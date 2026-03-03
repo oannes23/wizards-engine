@@ -6,9 +6,9 @@ This document defines conventions for any Claude instance (or human) working on 
 
 ## Project Overview
 
-{{PROJECT_DESCRIPTION}}
+A backend state tracker for a single narrative-heavy, low-crunch tabletop RPG campaign. Tracks character sheets, game world state, and provides a proposal workflow for player actions. API-first REST backend for a small fixed group (4–6 players + 1 GM).
 
-**Core principle**: {{CORE_PRINCIPLE}}
+**Core principle**: Mutable state + append-only event log. No DSL — all game logic is hardcoded in Python. API-first REST.
 
 **Current phase**: Specification and design.
 

@@ -1,26 +1,30 @@
 # Traits — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-02-26
+**Last interrogated**: 2026-03-13
 **Last verified**: —
-**Depends on**: [character-core](character-core.md)
+**Depends on**: [character-core](character-core.md), [game-objects](game-objects.md)
 **Depended on by**: [proposals](proposals.md), [downtime](downtime.md)
 
 ---
 
 ## Overview
 
-Traits represent a character's defining qualities (Core Traits) and learned abilities (Role Traits). They provide a +1d bonus to dice pools when relevant and use a charge mechanic to gate their usage. Traits can be referenced narratively at no cost; only the +1d mechanical bonus spends a charge.
+**This is the authoritative spec for all trait types in the system.** Traits exist on three Game Object types with varying mechanical depth:
 
-Traits share a unified architecture with Bonds — see [bonds.md](bonds.md) for the full Trait/Bond instance model.
+- **PC Traits** (Core 2 + Role 3): Mechanical — charges (0–5), +1d bonus on proposals, Trait Template catalog, Past/Retired lifecycle.
+- **Group Traits** (10 slots): Descriptive — freeform name + description, no charges, no dice bonuses, simple replace lifecycle.
+- **Location Feature Traits** (5 slots): Descriptive — freeform name + description, no charges, no dice bonuses, simple replace lifecycle.
+
+All trait types live in the unified table with Bonds (see [bonds.md](bonds.md)), distinguished by `slot_type`.
 
 ---
 
-## Core Concepts
+## PC Traits (Full Characters Only)
 
 ### Unified Trait/Bond Architecture
 
-Traits and Bonds share a common two-layer architecture:
+PC Traits and Bonds share a common two-layer architecture:
 
 1. **Trait Template** (definition layer): A GM-created catalog entry with name, description, and type (`core` or `role`). The type is fixed — Core templates fill Core slots, Role templates fill Role slots. Multiple characters can share the same Trait Template. Editing a template propagates changes to all characters referencing it. Bonds use game objects as their "template" instead — see [bonds.md](bonds.md).
 2. **Trait Instance** (character layer): A per-character record linking to a Trait Template. Holds character-specific state: charges, `is_active` flag, and an event history stream. A character can only have one active instance of a given template (no duplicates).
@@ -56,7 +60,7 @@ Maximum modifier bonus: **+3d** on top of the base skill dice pool.
 
 - New traits start at **full charge (5)**
 - Charges are **spent** (1 per invocation) when a trait is selected for the +1d bonus in an approved proposal
-- Charges are **replenished** during downtime via the "Reset Trait Charges" activity (fully restores one trait per activity, costs Free Time)
+- Charges are **replenished** during downtime via the "Recharge Trait" activity (fully restores one trait per activity, costs 1 FT)
 
 ### Trait Slots and Blank Slots
 
@@ -64,14 +68,14 @@ Characters have fixed trait **slots** (2 Core, 3 Role) but slots may be **blank*
 
 ### Past/Retired Traits
 
-When a trait is replaced (via "New Trait" downtime action or GM action), the old Trait Instance is marked `is_active = false`. It remains on the character sheet in a **"Past" section**:
+When a PC trait is replaced (via "New Trait" downtime action or GM action), the old Trait Instance is marked `is_active = false`. It remains on the character sheet in a **"Past" section**:
 - Full event history preserved and viewable
 - Cannot be selected for proposals (+1d bonus)
 - Serves as a narrative record of the character's trait history
 
 This applies equally to retired Bonds — see [bonds.md](bonds.md).
 
-### Trait Lifecycle
+### PC Trait Lifecycle
 
 1. **Created**: GM adds traits via direct action (post character creation), selecting from the Trait Template catalog. New traits start at full charge (5).
 2. **Active**: Trait is available for use in proposals and downtime.
@@ -81,42 +85,148 @@ This applies equally to retired Bonds — see [bonds.md](bonds.md).
 
 ---
 
+## Group Traits (Descriptive)
+
+Groups have **10 descriptive trait slots** — freeform name + description, no categories enforced. These represent the group's culture, training, assets, reputation, or any other defining characteristic the GM wants to track.
+
+### Key Properties
+
+- **Freeform**: No Trait Template catalog. GM types name + description directly.
+- **No mechanics**: No charges, no dice bonuses, no stacking rules.
+- **Simple replace**: GM can overwrite or clear any slot directly. No Past/Retired lifecycle — old values are not preserved on the entity.
+- **Event-logged**: Changes are recorded in the event log with before/after values, providing history via events even without the Past/Retired pattern.
+- **Player influence via work_on_project**: Players who are members of a Group can propose trait changes by submitting a `work_on_project` downtime action targeting the Group's Story/Arc. The GM resolves the trait change as the project outcome.
+
+### Group Trait Lifecycle
+
+1. **Created**: GM adds a descriptive trait to a Group slot (direct action).
+2. **Active**: Visible on the Group detail endpoint.
+3. **Replaced/Cleared**: GM overwrites with a new trait or clears the slot. Change logged as an event.
+
+---
+
+## Location Feature Traits (Descriptive)
+
+Locations have **5 descriptive Feature trait slots** — freeform name + description representing physical characteristics, atmosphere, dangers, notable qualities, or any other defining feature.
+
+### Key Properties
+
+- **Freeform**: No Trait Template catalog. GM types name + description directly.
+- **No mechanics**: No charges, no dice bonuses.
+- **Interchangeable**: All 5 slots are generic. Categories (atmosphere, danger, etc.) are naming conventions, not enforced.
+- **Simple replace**: Same as Group traits — GM overwrites or clears directly. No Past/Retired lifecycle.
+- **Event-logged**: Changes recorded in the event log with before/after values.
+- **Player influence via work_on_project**: Players bonded to a Location can propose Feature trait changes by submitting a `work_on_project` downtime action targeting a Story/Arc associated with the Location. The GM resolves the trait change as the project outcome.
+
+### Location Feature Trait Lifecycle
+
+1. **Created**: GM adds a descriptive Feature trait to a Location slot (direct action).
+2. **Active**: Visible on the Location detail endpoint.
+3. **Replaced/Cleared**: GM overwrites with a new trait or clears the slot. Change logged as an event.
+
+---
+
+## Unified Table
+
+All trait types live in the unified table alongside Bonds, distinguished by `slot_type`:
+
+| Slot Type | Owner | Slots | Mechanical | Template? |
+|-----------|-------|-------|------------|-----------|
+| `core_trait` | Full Character | 2 | Yes (charges, +1d) | Trait Template catalog |
+| `role_trait` | Full Character | 3 | Yes (charges, +1d) | Trait Template catalog |
+| `group_trait` | Group | 10 | No (descriptive) | Freeform |
+| `feature_trait` | Location | 5 | No (descriptive) | Freeform |
+
+Bond slot types are defined in [bonds.md](bonds.md).
+
+The complete column layout and nullable field rules are specified in [data-model.md](../architecture/data-model.md).
+
+---
+
 ## Decisions
+
+### traits.md Is the Authoritative Trait Spec
+
+- **Decision**: This document is the single source of truth for all trait types — PC Core/Role, Group descriptive, and Location Feature traits.
+- **Rationale**: Traits are a cross-cutting concept. Having one authoritative reference prevents fragmentation.
+- **Implications**: game-objects.md references this spec for Group/Location trait details.
 
 ### Unified Trait/Bond Architecture
 
-- **Decision**: Core Traits, Role Traits, and Bonds share a unified two-layer architecture: Trait Templates (definition catalog) and Trait Instances (per-character state). Core/Role Traits link to Trait Templates; Bonds link to game objects.
-- **Rationale**: Unifying the model reduces complexity. All three types occupy slots on the character sheet, can be active or retired, and have event history streams.
-- **Implications**: Single instance model with a slot type discriminator. See [bonds.md](bonds.md) for Bond-specific fields.
+- **Decision**: Core Traits, Role Traits, and Bonds share a unified two-layer architecture: Trait Templates (definition catalog) and Trait Instances (per-character state). Core/Role Traits link to Trait Templates; Bonds link to game objects. Group/Location traits are freeform (no templates).
+- **Rationale**: Unifying the model reduces complexity. All types occupy slots, can be active or retired (PC) or simply replaced (Group/Location), and live in one table.
+- **Implications**: Single table with a `slot_type` discriminator. See [bonds.md](bonds.md) for Bond-specific fields.
 
-### Trait Template Catalog
+### Trait Template Catalog (PC Traits Only)
 
-- **Decision**: Trait Templates are a GM-created shared catalog. Characters pick from the catalog when adding traits. Multiple characters can share the same Trait Template. Editing a template propagates changes to all characters referencing it.
-- **Rationale**: A shared catalog allows trait reuse and provides a consistent library for the GM to manage. Propagating edits keeps the template as the single source of truth for a trait's identity.
-- **Implications**: Need a Trait Template CRUD for the GM. Templates exist independently of characters.
+- **Decision**: Trait Templates are a GM-created shared catalog for Core and Role traits only. Group and Location traits are freeform — no catalog, no reuse mechanism.
+- **Rationale**: PC traits benefit from reuse (multiple characters can share "Brave") and catalog management. Group/Location traits are more situational and don't need the overhead.
+- **Implications**: Trait Template CRUD is for PC traits only. Group/Location trait creation is inline.
+
+### Group Traits — Flat Descriptive Slots
+
+- **Decision**: Groups have 10 descriptive trait slots with no enforced categories. Replaces the previous Culture (2) / Training (3) / Asset (5) structure.
+- **Rationale**: Categories added complexity without clear benefit. The GM can name traits however they want — a "Culture" trait vs a "Training" trait is a naming convention, not a system distinction.
+- **Implications**: Single `group_trait` slot_type in the unified table. Previous culture_trait, training_trait, asset_trait types removed.
+
+### Location Feature Traits — Interchangeable Slots
+
+- **Decision**: Locations have 5 generic Feature trait slots. All interchangeable — no typed sub-slots (atmosphere, danger, etc.).
+- **Rationale**: Enforcing sub-types constrains the GM without adding value. 5 slots is enough for most Locations.
+- **Implications**: Single `feature_trait` slot_type.
+
+### Group/Location Traits Are Freeform
+
+- **Decision**: Group and Location traits are name + description, typed directly by the GM. No Trait Template catalog or reuse mechanism.
+- **Rationale**: These are world-building flavor text. A shared catalog adds overhead without meaningful benefit — each Group/Location is unique enough that reuse is rare.
+- **Implications**: No template_id on Group/Location trait records. Just name + description.
+
+### Simple Replace Lifecycle (Group/Location)
+
+- **Decision**: Group and Location traits use a simple replace model — GM can overwrite or clear a slot directly. No Past/Retired pattern. Old values are captured in the event log (before/after), not on the entity itself.
+- **Rationale**: These are descriptive flavor with no mechanical stakes. Full history tracking adds overhead for no gameplay benefit. The event log provides audit trail if ever needed.
+- **Implications**: No `is_active` flag needed for Group/Location traits (they're always active or absent). Past/Retired only applies to PC traits and Bonds.
+
+### Player Influence on Group/Location Traits
+
+- **Decision**: Players can propose Group trait changes (for Groups they're members of) and Location Feature trait changes (for Locations they're bonded to) via the `work_on_project` downtime action. The player targets a Story/Arc associated with the Group or Location. The GM resolves the trait change as the project outcome.
+- **Rationale**: No new proposal types needed — `work_on_project` already covers narrative-driven changes. Players discuss desired changes at the table, formalize via proposal, GM makes the actual edit.
+- **Implications**: No new proposal types. GM direct action is the actual mechanism for the trait change; the proposal is the player's request and narrative contribution.
 
 ### Template Type Binding
 
 - **Decision**: Trait Template type (`core` or `role`) is fixed on the template. Core templates can only fill Core slots; Role templates can only fill Role slots.
 - **Rationale**: Clear categorization. The distinction between defining qualities (Core) and learned abilities (Role) is fundamental to the design.
-- **Implications**: Template creation requires specifying a type. Slot assignment validates type match.
+- **Implications**: Template creation requires specifying a type. Slot assignment validates type match. Type is immutable after creation — PATCH only allows name/description.
+
+### Trait Template Propagation
+
+- **Decision**: Editing a Trait Template's name or description propagates to all characters referencing it (via `slots.template_id`). Type is immutable — cannot be changed after creation. Soft-deleting a template does NOT cascade to instances — existing trait instances keep their `template_id` reference and remain functional, but the template is hidden from the catalog browse endpoint.
+- **Rationale**: Name/description propagation keeps the catalog consistent. Type immutability prevents breaking slot assignments. Orphaning (not cascading) on soft-delete avoids unexpected trait loss on active characters.
+- **Implications**: PATCH on trait templates only accepts name/description. Soft-deleted templates still resolve when fetched by ID (for instance display) but are excluded from catalog lists.
+
+### Auto-Catalog on New Trait Approval
+
+- **Decision**: When the GM approves a `new_trait` downtime proposal that includes a proposed name/description (not referencing an existing template), the system automatically creates a new Trait Template in the catalog and links the new trait instance to it.
+- **Rationale**: Reduces GM friction. The approval itself is the endorsement of the new trait concept. Auto-cataloging makes it immediately reusable for other characters.
+- **Implications**: The `new_trait` proposal's `selections` can include either `template_id` (existing) or `proposed_name` + `proposed_description` (new). On approval with proposed fields, system creates template → links instance.
 
 ### No Duplicate Templates per Character
 
 - **Decision**: A character can only have one active instance of a given Trait Template. No assigning the same template to multiple slots.
 - **Rationale**: Each trait should be narratively distinct on a character. Duplicates would be mechanically redundant.
 
-### Fixed Trait Slot Counts
+### Count-Based Trait Slots
 
-- **Decision**: Characters have exactly 2 Core Trait slots and 3 Role Trait slots. Slots may be blank.
-- **Rationale**: Fixed slot counts keep characters focused. Blank slots allow gradual discovery of character identity during play.
-- **Implications**: Trait creation fills a slot. Trait replacement swaps within a slot. No trait addition beyond the fixed 5 slots.
+- **Decision**: Characters have a maximum of 2 active Core Traits and 3 active Role Traits. Groups have 10 descriptive trait slots. Locations have 5 Feature trait slots. All counts are fixed maximums. Slots are count-based, not indexed — traits are referenced by ID, not by position. Blank slots are allowed (not all positions must be filled).
+- **Rationale**: Count-based is simpler than indexed positions and consistent with the bond model. Traits are naturally referenced by their unique ID. Display ordering is by creation time.
+- **Implications**: `new_trait` proposal uses `{slot_type, template_id?, retire_trait_id?}` — no `slot_index`. When at max active count for that slot_type, `retire_trait_id` is required. See [actions.md](actions.md).
 
 ### Charge Range
 
-- **Decision**: Charge range is 0–5 for all traits.
+- **Decision**: Charge range is 0–5 for all PC traits.
 - **Rationale**: Provides enough uses between downtimes without being unlimited.
-- **Implications**: Downtime "Reset Trait Charges" activity restores charges.
+- **Implications**: Downtime "Recharge Trait" activity restores charges.
 
 ### Charge Cost
 
@@ -144,7 +254,7 @@ This applies equally to retired Bonds — see [bonds.md](bonds.md).
 
 ### Charge Reset Mechanic
 
-- **Decision**: The "Reset Trait Charges" downtime activity fully restores one trait to 5 charges. Player chooses which trait. Costs Free Time.
+- **Decision**: The "Recharge Trait" downtime activity fully restores one trait to 5 charges. Player chooses which trait. Costs 1 FT.
 - **Rationale**: Per-trait reset creates meaningful resource decisions during downtime — which trait do you need most?
 - **Implications**: A player with 5 depleted traits needs 5 separate downtime activities (and Free Time) to fully recharge.
 
@@ -164,15 +274,29 @@ This applies equally to retired Bonds — see [bonds.md](bonds.md).
 
 ## API Endpoints
 
-Traits are managed via Trait Template catalog (GM), GM direct action, and downtime proposals:
+### Trait Template Catalog (GM-only CRUD)
+
+- `GET /api/v1/trait-templates` — list all templates (filters: `?type=core|role`, `?is_deleted=false` default)
+- `POST /api/v1/trait-templates` — create a new template (GM). Body: `{name, description, type}`.
+- `GET /api/v1/trait-templates/{id}` — template detail
+- `PATCH /api/v1/trait-templates/{id}` — update name/description only (GM). Type is immutable.
+- `DELETE /api/v1/trait-templates/{id}` — soft delete (GM). Existing trait instances keep their `template_id` reference but the template is hidden from the catalog. Instances remain functional.
+
+### PC Trait Management
 
 - `GET /api/v1/characters/{id}` — full sheet includes all trait slots (active, blank, and past/retired)
-- Trait Template CRUD: GM manages the shared catalog of trait definitions
-- GM direct action: assign/update/remove trait instances on a character (standard GM bypass)
+- GM trait management (assign/update/remove instances): via `POST /api/v1/gm/actions` with action types `create_trait`, `modify_trait`, `retire_trait`. See [actions.md](actions.md).
 - "New Trait" downtime action: submitted as a proposal via `POST /api/v1/proposals`
-- "Reset Trait Charges" downtime action: submitted as a proposal via `POST /api/v1/proposals`
+- "Recharge Trait" downtime action: submitted as a proposal via `POST /api/v1/proposals`
 
 No dedicated trait instance endpoints for players — all player-initiated trait changes go through proposals.
+
+### Group/Location Trait Management
+
+- `GET /api/v1/groups/{id}` — Group detail includes all descriptive trait slots
+- `GET /api/v1/locations/{id}` — Location detail includes all Feature trait slots
+- GM trait management (create/update/clear descriptive traits on Groups and Locations): via `POST /api/v1/gm/actions` with action types `create_trait`, `modify_trait`, `retire_trait`. See [actions.md](actions.md).
+- Player influence: `work_on_project` proposal targeting a Group/Location Story/Arc → GM resolves trait change
 
 ---
 
@@ -180,13 +304,25 @@ No dedicated trait instance endpoints for players — all player-initiated trait
 
 | Spec | Implication |
 |------|-------------|
-| [bonds](bonds.md) | Unified Trait/Bond architecture — shared instance model. Bonds are a slot type alongside Core/Role. |
-| [proposals](proposals.md) | Modifier selection: max 1 Core + 1 Role + 1 Bond per proposal. Each gives +1d. Charge spend happens on approval. |
-| [downtime](downtime.md) | Two trait-related downtime activities: "Reset Trait Charges" (full restore, one trait) and "New Trait" (replace/fill a slot). Both cost Free Time. |
-| [character-core](character-core.md) | Traits are sub-entities of the Character sheet, displayed in full-sheet endpoint. Past/retired traits shown separately. |
-| [events](events.md) | Charge changes, trait replacements, and retirements are logged as events. Per-instance event history stream. |
-| [architecture/data-model](../architecture/data-model.md) | Trait Template catalog + Trait Instance model. Shared with Bonds. |
+| [bonds](bonds.md) | Unified table architecture — shared with all trait types. Bond slot types defined in bonds.md. |
+| [game-objects](game-objects.md) | 🔄 Group traits simplified: 10 flat descriptive slots (no Culture/Training/Asset categories). Location Feature traits: 5 interchangeable slots. Both reference traits.md as authoritative. |
+| [actions](actions.md) | PC modifier selection: max 1 Core + 1 Role + 1 Bond per proposal. Each gives +1d. Charge spend happens on approval. Group/Location trait changes via work_on_project (no new proposal types). `new_trait` uses count-based slots with `retire_trait_id`. GM trait management via `POST /gm/actions`. |
+| [downtime](downtime.md) | Two PC trait activities: "Recharge Trait" (full restore, one trait) and "New Trait" (replace/fill a slot). Both cost 1 FT. |
+| [character-core](character-core.md) | PC traits are sub-entities of the Character sheet. Past/retired traits shown separately. |
+| [events](events.md) | All trait changes logged: PC charge changes, replacements, retirements, AND Group/Location trait overwrites (before/after). |
+| [architecture/data-model](../architecture/data-model.md) | 🔄 Trait Template catalog (PC only) + unified table. `group_trait` replaces culture/training/asset types. `feature_trait` for Locations. Nullable mechanical fields. |
 
 ---
 
-_Last updated: 2026-02-26_
+## Open Questions
+
+_All resolved._
+
+1. ~~**Trait Template CRUD endpoints**~~: **Resolved** — Standard REST CRUD: `GET/POST /api/v1/trait-templates`, `GET/PATCH/DELETE /api/v1/trait-templates/{id}`. All GM-only. Soft delete. PATCH accepts name/description only (type is immutable).
+2. ~~**GM trait direct action endpoints**~~: **Resolved** — All GM trait management (assign/update/remove instances on Characters, create/update/clear descriptive traits on Groups/Locations) via `POST /api/v1/gm/actions` with action types `create_trait`, `modify_trait`, `retire_trait`. No sub-resource endpoints. See [actions.md](actions.md).
+3. ~~**Group/Location trait management endpoints**~~: **Resolved** — Same as #2. All via `POST /api/v1/gm/actions`. No sub-resource endpoints on Groups or Locations for traits.
+4. ~~**`new_trait` with proposed template**~~: **Resolved** — Auto-add on approval. When GM approves a `new_trait` proposal with proposed name/description, system automatically creates a Trait Template and links the instance.
+
+---
+
+_Last updated: 2026-03-13 (interrogation — resolved all open questions: trait template CRUD endpoints, auto-catalog on new_trait approval, template propagation semantics, template type immutability)_

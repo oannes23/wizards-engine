@@ -26,11 +26,14 @@ This is the central index for all design specifications. Each area links to its 
 
 ## Scope
 
-### MVP 0
-- TBD — to be defined during interrogation (likely: core loop — character sheets + proposals + GM approval)
+**Single MVP, phased build.** No MVP 0/1 split — the full system is the target. Implementation is organized as 6 phases:
 
-### MVP 1
-- TBD — to be defined during interrogation (likely: downtime, magic, world management)
+1. **Foundation** — Auth, DB, API skeleton, test fixtures
+2. **World** — Game objects (NPCs, Groups, Locations, Stories, Clocks)
+3. **Characters** — Full character sheet, traits, bonds, magic effects
+4. **Actions** — Unified action system (proposals, GM actions, player direct actions), events, magic, rider events
+5. **Sessions** — Session lifecycle, downtime, FT/Plot distribution, invites
+6. **Web UI** — Basic mobile-friendly frontend
 
 See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 
@@ -40,9 +43,10 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 
 | Area | Doc | Status | Notes |
 |------|-----|--------|-------|
-| System Overview | [overview.md](architecture/overview.md) | 🟡 | Populated from engine.md — actors, principles, tech stack, non-goals. 🔄 **Needs addition**: Deferred Narrative Resolution as a named design principle. |
-| Data Model | [data-model.md](architecture/data-model.md) | 🔄 | Entity types, relationships, persistence stack. Open Qs: ID strategy, polymorphic refs. **Needs revision**: unified Trait/Bond instance model, Trait Template catalog, polymorphic bond targets, shared base fields (`is_deleted`), lightweight bond model with directionality, NPC `attributes` blob, Story entries with audit trail, event auto-capture logic, Location curated affiliations. |
-| MVP Scope | [mvp-scope.md](architecture/mvp-scope.md) | 🟡 | Light touch — scope decisions deferred to after domain interrogation. |
+| System Overview | [overview.md](architecture/overview.md) | 🟢 | All resolved. Deployment: self-hosted VPS. UI: same process. Pagination: ULID cursor. API conventions: separate doc. |
+| API Conventions | [api-conventions.md](architecture/api-conventions.md) | 🟢 | All resolved. **Updated 2026-03-13**: FastAPI framework. Bare responses, nested error format, snake_case naming, PATCH omit/null semantics, ISO 8601 timestamps, ULID-order sorting, 404 for authz, same-origin CORS. |
+| Data Model | [data-model.md](architecture/data-model.md) | 🟢 | All resolved. **Updated 2026-03-14**: events.changes value structure updated: added op tag (field.set/meter.delta/meter.set) and optional clamped flag. |
+| MVP Scope | [mvp-scope.md](architecture/mvp-scope.md) | 🟢 | All resolved. Single MVP, 6-phase build. |
 
 ---
 
@@ -52,15 +56,75 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 
 | Area | Doc | Status | Key Open Questions |
 |------|-----|--------|-------------------|
-| Game Objects | [game-objects.md](domains/game-objects.md) | 🟢 | All resolved (31 decisions). Soft delete (Draft sessions hard-delete exception), lightweight bonds on NPCs/Groups (not Locations), bond directionality model (Group↔Group/NPC↔NPC bidirectional, NPC→Group=membership, Group→NPC=special, Locations=targets only), quantum NPC locations with notes, deferred narrative resolution, story entries with full audit trail + edit/soft-delete, clock annotations via events, event auto-capture, group tier unbounded, clock segments any positive int (default 5), unlimited location nesting, clock dual route access, location curated affiliations + computed presence, NPC merged location view, group computed members, story owners sub-resource, bidirectional bond labels (source/target), lightweight bond IDs + sub-resource API. **Faction → Group rename** (project-wide). |
-| Character Core | [character-core.md](domains/character-core.md) | 🟢 | All questions resolved. 🔄 **Note**: needs `last_session_time_now` field and `session_ids` list. Plot: +1/+2 per session (Additional Contribution), guaranteed 6. FT via Time Now delta. Rest heals 3+mods. |
-| Traits | [traits.md](domains/traits.md) | 🟢 | All questions resolved. Updated with unified Trait/Bond architecture, Trait Template catalog, Past/Retired concept. |
-| Bonds | [bonds.md](domains/bonds.md) | 🟢 | All resolved. 🔄 **Note**: "Heal Bond Stress" renamed to "Maintain Bond" in proposals spec. Bond directionality model affects bond-distance visibility graph. |
-| Magic System | [magic-system.md](domains/magic-system.md) | 🟢 | All resolved — deepened with: combined sacrifice list, Stress→Trauma cascade, GM-interpreted effects (power 1–5), player effect use/retire, Charge Action split (charges vs power), Regain Gnosis formula. |
-| Proposals | [proposals.md](domains/proposals.md) | 🟢 | All resolved — 10 action types (3 Actions + 7 Downtime), all cost 1 FT for downtime, formulas defined, GM full override, mutate-in-place revision, Plot = guaranteed 6, projects use Story/Arc. |
-| Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved (19 decisions) — session lifecycle (Draft→Active→Ended), FT via Time Now delta, Plot +1/+2, Find Time, late joins, one Active at a time, forward-only lifecycle, per-clock adjustments, bidirectional session-character refs. |
-| Events | [events.md](domains/events.md) | 🟢 | All resolved (17 decisions). Keyed before/after changes, convention-based `{domain}.{action}` types, one event per action, bond-distance visibility (6 levels: global/gm_only/private/bonded/familiar/public), actor typed ref, targets list, generic metadata, proposal_id back-ref, session auto-capture, no undo for MVP, retain forever. |
-| Auth | [auth.md](domains/auth.md) | 🟡 | Token format, expiry, GM setup flow, player-character mapping. |
+| Game Objects | [game-objects.md](domains/game-objects.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for clock completion. |
+| Character Core | [character-core.md](domains/character-core.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for Stress/Trauma compound consequence. |
+| Traits | [traits.md](domains/traits.md) | 🟢 | All resolved. **Updated 2026-03-13**: Trait template CRUD endpoints (standard REST, GM-only). Auto-catalog on new_trait approval. Template propagation (name/desc only, type immutable, soft-delete orphans). |
+| Bonds | [bonds.md](domains/bonds.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior. |
+| Magic System | [magic-system.md](domains/magic-system.md) | 🟢 | All resolved. **Updated 2026-03-13**: Effect use body ({narrative?: string}). charge_magic approval outcome (charges_added/power_boost in gm_overrides). |
+| Actions | [actions.md](domains/actions.md) | 🟢 | All resolved. Unified action system. GM actions reuse domain event types. Integrity-only validation. Clean CRUD/GM split. Proposal withdrawal (hard delete). ULID pagination. |
+| Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). |
+| Events | [events.md](domains/events.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added operation type tags (field.set, meter.delta, meter.set) on changes entries. Meter boundary patterns catalog with clamped annotation. Compound consequence documentation. Cross-references to boundary behaviors in other specs. |
+| Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Updated 2026-03-12**: ULID cursor pagination (default 50, max 100). Discriminated union feed items (common fields + type-specific). Private visibility = union of actor + primary target. Story `visibility_level` field for GM override. Full filter set on all endpoints. Own actions included with `is_own` flag. Story entry targets = owners + refs union. Rider events as separate feed items. |
+| Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. |
+
+---
+
+## Design Ambiguity Analysis
+
+Design ambiguities that would cause real friction during implementation, organized by severity.
+
+### BLOCKING: Can't Build Without Deciding
+
+#### ~~1. No Dice/Outcome Framework~~ ✅ RESOLVED
+Resolved in proposals.md (2026-03-05): Narrative only — no dice values or outcome tiers recorded. Typed `calculated_effect` schemas per action type (outcome + costs). GM writes narrative, optionally overrides calculated values (replacement semantics). System tracks mechanical state changes, not roll outcomes.
+
+#### ~~2. Polymorphic Reference Strategy~~ ✅ RESOLVED
+Resolved in data-model.md (2026-03-05): Hybrid approach — type+id columns inline for single refs, association tables for list refs.
+
+#### ~~3. MVP Scope~~ ✅ RESOLVED
+Resolved in mvp-scope.md (2026-03-04): Single MVP, 6-phase build.
+
+### FRICTION: Implementable But Arbitrary Choices Required
+
+#### ~~4. Event Visibility Cache~~ ✅ RESOLVED
+Resolved in mvp-scope.md (2026-03-04): Compute-on-read, no cache. Add cache only if slow.
+
+#### ~~5. Clock Completion Surfacing~~ ✅ RESOLVED
+Resolved in game-objects.md (2026-03-04): Computed `is_completed` on read. Auto-generates `resolve_clock` proposal.
+
+#### ~~6. Trait Template Propagation Semantics~~ ✅ RESOLVED
+Resolved in traits.md (2026-03-13): Propagate name/description only. Type is immutable. Soft-delete template orphans instances (instances keep reference, template hidden from catalog). See [traits.md](domains/traits.md).
+
+#### 7. Lightweight Bond Directionality — Implementation Complexity
+**Affects**: game-objects
+
+Intricate directionality rules: bidirectional bonds mean creating/deleting two records atomically. The "membership" semantic for NPC→Group is implicit in direction. Already decided and specified — just noting this is the most complex piece of game-objects to implement. Plan extra time and good test coverage.
+
+#### 8. Story Entry Audit Trail
+**Affects**: game-objects
+
+Story entries have `updated_by`, `deleted_by`, `is_deleted` fields with player-edit-own + GM-edit-any rules — essentially a mini CMS.
+
+**Pragmatic recommendation**: Start with simple append-only entries (no edit, no delete). Add edit/delete later if actually needed during play.
+
+### COSMETIC: Won't Matter Until Someone Asks
+
+- **GM Decision Frameworks**: Multiple specs defer to "GM decides" for strain triggers, trauma negotiation, clock outcomes, etc. This is intentional — narrative flexibility. No implementation impact.
+- **Charge Ranges on Magic Effects**: "Charges are unbounded" — just an integer field. GM sets reasonable values.
+- **NPC Attributes Blob Schema**: Deliberately freeform JSON. No implementation impact.
+
+---
+
+## Recommended Next Steps
+
+### ~~Priority 1: Resolve Remaining Blocking Issue~~ ✅ RESOLVED
+~~1. **`/interrogate spec/domains/proposals.md`**~~ — Resolved (2026-03-05, expanded 2026-03-07). Typed `calculated_effect` schemas, rider events, `resolve_clock`, player-written narratives, GM override semantics all decided. Renamed to actions.md — unified action system (proposals, GM actions, player direct actions).
+
+### ~~Priority 1: Resolve Open Questions in overview.md~~ ✅ RESOLVED
+All resolved (2026-03-05): deployment model (self-hosted VPS), UI serving (same process), pagination (ULID cursor), real-time (deferred, polling for MVP).
+
+### ~~Priority 3: Propagate Stale Decisions~~ ✅ RESOLVED
+All propagation complete as of 2026-03-14. All specs aligned.
 
 ---
 
@@ -72,7 +136,7 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 4. `domains/traits` — trait mechanics
 5. `domains/bonds` — relationship mechanics (needs game-objects done first)
 6. `domains/magic-system` — magic subsystem
-7. `domains/proposals` — core gameplay loop
+7. `domains/actions` — core gameplay loop (renamed from proposals)
 8. `domains/downtime` — between-session phase
 9. `domains/events` — event log details
 10. `domains/auth` — permissions and onboarding
@@ -83,17 +147,25 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 
 ## Implementation Specs
 
-### MVP 0
+Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/mvp-scope.md)). Epic/Story breakdown is in [`spec/implementation/`](implementation/README.md).
 
-| Epic | Doc | Status | Blocked By |
-|------|-----|--------|------------|
-| Overview | [overview.md](implementation/mvp-0/overview.md) | 🔴 | Domain specs |
+**13 Epics, 46 Stories** across 5 API phases (Phase 6 Web UI deferred).
 
-### MVP 1
-
-| Epic | Doc | Status | Blocked By |
-|------|-----|--------|------------|
-| Overview | [overview.md](implementation/mvp-1/overview.md) | 🔴 | MVP 0 complete |
+| Phase | Epic | File | Stories | Status |
+|-------|------|------|---------|--------|
+| 1 | 1.1 — Scaffolding & DB | [phase1-scaffolding-db.md](implementation/phase1-scaffolding-db.md) | 4 | 🔴 |
+| 1 | 1.2 — Auth & API Skeleton | [phase1-auth-api-skeleton.md](implementation/phase1-auth-api-skeleton.md) | 6 | 🔴 |
+| 2 | 2.1 — Game Object CRUD | [phase2-game-object-crud.md](implementation/phase2-game-object-crud.md) | 4 | 🔴 |
+| 2 | 2.2 — System Entities | [phase2-system-entities.md](implementation/phase2-system-entities.md) | 5 | 🔴 |
+| 2 | 2.3 — Bonds & Presence | [phase2-bonds-presence.md](implementation/phase2-bonds-presence.md) | 3 | 🔴 |
+| 3 | 3.1 — Character Sheet Model | [phase3-character-sheet.md](implementation/phase3-character-sheet.md) | 4 | 🔴 |
+| 3 | 3.2 — Traits & Magic Effects | [phase3-traits-effects.md](implementation/phase3-traits-effects.md) | 3 | 🔴 |
+| 3 | 3.3 — PC Bond Mechanics | [phase3-pc-bond-mechanics.md](implementation/phase3-pc-bond-mechanics.md) | 2 | 🔴 |
+| 4 | 4.1 — Event Log | [phase4-event-log.md](implementation/phase4-event-log.md) | 3 | 🔴 |
+| 4 | 4.2 — GM Actions | [phase4-gm-actions.md](implementation/phase4-gm-actions.md) | 3 | 🔴 |
+| 4 | 4.3 — Proposal Workflow | [phase4-proposal-workflow.md](implementation/phase4-proposal-workflow.md) | 5 | 🔴 |
+| 4 | 4.4 — Feed System | [phase4-feed-system.md](implementation/phase4-feed-system.md) | 4 | 🔴 |
+| 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🔴 |
 
 ---
 
@@ -106,21 +178,268 @@ game-objects (primitive)        events (primitive)        auth (primitive)
     │       │                       │                       │
     │       ├──> traits             │                       │
     │       │       │               │                       │
-    │       ├──> bonds              │                       │
+    │       ├──> bonds ─────────────┤                       │
     │       │       │               │                       │
     │       └──> magic-system       │                       │
     │               │               │                       │
     │       ┌───────┘               │                       │
     │       ▼                       │                       │
-    └──> proposals <────────────────┘───────────────────────┘
+    └──> actions <──────────────────┘───────────────────────┘
             │
             ▼
          downtime
+
+    game-objects ──> bonds ──> events ──> feed <── auth
 ```
 
 ---
 
 ## Recent Changes
+
+### 2026-03-10: Propagation Sweep — CRUD/GM Split, Character-intermediary Rename, GM Event Types
+
+### 2026-03-10: Downtime Interrogation Complete
+
+- **downtime.md marked 🟢 Complete** — all 5 open questions resolved.
+- **Plot overflow**: Plot can exceed 5 from any source. Clamped to 5 at Session End. Players use Find Time to convert excess during Active session.
+- **Participant registration**: `POST /sessions/{id}/participants` body: `{character_id, additional_contribution?: false}`.
+- **No distributed flag**: Re-adding a participant to an Active session re-distributes. GM corrects via direct actions.
+- **Find Time**: Empty request body. Always 3 Plot → 1 FT.
+- **Time Now defaults**: New characters default `last_session_time_now = 0`. First session `time_now` unconstrained.
+- **Implications**: character-core.md Plot range description needs update (overflow behavior). Session End logic must clamp Plot.
+
+### 2026-03-10: Propagation Sweep
+
+- **Propagated decisions from actions.md (2026-03-10) and bonds.md (2026-03-07)** across 8 specs.
+- **CRUD/GM split applied to all game object specs**: Removed write sub-resource endpoints for bonds (`POST/PATCH/DELETE /{type}/{id}/bonds`) and clocks (`POST/PATCH /groups/{id}/clocks`). PATCH narrowed to name/desc/notes only. All mechanical changes via `POST /gm/actions`. POST (creation) still accepts all fields.
+- **Character-intermediary rename**: "NPC-intermediary" → "Character-intermediary" in feed.md, events.md, bonds.md. PCs are valid intermediaries.
+- **GM event types cleanup**: Removed `gm.direct_action` from events.md event type catalog. GM actions reuse domain event types (e.g., `character.stress_changed`) with `actor_type: "gm"`.
+- **Open questions resolved** (8 total across specs):
+  - character-core.md #5: `attributes` not player-editable (GM actions only)
+  - traits.md #2, #3: GM trait management via POST /gm/actions
+  - magic-system.md #1: action types canonicalized to `use_magic`/`charge_magic`
+  - magic-system.md #3: XP award via POST /gm/actions with `award_xp`
+  - downtime.md #1: session_ids contradiction resolved (join table query, no field on Character)
+  - downtime.md #4: clock adjustment via POST /gm/actions with `modify_clock`
+- **Open question count reduced**: From 34 to 26 across all 🔄 specs.
+- Updated: game-objects.md, character-core.md, traits.md, bonds.md, events.md, feed.md, magic-system.md, downtime.md, MASTER.md.
+
+### 2026-03-07: Actions Interrogation — Unified Action System (renamed from Proposals)
+
+- **proposals.md renamed to actions.md** — expanded scope to cover all state-changing operations.
+- **Unified Action System**: All state changes are "actions" — typed, validated inputs that produce Event rows. Three paths: player proposals (approval gate), GM actions (direct), player direct actions (no approval).
+- **Count-based slots**: Both traits and bonds use count-based models (not indexed ordinals). Items referenced by ID. `new_bond` uses `{target_type, target_id, retire_bond_id?}`. `new_trait` uses `{slot_type, template_id?, retire_trait_id?}`.
+- **GM Actions endpoint**: `POST /api/v1/gm/actions` with typed payload. ~14 action types with per-type default visibility. Same event output as proposal approvals.
+- **Player Direct Actions**: `find_time`, `use_effect`, `retire_effect` — no proposal needed, direct event creation.
+- **Rider event FK**: `rider_event_id` column on proposals table (not inline JSON).
+- **gm_overrides persistence**: All GM approval fields (actual_stat, style_bonus, effect_details, charges_added, power_boost, bond_strained) in `gm_overrides` JSON. Only `force` is transient.
+- **Style bonus timing**: Applied at approval only via gm_overrides. Player-facing `calculated_effect` never includes it.
+- **work_on_project narrative**: Proposal's `narrative` field IS the story entry text. On approval: `text = gm_narrative ?? narrative`.
+- **API logical fields**: Request/response bodies use separate top-level fields. API layer maps to/from physical `selections` JSON column.
+- **Canonical submission endpoint**: `POST /api/v1/proposals` only. Removed `POST /characters/{id}/actions/{action}` from character-core.md.
+- **Modifier shape**: Submission uses bare IDs (`{core_trait_id?, role_trait_id?, bond_id?}`), calculated_effect enriches to `[{id, type, name}]`.
+- Cross-spec updates: character-core.md (removed actions endpoint), traits.md (count-based slots), data-model.md (rider_event_id, field mapping).
+- 3 new open questions: GM action `changes` shapes per type, validation depth for retire checks, event type catalog for GM actions.
+
+### 2026-03-05: Proposals Interrogation — All 6 Open Questions Resolved
+
+- Proposals status: 🔄 → 🟢 — all 6 open questions resolved.
+- **Re-validation warning**: 409 Conflict + `force: true` retry. Two-step explicit mechanism when player can no longer afford costs at approval time.
+- **Pending proposal edits**: Players can PATCH both pending and rejected proposals. Auto-recalculates. Pending stays pending; rejected reverts to pending.
+- **Charge magic approval outcome**: GM specifies `charges_added` (integer, for charged effects) and optional `power_boost` (integer, for permanent effects). Delta-based, not replacement.
+- **Bond strain flag**: `bond_strained: true` boolean in GM approval payload. Auto-applies +1 stress to the bond modifier.
+- **Slot index semantics**: 0-indexed fixed ordinals. Core Traits 0–1, Role Traits 0–2, Bonds 0–7.
+- **Physical field mapping**: Cross-reference to data-model.md only — no inline duplication.
+- GM Approval Payload expanded with `charges_added`, `power_boost`, `bond_strained`, `force` fields.
+- Updated glossary: Proposal (pending edits, 409+force, bond_strained, slot ordinals).
+- **Implications**: magic-system.md may need `charge_magic` approval outcome noted. data-model.md `proposals` table may need `force` handling documented in API conventions.
+
+### 2026-03-05: Data Model Interrogation Complete — Full Rewrite
+
+- Data Model status: 🔄 → 🟢 — complete rewrite, all 6 open questions resolved + 9 new decisions.
+- **ULID primary keys**: All tables use ULID (26-char, sortable by creation time, stored as TEXT).
+- **Hybrid polymorphic strategy**: Type+id columns inline for single refs (Bond source/target, Clock association). Association tables for list refs (`event_targets`, `story_owners`).
+- **Unified `slots` table**: Single table for all traits and bonds. 9 `slot_type` values: `core_trait`, `role_trait`, `pc_bond`, `npc_bond`, `group_trait`, `group_relation`, `group_holding`, `feature_trait`, `location_bond`. Nullable mechanical columns.
+- **Skills/Magic Stats as JSON**: Two JSON columns on `characters` table for the fixed known sets. No separate tables.
+- **Story entries as separate table**: `story_entries` with per-entry soft-delete, `updated_by`, permissions.
+- **Session participants as join table**: `session_participants` with `additional_contribution` flag.
+- **Starred objects as separate table**: `starred_objects` (consistent with association table pattern).
+- **Rider events as separate Event rows**: `parent_event_id` FK on `events` table (self-referential).
+- **Calculated effect schemas deferred**: Typed per action_type, exact schemas defined during implementation.
+- **18 tables total**: users, invites, characters, groups, locations, trait_templates, slots, magic_effects, clocks, sessions, session_participants, stories, story_entries, story_owners, events, event_targets, proposals, starred_objects.
+- Design Ambiguity items #2 (polymorphic refs), #3 (MVP scope), #4 (visibility cache), #5 (clock completion) marked ✅ RESOLVED.
+- Updated recommended next steps.
+
+### 2026-03-05: Character Core Propagation Update
+
+- Character Core status: 🔄 → 🟢 — all upstream decisions propagated.
+- **PC bond slots → 8**: Updated throughout (was 7). NPCs remain at 7.
+- **No Trauma cap**: All 8 PC bonds can be Trauma. Stress min = 1 with 8 Traumas.
+- **Session history via join table**: Removed `session_ids` from Character. Session history queried from `session_participants`.
+- **No `player_id` on Character**: User.character_id references Character, not the reverse. detail_level determined by creation context.
+- **Skills/magic_stats as JSON**: Noted JSON storage per data-model.md.
+- Updated glossary: Members (PC bonds 8).
+
+### 2026-03-05: Events Major Propagation Update
+
+- Events status: 🔄 → 🟢 — major rewrite propagating upstream decisions.
+- **Unified 7-level visibility**: Replaced old 6-level system. Added `silent`. Redefined `private`, `familiar`, `public`. References feed.md as authoritative.
+- **Compute-on-read**: Removed cached visibility model. Compute per-request.
+- **Rider events**: Added concept — separate Event rows with `parent_event_id` FK.
+- **Physical schema alignment**: `actor_type`/`actor_id` columns, `event_targets` association table, matching data-model.md.
+- **Unified character event types**: Removed `npc.*` prefix. NPCs use `character.*` types.
+- **`silent` default visibility**: Added for system bookkeeping events.
+
+### 2026-03-05: Auth Propagation Update
+
+- Auth status: 🔄 → 🟢 — feed/starring features propagated.
+- **Feed endpoints**: Added `/me/feed`, `/me/feed/starred`, `/me/feed/silent` to API table.
+- **Starring API**: Added `/me/starred` (GET/POST/DELETE).
+- **Silent feed**: GM-only access noted in permission model.
+- **Unified visibility**: Updated visibility filtering decision to reference feed.md 7-level model.
+- **data-model alignment**: User/Invite/starred_objects table definitions aligned.
+
+### 2026-03-05: Bonds Propagation Update
+
+- Bonds status: 🔄 → 🟢 — all upstream decisions propagated.
+- **PC bond slots → 8**: Updated throughout (was 7). NPCs remain at 7.
+- **NPC-intermediary traversal for presence**: Same algorithm as visibility. One traversal, two uses.
+- **Soft-deleted exclusion**: Explicit in traversal constraints.
+- **Visibility reference → feed.md**: Replaced events.md references.
+- **data-model.md implications resolved**: `slots` table with `pc_bond`/`npc_bond` slot_types.
+
+### 2026-03-04: Game Objects Fourth Interrogation — Feed, Unified Visibility, Clock Updates
+
+- Game Objects re-interrogated — 15+ new decisions:
+- **PC Bond slots → 8**: PCs get 8 bond slots (was 7). NPCs remain at 7. The 8th slot accounts for the expected party Group bond.
+- **Feed concept (new spec)**: Unified Feed = merged Events + Story entries per Game Object, visibility-filtered by bond-graph proximity. A query pattern, not a stored entity.
+- **Unified 7-level visibility**: Replaces the old 6-level event visibility. New levels: `silent` (GM-only audit), `gm_only`, `private` (owner-scoped), `bonded` (1-hop), `familiar` (2-hop, default for Stories), `public` (3-hop), `global`. `familiar` and `public` use NPC-intermediary bond-graph traversal.
+- **NPC-intermediary traversal**: Bond-graph hops must alternate through NPCs. You can't traverse two Groups or two Locations. NPCs are the social connective tissue.
+- **Story visibility**: Bond-graph driven, computed on read. Owner-based: PC-owned = private, NPC/Group/Location-owned = familiar. Mixed owners = union visibility. GM can override via `visibility_overrides`.
+- **Story entry access: See = Write**: If you can see a Story, you can add entries.
+- **Story creation: GM-only. Status: free-set by GM.
+- **Starring**: Simple list of typed Game Object refs on User record. Starred feed = personal feed filtered to starred objects.
+- **Three feed endpoints**: Per-Game Object, complete personal, starred personal. Plus GM-only silent feed.
+- **Clock association → polymorphic**: Any Game Object (Character, Group, Location) via `associated_type`/`associated_id`. Replaces old `group_id`.
+- **Clock completion → auto-generate resolve_clock**: System creates pending proposal when completion detected. Idempotent.
+- **Clock soft cap**: GM can advance past segment count.
+- **Clock completion computed**: No stored `is_completed` flag.
+- **Soft-deleted excluded from bond graph**: Dead ends during traversal.
+- **No cascade soft-delete**: Deleting a Game Object doesn't cascade to Clocks/entries.
+- **Location list: flat parent filter only**.
+- Created new spec: feed.md (Feed, unified visibility, starring)
+- Updated glossary: Character (8 PC bonds), Bond (8 PC slots), Clock (polymorphic, auto-resolve), User (starred). Added: Feed, Starring, Unified Visibility Model. Replaced: Bond-Distance Visibility.
+- character-core.md flagged 🔄 — PC bonds 8
+- bonds.md flagged 🔄 — PC bonds 8, soft-delete exclusion, NPC-intermediary traversal
+- events.md flagged 🔄 — unified 7-level visibility, silent level, reference feed.md
+- auth.md flagged 🔄 — starred_game_objects, /me/feed endpoints, silent feed GM role
+- data-model.md flagged 🔄 — Clock polymorphic, User starred, Story visibility_overrides
+
+### 2026-03-04: Traits Revision — Authoritative Trait Spec
+
+- Traits status: 🔄 → 🟢 — major revision as the authoritative trait spec for all types.
+- **traits.md covers all trait types**: PC Core/Role, Group descriptive, and Location Feature. One spec, one source of truth.
+- **Group traits simplified**: Replaced Culture (2) / Training (3) / Asset (5) categories with **10 flat descriptive slots**. No enforced categories. Freeform name + description.
+- **Location Feature traits**: 5 interchangeable slots confirmed. All generic, no typed sub-slots.
+- **Freeform descriptive traits**: Group and Location traits do NOT use the Trait Template catalog. GM types name + description directly. No reuse mechanism.
+- **Simple replace lifecycle**: Group/Location traits have no Past/Retired pattern. GM overwrites or clears directly. Changes logged in event log (before/after) for audit trail.
+- **Player influence via work_on_project**: Players can propose Group trait changes (for Groups they're members of) and Location Feature trait changes (for Locations they're bonded to) via `work_on_project` downtime action. No new proposal types needed.
+- **Simplified slot_types**: Single `group_trait` replaces culture_trait + training_trait + asset_trait. Single `feature_trait` for Locations.
+- Updated glossary: Group (10 flat trait slots), Feature Trait (interchangeable, player influence). Replaced Culture Trait + Training Trait + Asset Trait with single Group Trait entry.
+- game-objects.md flagged 🔄 — Group traits simplified, reference traits.md as authoritative.
+- data-model.md flagged 🔄 — simplified slot_type catalog.
+
+### 2026-03-04: Bonds Revision — Authoritative Bond Spec
+
+- Bonds status: 🔄 → 🟢 — major rewrite as the authoritative bond spec
+- **Unified bond concept**: All relationships are Bonds. One concept, varying mechanical depth. bonds.md is the single source of truth.
+- **Fully unified table**: All traits AND bonds in one table with `slot_type` discriminator. Complete catalog deferred to data-model.md.
+- **Derived membership**: Group members = Characters with bonds targeting the Group. Not a stored type. PC bond to Group = membership (dual purpose).
+- **Group Holdings**: New bond category (Group → Location, unlimited, descriptive). Covers territories, properties, meeting places.
+- **Bond-distance presence**: Moved from game-objects.md to bonds.md (it's about bond graph traversal).
+- **NPC membership same as PC**: Consistent rule — any Character bond to a Group = membership.
+- game-objects.md updated: Bond section replaced with reference to bonds.md. Group bonds updated with Holdings and derived Members.
+- Updated glossary: Bond (unified table reference), Members (derived), added Holdings.
+- Traits spec flagged 🔄 — shares unified table, needs alignment.
+- Data Model spec flagged 🔄 — complete slot_type catalog needed.
+
+### 2026-03-04: Character Core Revision — Unified Character Model
+
+- Character Core status: 🔄 → 🟢 — aligned with unified Game Object model
+- **Unified Character entity**: PCs and NPCs are the same entity with `detail_level` field (`full` or `simplified`). NPCs = Characters without a player.
+- **detail_level fixed at creation**: Auto-determined from `player_id` presence. No promotion/demotion.
+- **Single API endpoint**: `GET /characters` with filters (`?detail_level=`, `?has_player=`). No separate NPC endpoints.
+- **NPC bond cap**: 7 slots, same as PCs. Uniform model.
+- **Player departure**: No special mechanism. GM handles narratively.
+- **Removed**: References to separate NPC model, `common_locations` (replaced by bond-distance presence).
+- **Added**: `attributes` JSON blob on all Characters, detail_level field, bond sub-resource endpoints.
+
+### 2026-03-04: Game Objects Third Interrogation — Unified Game Object Model
+
+- Game Objects spec major restructuring — unified model:
+- **3 Game Object types**: Characters, Groups, Locations. These are the "things in the fiction" — nodes in the bond graph.
+- **System Entities** (NOT Game Objects): Clocks, Sessions, Stories. Tracking/organizational tools that don't participate in the bond graph.
+- **NPCs are Characters**: NPCs are Characters with `detail_level = simplified` (no meters, skills, magic, or Core/Role traits). Same entity, tiered detail. PCs have `detail_level = full`.
+- **Unified Bond concept**: All relationships are Bonds. PC Bonds have full mechanics (stress, degradation, +1d, 7 slots). All other bonds are descriptive (active/retired only).
+- **Group trait types** (descriptive only): Culture (2), Training (3), Asset (5). No charges, no dice bonuses.
+- **Group bond types**: Relations (7, Group↔Group, bidirectional) and Members (unlimited, Character↔Group). Descriptive only.
+- **Location Feature Traits** (5, descriptive): Physical characteristics, atmosphere, dangers, notable qualities.
+- **Location Bonds** (unlimited): To any Game Object. Descriptive only.
+- **Bond-Distance Presence**: Replaces curated affiliation lists and `common_locations`. Presence at a Location computed from bond graph: Commonly present (1-hop), Often present (2-hop), Sometimes present (3-hop). Works bidirectionally for Character locations. Same graph as event visibility.
+- **Powerful individuals**: A Character operating at Group scale gets their own single-member Group to participate in Relations.
+- Updated glossary: Game Object, Character, NPC, Group, Location, Bond, Session, Story, Clock, Deferred Narrative Resolution, Bond-Distance Visibility
+- Added glossary terms: System Entity, Bond-Distance Presence, Culture Trait, Training Trait, Asset Trait, Feature Trait, Relations, Members, Detail Level
+- Removed glossary term: Lightweight Bond (now just Bond)
+- Character Core flagged 🔄 — NPCs are Characters, remove separate model, add detail_level
+- Bonds flagged 🔄 — unified bond concept, remove Lightweight Bond, add Group/Location bond categories
+- Traits flagged 🔄 — Group descriptive traits, Location Feature traits
+- Data Model flagged 🔄 — unified Character table, unified Bond table, Group traits, Location traits, bond-distance presence
+
+### 2026-03-04: MVP Scope Interrogation Complete
+
+- MVP Scope status: 🟡 → 🟢 — all 4 open questions resolved + 9 new decisions
+- **Single MVP, phased build**: No MVP 0/1 split. Full system is the target. 6-phase build order: Foundation → World → Characters → Actions → Sessions → Web UI.
+- **Rider events**: GM can optionally attach a bundled direct-action event when approving a proposal. Fires atomically. Used for side effects and clock resolution.
+- **`resolve_clock` proposal type**: System auto-generates when a clock completes. Pre-linked to clock + containing game objects. GM fills narrative + optional rider event. 11th proposal type (system-initiated).
+- **Typed `calculated_effect`**: Each action type has a known schema for its pre-computed result. GM can override any field.
+- **Player-written narratives**: Players write narrative on submission. GM usually just approves. Can edit or reject with note.
+- **Simplified story entries**: Simple CRUD with soft-delete. `updated_at` + `updated_by` fields, no full audit trail.
+- **Compute-on-read visibility**: No bond-distance cache. Compute per-request. Add cache only if slow.
+- **Full test coverage**: Integration-heavy (pytest + httpx). Fixture DB with canonical seed data. Fresh DB per test.
+- **Auth phasing**: Setup + middleware in Phase 1. Invites deferred to Phase 5. Seed test users.
+- **Web UI as Phase 6**: API-first. Swagger UI during development. Basic mobile-friendly frontend for table use.
+- Added glossary terms: Resolve Clock, Rider Event, Calculated Effect
+- Updated glossary: Bond-Distance Visibility (compute-on-read, no cache)
+- Proposals spec flagged 🔄 — needs rider events, typed calculated_effect, resolve_clock, player narratives
+- Events spec flagged 🔄 — needs compute-on-read visibility, rider event concept
+- Game Objects spec flagged 🔄 — story entry simplification, clock completion auto-proposal
+
+### 2026-03-04: Spec Status Audit & Design Ambiguity Analysis
+
+- All 9 domain specs confirmed 🟢. Architecture specs: overview 🟡, mvp-scope 🟡, data-model 🔄.
+- **Terminology fix**: "Heal Bond Stress" → "Maintain Bond" aligned in bonds.md (4 occurrences).
+- **Design principle added**: "Deferred Narrative Resolution" added to overview.md as a named architectural principle.
+- **Ambiguity analysis**: Identified 3 blocking issues (no outcome framework, polymorphic refs, undefined MVP scope), 5 friction points, 3 cosmetic items. Added to MASTER.md.
+- **Recommended next steps**: MVP scope interrogation (priority 1), data-model revision (priority 1), proposals approval UX interrogation (priority 2).
+- Overview 🔄 flag cleared (Deferred Narrative Resolution added). Bonds 🔄 flag cleared (terminology aligned).
+
+### 2026-03-04: Auth Interrogation Complete
+
+- Auth status: 🟡 → 🟢 — all 8 open questions resolved + 6 additional decisions (14 total)
+- **GM as privileged player**: GM is not a distinct entity — a player with unlimited privileges. Has display name (shown as "GM [name]"). Can optionally own and play a character using the same proposal workflow.
+- **Token format**: Random 64-char hex string (`secrets.token_hex(32)`). No expiry. SHA-256 hashed server-side.
+- **First-run setup**: One-time `POST /api/v1/setup` — creates GM account, returns token, locks permanently. No guard (trusted network).
+- **Single-use invites**: Each invite pre-linked to a character. One invite = one character = one player account.
+- **1:1 player-character mapping**: Strictly one player per character. New character requires new invite (old account deactivated).
+- **GM token regen**: GM can force-regenerate any player's token (kick/reset).
+- **No spectators for MVP**: Two roles only.
+- **Player profile**: Display name only.
+- **Event visibility**: Server-side filtering per bond-distance. GM sees all. GM can permanently override per-event visibility.
+- **Identity endpoint**: `GET /api/v1/me` for client bootstrap.
+- **GM self-play**: Same proposal workflow — must explicitly approve own proposals.
+- Events spec flagged 🔄 — actor.type should handle GM as player subtype, per-event visibility override
+- Data Model spec flagged 🔄 — needs User model and Invite model
+- Proposals spec note: GM uses same workflow for own character, no special-casing
 
 ### 2026-03-02: Game Objects Second Interrogation — Bond Directionality + Group Rename
 
@@ -367,4 +686,4 @@ See [glossary.md](glossary.md) for canonical definitions of all terms.
 ---
 
 ## Last Updated
-_2026-03-02 — Game Objects second interrogation: bond directionality, location affiliations, story entry editability, Faction→Group rename._
+_2026-03-14 — Cross-domain spec audit: resolved first-session FT contradiction (delta from 0), added stories.visibility_level to data-model.md, aligned character list pagination with api-conventions.md, added has_more to paginated response envelope, fixed stale proposals.md links, updated Implementation Specs section for 6-phase build._

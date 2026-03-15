@@ -155,10 +155,13 @@ Phase (major milestone)
 ## Technical Conventions (For Future Implementation)
 
 ### Stack
-<!-- Customize per project -->
-- **Language**: TBD
-- **Framework**: TBD
-- **Database**: TBD
+- **Language**: Python
+- **Framework**: FastAPI
+- **Database**: SQLite
+- **ORM**: SQLAlchemy
+- **Migrations**: Alembic
+- **Validation**: Pydantic
+- **IDs**: ULIDs (python-ulid)
 
 ### Code Style
 - Type hints where applicable

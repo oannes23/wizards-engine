@@ -1,9 +1,9 @@
 # Downtime — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-03-01
+**Last interrogated**: 2026-03-10
 **Last verified**: —
-**Depends on**: [proposals](proposals.md), [game-objects](game-objects.md), [character-core](character-core.md)
+**Depends on**: [actions](actions.md), [game-objects](game-objects.md), [character-core](character-core.md)
 **Depended on by**: None
 
 ---
@@ -73,7 +73,8 @@ Plot is awarded at Session Start to registered participants:
 
 - **Base**: +1 Plot per session participated
 - **Additional Contribution**: +2 Plot if the player checked the contribution flag (meta-game reward: wrote recap, brought props, helped organize)
-- **Capped at 5**: Plot cannot exceed 5
+- **Overflow allowed**: Plot can exceed 5 from any source (session income, GM bonus awards). Players have the Active session window to convert excess via Find Time (3 Plot → 1 FT).
+- **Clamped at Session End**: When a session transitions to Ended, all characters' Plot is clamped to 5 (excess lost). This gives players the duration of the Active session to manage overflow.
 
 ### Find Time (Direct Player Action)
 
@@ -87,7 +88,7 @@ FT gained from Find Time respects the 20 cap.
 
 Players can submit Downtime Action proposals **at any time** they have Free Time — there is no "downtime window" or mode. All downtime actions cost 1 FT automatically (deducted on approval).
 
-Seven Downtime Action types (defined in [proposals](proposals.md)):
+Seven Downtime Action types (defined in [actions](actions.md)):
 
 | Type | Effect | Supports Modifiers |
 |------|--------|-------------------|
@@ -119,12 +120,13 @@ During Active state (typically as the session wraps up), the GM adjusts group pr
 
 Sessions have a participant list tracking who played:
 
-- **Player self-registration**: Players add themselves to a Draft or Active session
-- **GM management**: GM can add/remove any player
-- **Late joins**: Adding a participant to an Active session triggers immediate FT + Plot distribution for that participant
-- **Additional Contribution flag**: Per-participant boolean, set on registration. **Locks on Start** — must be set before the session starts (or at the moment of late join). Cannot be changed after distribution.
-- **Character link**: Each participant entry links to the Player and their Character
-- **Session history on Character**: Characters store a list of session IDs they've participated in, enabling easy history lookups from either direction.
+- **Player self-registration**: Players add themselves to a Draft or Active session via `POST /sessions/{id}/participants` with `{character_id, additional_contribution?: false}`.
+- **GM management**: GM can add/remove any player. GM specifies the `character_id` of the character to register.
+- **Late joins**: Adding a participant to an Active session triggers immediate FT + Plot distribution for that participant.
+- **Additional Contribution flag**: Per-participant boolean, set on registration (defaults to `false`). Can be PATCHed while the session is Draft. **Locks on Start** — must be set before the session starts (or at the moment of late join). Cannot be changed after distribution.
+- **No double-distribution protection**: If a participant is removed from an Active session and re-added, distribution runs again. This is rare — the GM corrects any overshoot via direct actions.
+- **Character link**: Each participant entry links to the Player and their Character.
+- **Session history on Character**: Queried from the `session_participants` join table, not stored on Character. See [character-core.md](character-core.md).
 
 ---
 
@@ -226,6 +228,36 @@ Sessions have a participant list tracking who played:
 - **Rationale**: Draft sessions have no side effects (no resources distributed, no clock adjustments). Active and Ended sessions have generated events and state changes — deleting them would leave orphaned references.
 - **Implications**: `DELETE /api/v1/sessions/{id}` only works when `status = draft`. Returns error for Active or Ended.
 
+### Plot Overflow and Session-End Clamp
+
+- **Decision**: Plot can exceed 5 from any source (session income, GM bonus awards). Plot is clamped to 5 when the session transitions to Ended. Players have the Active session window to Find Time and convert excess.
+- **Rationale**: Without overflow, a player at Plot 5 would waste incoming Plot from session start. Allowing temporary overflow gives them a window to convert to FT via Find Time, adding meaningful resource management. Clamping at session end keeps Plot bounded and prevents long-term hoarding above 5.
+- **Implications**: Session End logic must clamp all participants' Plot to 5. Plot meter's practical range is 0–7 (5 existing + 2 from Additional Contribution). Late joiners also get the overflow window until session end.
+
+### Participant Registration Body
+
+- **Decision**: `POST /api/v1/sessions/{id}/participants` takes `{character_id, additional_contribution?: false}`. Both players and GM send `character_id` explicitly. GM can register any character.
+- **Rationale**: Explicit `character_id` is simple and consistent for both player and GM callers. Including `additional_contribution` on registration avoids a mandatory follow-up PATCH.
+- **Implications**: Server validates that the authenticated player owns the `character_id` (unless caller is GM). `additional_contribution` defaults to `false` if omitted.
+
+### No Double-Distribution Flag
+
+- **Decision**: No `distributed` flag on `session_participants`. If a participant is removed from an Active session and re-added, distribution runs again. GM corrects via direct actions.
+- **Rationale**: This is an extremely rare edge case. Adding a flag increases complexity for a scenario that almost never happens. The GM already has full authority to adjust meters.
+- **Implications**: No additional column on `session_participants`. Simple implementation.
+
+### Find Time — Empty Request Body
+
+- **Decision**: `POST /api/v1/characters/{id}/find-time` has an empty request body. Always converts exactly 3 Plot → 1 FT. One invocation = one conversion.
+- **Rationale**: Plot is capped at 7 in practice (5 + 2 overflow). No one would ever need a bulk conversion. One-at-a-time keeps it simple.
+- **Implications**: Validates Plot >= 3 and FT < 20. Returns 409 if insufficient resources or FT at cap.
+
+### Time Now Defaults
+
+- **Decision**: First session's `time_now` is whatever the GM sets (unconstrained). New full Characters default `last_session_time_now = 0` unless the GM overrides it at creation.
+- **Rationale**: Gives the GM full flexibility. Default of 0 means a character joining session 1 with `time_now = 5` gets 5 FT — sensible starting grant. GM can override for mid-campaign character introductions.
+- **Implications**: `last_session_time_now` is optional on character creation (defaults to 0). First session has no Time Now validation constraint.
+
 ### Additional Contribution Flag Locks on Start
 
 - **Decision**: The Additional Contribution flag on a participant record is editable only while the session is in Draft state. It locks when the session starts (or immediately on late join to an Active session, after distribution).
@@ -238,11 +270,11 @@ Sessions have a participant list tracking who played:
 - **Rationale**: Separating clock adjustments from the End transition gives the GM flexibility to adjust clocks at any point during the session wrap-up. It also simplifies the End Session endpoint.
 - **Implications**: Clock adjustment uses the existing clock mutation endpoints (see [game-objects](game-objects.md)) with annotation support. `POST /api/v1/sessions/{id}/end` has no payload — it just transitions the status.
 
-### Bidirectional Session-Character References
+### Session History via Join Table
 
-- **Decision**: Characters store a list of session IDs they've participated in, in addition to Sessions storing their participant list. This enables easy history lookups from either direction.
-- **Rationale**: Common query: "what sessions has this character been in?" Without bidirectional refs, this requires scanning all sessions. With a small group this is manageable, but the ref list is cheap to maintain.
-- **Implications**: Character model needs a `session_ids` list (or a join table query). Updated when a participant is added or removed.
+- **Decision**: Character session history is queried from the `session_participants` join table, not stored as a denormalized list on Character. No `session_ids` field on Character. (Supersedes earlier "Bidirectional Session-Character References" decision in this spec.)
+- **Rationale**: The join table already exists for tracking participants and contribution flags. Querying it is simple and avoids sync issues between a denormalized list and the source of truth.
+- **Implications**: Character sheet API includes session history derived from `session_participants`. See [character-core.md](character-core.md).
 
 ---
 
@@ -253,19 +285,19 @@ Sessions have a participant list tracking who played:
 - `GET /api/v1/sessions/{id}` — session detail with participants, clocks status
 - `PATCH /api/v1/sessions/{id}` — update session details (GM, Draft or Active only; Ended is read-only)
 - `DELETE /api/v1/sessions/{id}` — delete a session (GM, Draft only)
-- `POST /api/v1/sessions/{id}/start` — start session (GM): distributes FT + Plot to participants, locks contribution flags. Rejects if another session is Active.
-- `POST /api/v1/sessions/{id}/end` — end session (GM): no payload, just transitions to Ended. Clock adjustments happen separately during Active.
+- `POST /api/v1/sessions/{id}/start` — start session (GM): distributes FT + Plot (overflow allowed) to participants, locks contribution flags. Rejects if another session is Active.
+- `POST /api/v1/sessions/{id}/end` — end session (GM): no payload. Transitions to Ended + clamps all participants' Plot to 5. Clock adjustments happen separately during Active.
 
 ### Session Participants
-- `POST /api/v1/sessions/{id}/participants` — register for session (player or GM adds)
-- `DELETE /api/v1/sessions/{id}/participants/{player_id}` — remove from session (player self-remove or GM)
-- `PATCH /api/v1/sessions/{id}/participants/{player_id}` — update contribution flag
+- `POST /api/v1/sessions/{id}/participants` — register for session. Body: `{character_id, additional_contribution?: false}`. Player or GM. Server validates character ownership (unless GM).
+- `DELETE /api/v1/sessions/{id}/participants/{player_id}` — remove from session (player self-remove or GM). No resource clawback on Active sessions.
+- `PATCH /api/v1/sessions/{id}/participants/{player_id}` — update contribution flag (Draft only; locked after distribution).
 
 ### Direct Player Actions
-- `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player, no approval)
+- `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player, no approval). Empty request body. Validates Plot >= 3 and FT < 20.
 
 ### Downtime Proposals
-All downtime actions are submitted as proposals via `POST /api/v1/proposals` (see [proposals](proposals.md)).
+All downtime actions are submitted as proposals via `POST /api/v1/proposals` (see [actions](actions.md)).
 
 ---
 
@@ -274,12 +306,24 @@ All downtime actions are submitted as proposals via `POST /api/v1/proposals` (se
 | Spec | Implication |
 |------|-------------|
 | [game-objects](game-objects.md) | 🔄 Session model significantly expanded: `time_now`, `status` (draft/active/ended), participant list with contribution flag. Clock mutation annotations. Stories support narrative entries from `work_on_project`. |
-| [character-core](character-core.md) | 🔄 Character needs `last_session_time_now` field and `session_ids` list. Plot mechanic clarified: +1/+2 per session, capped at 5. FT distribution via Time Now delta. |
-| [proposals](proposals.md) | 🔄 Find Time is a new direct player action (not a proposal type). Session start/end replace the concept of a downtime trigger. |
+| [character-core](character-core.md) | 🔄 Character needs `last_session_time_now` field. Session history via join table (no `session_ids` on Character). Plot mechanic clarified: +1/+2 per session, capped at 5. FT distribution via Time Now delta. |
+| [actions](actions.md) | 🔄 Find Time is a new direct player action (not a proposal type). Session start/end replace the concept of a downtime trigger. |
 | [events](events.md) | Session start (FT + Plot distribution), session end (clock adjustments), Find Time, and player registration all generate events. |
 | [auth](auth.md) | Players can self-register for sessions and trigger Find Time. Session start/end are GM-only. |
 | [architecture/data-model](../architecture/data-model.md) | 🔄 Session model needs major expansion. Session participant join table. Clock mutation annotation model. `last_session_time_now` on Character. |
 
 ---
 
-_Last updated: 2026-03-01 (third pass — lifecycle edge cases)_
+## Open Questions
+
+_All resolved._
+
+1. ~~**`session_ids` on Character contradiction**~~: **Resolved** — session history via join table, no field on Character.
+2. ~~**Session participant registration body**~~: **Resolved** — `{character_id, additional_contribution?: false}`. Player sends their own; GM can send any.
+3. ~~**`distributed` flag tracking**~~: **Resolved** — no flag. Re-adding re-distributes; GM corrects via direct actions if needed.
+4. ~~**Clock adjustment endpoint**~~: **Resolved** — via `POST /api/v1/gm/actions` with action type `modify_clock`.
+5. ~~**Find Time request body**~~: **Resolved** — empty body. Always 3 Plot → 1 FT, one conversion per call.
+
+---
+
+_Last updated: 2026-03-10 (interrogation complete — resolved all open questions: registration body ({character_id, additional_contribution?}), no distributed flag, Find Time empty body, Time Now defaults (0), Plot overflow with session-end clamp)_

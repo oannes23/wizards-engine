@@ -1,10 +1,10 @@
 # Magic System — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-03-01
+**Last interrogated**: 2026-03-13
 **Last verified**: —
 **Depends on**: [character-core](character-core.md), [traits](traits.md), [bonds](bonds.md)
-**Depended on by**: [proposals](proposals.md), [downtime](downtime.md)
+**Depended on by**: [actions](actions.md), [downtime](downtime.md)
 
 ---
 
@@ -271,6 +271,18 @@ Like Traits and Bonds, retired Magic Effects move to the Past section of the cha
 - **Rationale**: Clean separation — charged effects grow in capacity, permanent effects grow in strength. Different investment paths.
 - **Implications**: Charge Action resolution logic branches on target effect type.
 
+### Charge Magic Approval Outcome
+
+- **Decision**: On `charge_magic` approval, the GM provides `{charges_added?: int, power_boost?: int}` in `gm_overrides`. For charged effects: `charges_added` restores that many charges (current increases, and if current would exceed max, max increases to match). For permanent effects: `power_boost` increases `power_level` (within the 1–5 scale). Fields are mutually exclusive based on target effect type.
+- **Rationale**: Explicit fields make the GM's intent clear. Separate fields for the two effect types avoid ambiguity.
+- **Implications**: System validates that the correct field is provided for the target effect type. `charges_added` can grow `charges_max` beyond the original value.
+
+### Effect Use Request Body
+
+- **Decision**: `POST /characters/{id}/effects/{effect_id}/use` takes `{narrative?: string}`. Player can optionally describe what they're doing with the effect. No target or context fields.
+- **Rationale**: Effects are self-contained — the narrative is freeform flavor. Target/context tracking would add complexity without clear benefit for a narrative-first system.
+- **Implications**: Event logged with optional narrative text. No validation beyond charge > 0.
+
 ### One Effect Per Magic Action
 
 - **Decision**: A single Magic Action always produces exactly one Magic Effect (or one instant outcome). Multiple effects require multiple actions.
@@ -302,12 +314,12 @@ Like Traits and Bonds, retired Magic Effects move to the Past section of the cha
 Magic is accessed via the character sheet and proposal system:
 
 - `GET /api/v1/characters/{id}` — full sheet includes Gnosis, Magic Stats (with XP), and all Magic Effects (active and past)
-- Magic Action: submitted as a proposal via `POST /api/v1/proposals` (action type: `magic`)
-- Charge Action: submitted as a proposal via `POST /api/v1/proposals` (action type: `charge`)
-- Effect use (charged): `POST /api/v1/characters/{id}/effects/{effect_id}/use` — player-initiated, decrements 1 charge, optional narrative body, logs event
-- Effect retire: `POST /api/v1/characters/{id}/effects/{effect_id}/retire` — player-initiated, moves to Past, frees cap space
+- Magic Action: submitted as a proposal via `POST /api/v1/proposals` (action type: `use_magic`)
+- Charge Action: submitted as a proposal via `POST /api/v1/proposals` (action type: `charge_magic`)
+- Effect use (charged): `POST /api/v1/characters/{id}/effects/{effect_id}/use` — player-initiated, decrements 1 charge, logs event. Body: `{narrative?: string}` (optional freeform description of the use).
+- Effect retire: `POST /api/v1/characters/{id}/effects/{effect_id}/retire` — player-initiated, moves to Past, frees cap space. Empty body.
 - "Regain Gnosis" downtime: submitted as a proposal via `POST /api/v1/proposals`
-- GM direct action: award Magic Stat XP, create/edit/retire effects, modify Gnosis
+- GM actions (award XP, create/edit/retire effects, modify Gnosis): via `POST /api/v1/gm/actions` with action types `award_xp`, `create_effect`, `modify_effect`, `retire_effect`, `modify_character`. See [actions.md](actions.md).
 
 ---
 
@@ -315,7 +327,7 @@ Magic is accessed via the character sheet and proposal system:
 
 | Spec | Implication |
 |------|-------------|
-| [proposals](proposals.md) | 🔄 Two new action types: Magic Action and Charge Action. Sacrifice is a list of entries (combined freely). Magic Action has unique structure (intention, symbolism, sacrifice list). Style bonus is GM-only field. GM creates effect during approval (name, description, power_level, charges). |
+| [actions](actions.md) | 🔄 Two new action types: Magic Action and Charge Action. Sacrifice is a list of entries (combined freely). Magic Action has unique structure (intention, symbolism, sacrifice list). Style bonus is GM-only field. GM creates effect during approval (name, description, power_level, charges). |
 | [downtime](downtime.md) | 🔄 "Regain Gnosis" formula defined: 1 FT = 3 base + lowest Magic Stat + up to +3 from trait/bond use. Charge Action can also be done during downtime. |
 | [traits](traits.md) | Traits can be *Sacrificed* (destroyed, goes to Past, 10 Gnosis) in Magic Actions. Distinct from *Using* a trait (+1d). Traits can also be invoked on Regain Gnosis for +1 Gnosis. |
 | [bonds](bonds.md) | Bonds can be *Sacrificed* (destroyed, goes to Past, 10 Gnosis) in Magic Actions. Distinct from *Using* a bond (+1d). Bonds can also be invoked on Regain Gnosis for +1 Gnosis. |
@@ -325,4 +337,15 @@ Magic is accessed via the character sheet and proposal system:
 
 ---
 
-_Last updated: 2026-03-01_
+## Open Questions
+
+_All resolved._
+
+1. ~~**Action type name mismatch**~~: **Resolved** — `use_magic` and `charge_magic` are the canonical action type names (per [actions.md](actions.md) action type catalog). This spec's API section references updated accordingly.
+2. ~~**Magic Effect `use` request body**~~: **Resolved** — Body is `{narrative?: string}`. Optional freeform description. No target or context fields.
+3. ~~**XP award endpoint**~~: **Resolved** — GM awards Magic Stat XP via `POST /api/v1/gm/actions` with action type `award_xp`. Level-up is automatic when XP reaches the threshold (5 per level). See [actions.md](actions.md).
+4. ~~**Magic Effect creation on `charge_magic` approval**~~: **Resolved** — GM provides `{charges_added?: int, power_boost?: int}` in `gm_overrides`. `charges_added` for charged effects (can grow max), `power_boost` for permanent effects. Mutually exclusive based on effect type.
+
+---
+
+_Last updated: 2026-03-13 (interrogation — resolved all open questions: effect use body ({narrative?: string}), charge_magic approval outcome (charges_added/power_boost in gm_overrides))_

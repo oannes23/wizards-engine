@@ -1,132 +1,88 @@
 # Game Objects — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-03-02
+**Last interrogated**: 2026-03-13
 **Last verified**: —
 **Depends on**: None (primitive)
-**Depended on by**: [character-core](character-core.md), [bonds](bonds.md), [events](events.md), [downtime](downtime.md)
+**Depended on by**: [character-core](character-core.md), [bonds](bonds.md), [events](events.md), [downtime](downtime.md), [feed](feed.md)
 
 ---
 
 ## Overview
 
-Everything tracked in the system is a game object. This domain defines the shared structure and the non-character object types: NPCs, Groups, Clocks, Locations, Sessions, and Stories/Arcs. Characters are covered in [character-core](character-core.md).
+**Game Objects** are the things that exist "in the fiction" — the entities that populate the game world. There are exactly three types: **Characters**, **Groups**, and **Locations**.
 
-A core design principle is **Deferred Narrative Resolution** — game state is intentionally left ambiguous until narratively observed. NPCs have probable locations, not pinned ones. Group projects progress mechanically but their outcomes are defined retroactively. The system supports fuzzy/potential state alongside concrete state.
+**Bonds** are the connections between Game Objects. Every relationship in the system is represented as a Bond — whether it's a PC's deep relationship with an NPC, a Group's alliance with another Group, or a Character's connection to a place. Bonds are a unified concept with varying mechanical depth depending on context.
+
+**System Entities** (Clocks, Sessions, Stories) are tracking and organizational tools. They are *not* Game Objects — they don't exist "in the fiction" in the same way and are not bond targets.
+
+A core design principle is **Deferred Narrative Resolution** — game state is intentionally left ambiguous until narratively observed. NPCs exist in a probability smear across their bonded locations. Group projects progress mechanically but their outcomes are defined retroactively. The system supports fuzzy/potential state alongside concrete state.
 
 ---
 
-## Core Concepts
+## Game Object Types
 
-### Shared Game Object Fields
+### Characters
 
-All game objects have:
-- `id`: string (primary key)
-- `name`: string
-- `description`: string (optional)
-- `is_deleted`: boolean (default false) — soft delete flag, shared across all types
-- `created_at`: datetime
-- `updated_at`: datetime
+Characters represent beings in the fiction — both player characters (PCs) and non-player characters (NPCs). **NPCs are Characters without a Player assigned.** The hierarchy is:
 
-Plus type-specific fields.
+- **Character**: A Game Object with information about an in-fiction being
+- **Player Character (PC)**: A Character with a player login assigned. Full character sheet.
+- **NPC**: A Character without a player login. Simplified record.
+- **GM**: A Player with full visibility, configuration, and proposal approval capabilities.
 
-### Soft Delete
+Characters have a **detail level** that determines which fields are active:
 
-- **All game objects** use soft delete via the `is_deleted` flag on the shared base.
-- **Exception**: Draft Sessions use hard delete (no downstream references exist — no events, no distributions).
-- Deleted objects are hidden from list endpoints by default but accessible via direct lookup.
-- References to deleted objects remain valid — Bonds targeting a deleted NPC still resolve, they just point to a deleted entity.
-- Per-type lifecycle fields (e.g., Story `status`) are independent of the deletion flag.
+#### Full (PC) Character
 
-### Lightweight Bonds
-
-NPCs and Groups can have a `bonds` list — lightweight Bond-shaped relationships to other game objects. These are the relationship primitive for non-Character objects.
-
-**Fields per lightweight bond:**
-- `id`: string — unique identifier (individually addressable)
-- `source_type`: string — type of the owning object
-- `source_id`: string — ID of the owning object
-- `target_type`: string — type of the referenced game object
-- `target_id`: string — ID of the referenced game object
-- `source_label`: string — relationship label from the source's perspective (e.g., "allied with")
-- `target_label`: string — relationship label from the target's perspective (for bidirectional bonds)
-- `description`: string — freeform context
-- `is_active`: boolean — supports Past/Retired pattern
-- `bidirectional`: boolean — whether both sides see this bond
-- Event history via the event log (no embedded history)
-
-**Managed via sub-resource API**: `POST/PATCH/DELETE /{object-type}/{id}/bonds/{bond_id}`
-
-**Differences from PC Bonds:**
-- No stress meter or degradation mechanics
-- No charge mechanics or +1d modifier
-- No cap on number of bonds per object (PCs have 7 slots)
-- Not Trait Instances — these are a simpler structure
-
-**Design intent**: NPC/Group bonds should be vaguely Bond-shaped and function interchangeably in the UI and mental model, even though they lack the mechanical depth of PC Bonds.
-
-### Bond Directionality Model
-
-Lightweight bonds follow different directionality rules depending on the types involved:
-
-| Source → Target | Direction | Notes |
-|-----------------|-----------|-------|
-| Group ↔ Group | Bidirectional | One record, both sides see it. `source_label` / `target_label` allow different wording per side. |
-| NPC ↔ NPC | Bidirectional | Same as Group↔Group. One record, both see it. |
-| NPC → Group | Directional | Represents **membership**. NPC owns the bond. Group's "members" list is derived from inbound bonds. |
-| Group → NPC | Directional | Represents a **special relationship** (mentorship, alliance with a powerful individual). Group owns the bond. Distinct from membership. |
-| NPC → Location | Directional | Represents presence/connection. NPC owns the bond. |
-| Group → Location | Directional | Represents territorial control or presence. Group owns the bond. |
-| Location → * | N/A | **Locations are targets only** — they do not have bonds. Presence at a Location is tracked via curated affiliation lists + inbound bond queries. |
-
-**Membership semantics**: An NPC with a bond to a Group is considered a "member" of that Group. A Group with a bond to an NPC represents something different — a special, non-membership relationship (e.g., "mentors", "hunts", "owes a debt to"). This distinction is directional, not labeling.
-
-### NPCs
-
-Simplified character records controlled by the GM:
-- `name`: string
-- `description`: string
-- `attributes`: JSON blob — freeform structure for traits, stats, abilities, and any other mechanical info the GM wants to track. No enforced schema.
+All shared Game Object fields plus:
+- `detail_level`: `full`
 - `notes`: text
-- `common_locations`: list of `{location_id, note?}` — places the NPC might be found, with optional freeform notes (e.g., "works the night shift", "lives upstairs"). See Deferred Narrative Resolution.
-- `bonds`: list of lightweight bonds to other game objects (other NPCs, Groups, Locations, Characters, etc.)
+- `attributes`: JSON blob — freeform GM notes (available on all Characters)
+- **Resource meters**: Stress (0–9), Free Time (0–20), Plot (0–5), Gnosis (0–23)
+- **Skills**: 8 hardcoded skills (Awareness, Composure, Influence, Finesse, Speed, Power, Knowledge, Technology), levels 0–3
+- **Magic Stats**: 5 schools (Being, Wyrding, Summoning, Enchanting, Dreaming), levels 0–5 with XP
+- **Magic Effects**: Up to 9 active (charged + permanent)
+- **Traits**: Core Traits (2 slots), Role Traits (3 slots) — mechanical (charges 0–5, +1d on proposals)
+- **Bonds**: 8 slots — can target any Game Object (Character, Group, or Location). Full stress/degradation mechanics, +1d on proposals.
 
-**Quantum location model**: NPCs are not pinned to a single location. They have a list of common locations representing where they *might* be — a probability smear. The NPC's actual location is resolved narratively when observed (e.g., during a session when a player looks for them). This is a deliberate design choice reflecting the deferred narrative resolution principle.
+See [character-core](character-core.md) for full field definitions and mechanics.
 
-**Merged location view**: The NPC detail endpoint merges `common_locations` (curated list) with any Location-targeting bonds the NPC has, producing a unified "where to find this NPC" view. Bond-derived locations are flagged as such.
+#### Simplified (NPC) Character
+
+All shared Game Object fields plus:
+- `detail_level`: `simplified`
+- `notes`: text
+- `attributes`: JSON blob — freeform structure for traits, stats, abilities, and any other info the GM wants to track. No enforced schema.
+- **Bonds**: 7 slots — can target any Game Object. Descriptive only (no stress, no degradation, no +1d).
+- No resource meters, no skills, no magic stats, no magic effects, no Core/Role traits.
+
+**Design intent**: NPCs are mechanically lightweight but participate in the bond graph as first-class entities. Their bonds define who they know, where they go, and what groups they belong to.
 
 ### Groups
 
-Organizations, crews, families, guilds, and other groups in the game world (renamed from "Factions"):
+Organizations, crews, families, guilds, and other groups in the game world:
 - `name`: string
 - `description`: string
-- `tier`: non-negative integer — power/influence level. No upper bound. GM decides the scale.
+- `tier`: non-negative integer — power/influence level. No upper bound.
 - `project_clocks`: list of embedded Clock objects — ongoing group projects
-- `bonds`: list of lightweight bonds to other game objects (other Groups, NPCs, Locations, Characters, etc.)
 - `notes`: text
 
-**Territories**: Group territorial control is represented via Group→Location bonds (e.g., `source_label: "controls"`, `target_label: "controlled by"`). No separate `locations` field.
+**Group Traits**: 10 descriptive trait slots — freeform name + description, no enforced categories. No charges, no dice bonuses. See [traits.md](traits.md) for authoritative spec.
 
-**Members**: Derived from inbound bonds — any NPC (or other object) with a bond targeting this Group is considered a member. The Group detail endpoint includes a computed `members` list.
+**Group Bonds** (descriptive — no stress, no degradation):
 
-**Group bond model**: Group-to-Group relationships (alliances, rivalries, debts) are stored as bidirectional lightweight bonds. A single bond record between two Groups; both see the bond with their respective labels.
+| Bond Type | Slots | Direction | Purpose |
+|-----------|-------|-----------|---------|
+| Relations | 7 | Group ↔ Group | Alliances, rivalries, debts, political ties. Bidirectional with `source_label`/`target_label`. |
+| Holdings | Unlimited | Group → Location | Territories, properties, meeting places, sacred sites. Directional. |
+| Members | Derived | Character → Group | Any Character (PC or NPC) with a bond targeting the Group is a member. Not a stored type — computed from inbound bonds. |
 
-**Group projects and deferred resolution**: Project clocks track mechanical progress (segment fill), but the *outcome* of a project is intentionally left ambiguous until the clock completes. The GM may specify a project description upfront or leave it as a placeholder. At resolution time, the GM looks at accumulated context (events, bonds, narrative) and decides what the group was doing, then creates events that adjust game state (territorial bonds, game object mutations) and ties to a Story.
+See [bonds.md](bonds.md) for full bond model, directionality rules, and bond-distance presence.
 
-### Clocks
+**Group projects and deferred resolution**: Project clocks track mechanical progress (segment fill), but the *outcome* of a project is intentionally left ambiguous until the clock completes. At resolution time, the GM looks at accumulated context and decides what the group was doing.
 
-Progress trackers (BitD-style):
-- `name`: string
-- `segments`: positive integer — total segments. Any positive value allowed, default 5.
-- `progress`: integer (0 to `segments`) — filled segments
-- `associated_with`: optional reference to a Group, Story, or other game object
-- `notes`: text
-
-Clocks can be embedded in Groups (as project clocks) or exist independently. **Both access routes work**: embedded clocks are accessible via `/groups/{id}/clocks/{clock_id}` and the standalone `/clocks/{id}` endpoint. Single underlying table with optional `group_id`.
-
-**Completion**: When `progress >= segments`, the clock is flagged as completed. System surfaces completed clocks to the GM. The GM resolves consequences narratively — typically creating events that adjust game state and linking to or creating a Story. No automatic game state changes on completion.
-
-**Annotations**: Clock adjustments (advancement, regression, resets) are recorded via the Event log. Each clock adjustment event includes annotation metadata: freeform notes, event references, and game object references explaining why the change occurred. No denormalized annotation history on the Clock object itself.
+**Powerful individuals at Group scale**: A Character powerful enough to operate at the Group level gets their own Group with just themselves as a member. Their Group can then have Relations with other Groups.
 
 ### Locations
 
@@ -135,307 +91,421 @@ Places in the game world with nestable hierarchy:
 - `description`: string
 - `parent`: optional reference to another Location — unlimited nesting depth
 - `notes`: text
-- `npcs`: list of `{npc_id, note?}` — curated NPC affiliations with optional freeform notes (e.g., "bartender", "regular patron")
-- `groups`: list of `{group_id, note?}` — curated Group affiliations with optional freeform notes (e.g., "headquarters", "patrol route")
 
-**No bonds on Locations**: Locations are bond targets, not bond sources. They don't have a `bonds` list.
+**Location Traits**: 5 descriptive Feature trait slots — freeform, interchangeable (no typed sub-slots). No charges, no dice bonuses. See [traits.md](traits.md) for authoritative spec.
 
-**Computed presence**: The Location detail endpoint merges the curated `npcs` and `groups` affiliation lists with inbound bonds (NPCs and Groups that have bonds targeting this Location), producing a unified "who's here" view. Bond-derived entries are flagged as such.
+**Location Bonds** (descriptive — unlimited):
 
-**Hierarchy**: No system-imposed depth limit. A city can contain districts, which contain streets, which contain buildings, etc. Practical depth is left to the GM.
+Locations can bond to any Game Object (Characters, Groups, other Locations). Bonds represent notable connections — "headquarters of [Group]", "home of [Character]", "path to [Location]".
+
+**Hierarchy**: No system-imposed depth limit. A city can contain districts, which contain streets, which contain buildings, etc. Location list API uses flat parent filtering (`?parent={id}` for direct children only).
+
+---
+
+## Shared Game Object Fields
+
+All Game Objects have:
+- `id`: string (primary key)
+- `name`: string
+- `description`: string (optional)
+- `is_deleted`: boolean (default false) — soft delete flag
+- `created_at`: datetime
+- `updated_at`: datetime
+
+Plus type-specific fields.
+
+### Soft Delete
+
+- All Game Objects use soft delete via `is_deleted`.
+- Deleted objects are hidden from list endpoints but accessible via direct lookup.
+- References to deleted objects remain valid — a Bond targeting a deleted Character still resolves.
+- **Soft-deleted objects are excluded from the bond graph** — they don't participate in bond-distance visibility, presence, or feed computations. Their bonds still exist in the database but are skipped during graph traversal.
+- Per-type lifecycle fields (e.g., Story `status`) are independent of the deletion flag.
+- **No cascade**: Soft-deleting a Game Object does NOT cascade to its Clocks, Story entries, or other associated records. Those remain accessible independently.
+
+---
+
+## Bonds
+
+Bonds are the relationship primitive connecting Game Objects. See [bonds.md](bonds.md) for the authoritative spec covering:
+- Unified bond model and shared fields
+- All bond categories (PC Bond, NPC Bond, Group Relations, Group Holdings, Location Bond)
+- Directionality rules and bidirectional labels
+- PC Bond mechanics (stress, degradation, +1d, Trauma)
+- Derived membership (Character bonds to Groups)
+- Bond-Distance Presence (computed location proximity from the bond graph)
+- Bond management via GM actions
+
+---
+
+## System Entities
+
+These are tracking and organizational tools — NOT Game Objects. They don't participate in the bond graph.
+
+### Clocks
+
+Progress trackers (BitD-style):
+- `name`: string
+- `segments`: positive integer — total segments. Any positive value, default 5.
+- `progress`: integer — filled segments. Soft cap at `segments` (GM can advance past completion).
+- `associated_type`: optional — type of associated Game Object (`character`, `group`, or `location`)
+- `associated_id`: optional — ID of associated Game Object
+- `notes`: text
+
+Clocks can be associated with any Game Object (Character, Group, or Location) or exist independently. Group project clocks are the most common pattern. **Both access routes work**: embedded clocks via `/groups/{id}/clocks/{clock_id}` and standalone via `/clocks/{id}`. Single underlying table with optional association fields.
+
+**Single association**: A Clock can be associated with at most one Game Object. If a project involves multiple entities, pick the primary one.
+
+**Completion**: Computed on read (`progress >= segments`). No stored `is_completed` flag. When completion is detected, the system **auto-generates a `resolve_clock` proposal** in pending state. The GM fills in narrative and approves. See [actions.md](actions.md). This is a meter boundary behavior — see [events.md](events.md) Meter Boundary Patterns for the full catalog.
+
+**Soft cap**: The GM can continue advancing a clock past its segment count (e.g., for over-achievement tracking). The clock remains flagged as completed.
+
+**Annotations**: Clock adjustments are recorded via the Event log with annotation metadata. No denormalized history on the Clock object.
 
 ### Sessions
 
 Records of play sessions with a strictly forward lifecycle: **Draft → Active → Ended**.
 
-- `time_now`: integer — abstract campaign time counter (GM-set). See [downtime](downtime.md) for full semantics.
+- `time_now`: integer — abstract campaign time counter (GM-set)
 - `status`: enum — `draft`, `active`, `ended`
 - `date`: date
 - `summary`: text
 - `notes`: text
-- `participants`: list of participant records (see below)
+- `participants`: list of participant records
 
 **Lifecycle** (fully specified in [downtime](downtime.md)):
-- **Draft**: Editable. **Hard deletable** (exception to soft-delete rule — no downstream references). Players self-register. GM sets time_now and details.
-- **Active** (on Start): FT distributed via Time Now delta, Plot awarded (+1/+2 with Additional Contribution). GM can edit summary/notes. Late joins allowed with immediate distribution. Only one Active session at a time.
-- **Ended** (on End): Read-only. Active/Ended sessions are permanent (cannot be deleted). Clock adjustments happen individually during Active, not in the End call.
+- **Draft**: Editable. **Hard deletable** (exception — no downstream references). Players self-register.
+- **Active** (on Start): FT distributed via Time Now delta, Plot awarded. Only one Active at a time. Late joins allowed.
+- **Ended** (on End): Read-only. Permanent.
 
-**Participant records**: `{player_id, character_id, additional_contribution: bool, distributed: bool}`. Contribution flag locks on Start (or on late join after distribution).
+**Participant records**: `{player_id, character_id, additional_contribution: bool}`. No `distributed` flag — see [downtime.md](downtime.md) for rationale.
 
-**Time Now validation**: Must be >= previous session's Time Now. Equal allowed (0 FT delta). First session unconstrained.
-
-**Event auto-capture**: Any event generated while a session is Active is automatically tagged with that session's ID. Callers can override with a specific session_id. When no session is Active, session_id is optional/null.
+**Event auto-capture**: Events generated while a session is Active are automatically tagged with that session's ID.
 
 ### Stories / Arcs
 
 Narrative threads:
 - `name`: string
 - `summary`: text
-- `owners`: list of typed references to Characters, Groups, or other game objects — managed via sub-resource API (`POST/DELETE /stories/{id}/owners`)
-- `status`: enum — `active`, `completed`, `abandoned`
+- `owners`: list of typed references to Characters, Groups, or Locations — managed via sub-resource API. **Mixed owner types allowed** (e.g., a Story owned by both a PC and a Group).
+- `status`: enum — `active`, `completed`, `abandoned`. **GM free-sets** — no transition rules.
 - `parent`: optional reference to another Story (nestable sub-arcs)
-- `tags`: list of strings — freeform tags for categorization (e.g., "personal", "group", "world", "heist"). No predefined vocabulary.
+- `tags`: list of strings — freeform
 - `entries`: list of narrative entries (see below)
 - `notes`: text
+- `visibility_overrides`: optional list of player IDs granted visibility by GM (overrides bond-graph rules)
 
-**Narrative entries**: Stories have an embedded entries list for structured narrative progress (primarily from `work_on_project` proposals):
+**Story visibility** is bond-graph driven, computed on read. See [feed.md](feed.md) for the unified visibility model. Stories default to `familiar` visibility level.
+
+**Narrative entries**: Structured narrative progress records:
 
 ```
 {
-  id: string,              // unique identifier
-  text: string,            // narrative content
-  character_id?: ref,      // who wrote this entry (if player-initiated)
-  session_id?: ref,        // which session this relates to
-  event_id?: ref,          // linked event for audit trail
-  game_object_refs?: [],   // optional links to related game objects
+  id: string,
+  text: string,
+  author_id: ref (user),
+  character_id?: ref,
+  session_id?: ref,
+  event_id?: ref,
+  game_object_refs?: [],
   created_at: datetime,
-  updated_at?: datetime,   // set on edit
-  updated_by?: ref,        // who last edited (player or GM)
-  is_deleted: bool,        // soft delete for entries
-  deleted_by?: ref         // who deleted the entry
+  updated_at?: datetime,
+  updated_by?: ref,
+  is_deleted: bool,
+  deleted_by?: ref
 }
 ```
 
-**Entry editability**: Players can edit entries they created. The GM can edit any entry. Deletions are soft-deletes (`is_deleted = true`). Full audit trail tracked per entry.
+**Story creation**: GM-only. Players contribute via entries, not Story creation.
 
-**Player projects**: Use Stories as the tracking object. `work_on_project` proposals add narrative entries. The GM resolves the project (via direct action) when the fiction warrants it. No segmented clock — progress is narrative, not mechanical.
+**Entry access**: **See = write.** If a player can see a Story (via the visibility model), they can add entries to it. Players edit own entries, GM edits any. Soft-delete for removals.
 
 ---
 
 ## Decisions
 
+### Three Game Object Types
+
+- **Decision**: Game Objects are exactly three types: Characters, Groups, and Locations. These are the things that exist "in the fiction." Clocks, Sessions, and Stories are System Entities — tracking tools, not world entities.
+- **Rationale**: Clean conceptual model. Game Objects are the nodes in the bond graph. System Entities are organizational/tracking mechanisms that serve the game but don't have narrative identity.
+- **Implications**: Bond targets are always Game Objects. System Entities have their own API patterns but don't participate in the bond graph or presence model.
+
+### Characters Unify PCs and NPCs
+
+- **Decision**: NPCs are Characters without a player login assigned. Same entity, tiered detail level. A `detail_level` field (`full` or `simplified`) determines which fields are active.
+- **Rationale**: In the fiction, PCs and NPCs are the same kind of thing — beings in the world. The system should reflect this. The detail difference is about player interaction, not ontology.
+- **Implications**: Single Character table with optional fields. NPCs participate in the bond graph identically to PCs. Auth determines what a user can do, not the Character's type.
+
+### NPC Detail Level — Skip Meters and Skills
+
+- **Decision**: Simplified (NPC) Characters have name, description, notes, attributes blob, and 7 Bond slots. They skip: resource meters (Stress, FT, Plot, Gnosis), Skills, Magic Stats, Magic Effects, and Core/Role Traits.
+- **Rationale**: NPCs don't use the proposal workflow or dice mechanics. The GM needs maximum flexibility. Mechanical fields are unnecessary overhead.
+- **Implications**: API returns null/omitted fields for simplified Characters. Bond slots are the NPC's primary structural feature.
+
+### PC Bond Slots — 8
+
+- **Decision**: Full (PC) Characters have 8 Bond slots. NPCs retain 7.
+- **Rationale**: PCs will almost always bond to their party Group, which serves as the hub for main-quest Stories, the default starred feed, etc. The 8th slot ensures PCs aren't penalized for this expected bond.
+- **Implications**: Updates character-core.md, bonds.md. Trauma can consume at most 8 PC slots. Character Stress max can decrease from 9 to 1. NPC slot count unchanged at 7.
+
+### Group Traits — Flat Descriptive Slots
+
+- **Decision**: Groups have 10 descriptive trait slots — freeform name + description, no enforced categories. No charges, no dice bonuses.
+- **Rationale**: The previous Culture/Training/Asset categories added complexity without clear benefit. The GM names traits however they want.
+- **Implications**: Single `group_trait` slot_type. See [traits.md](traits.md) for authoritative spec.
+
+### Group Bond Types — Relations, Holdings, and Members
+
+- **Decision**: Groups have three bond categories: Relations (7 slots, Group↔Group, bidirectional), Holdings (unlimited, Group→Location), and Members (derived from Character→Group bonds). All descriptive.
+- **Rationale**: Relations cap at 7 to keep Groups focused. Holdings are unlimited for territorial flexibility. Members are unlimited because a Group can have any number of members.
+- **Implications**: A Character operating at Group scale gets their own single-member Group to participate in Relations.
+
+### Location Feature Traits — 5 Interchangeable Slots
+
+- **Decision**: Locations have 5 Feature Trait slots — all interchangeable, no typed sub-slots. Categories (atmosphere, danger, etc.) are naming conventions, not enforced.
+- **Rationale**: Enforcing sub-types constrains the GM without adding value. 5 slots is enough.
+- **Implications**: Single `feature_trait` slot_type. See [traits.md](traits.md) for authoritative spec.
+
+### Location Bonds — Unlimited
+
+- **Decision**: Locations have unlimited bond slots to any Game Object. Descriptive only.
+- **Rationale**: Locations are hubs — many things connect to them. An artificial cap would be frustrating. Bonds replace the old curated affiliation lists.
+- **Implications**: Location bonds participate in the bond-distance presence graph.
+
+### Location List — Flat Parent Filter
+
+- **Decision**: Location list API uses `?parent={id}` for direct children only. No tree query or depth parameter.
+- **Rationale**: Simplest implementation. Client builds tree by making multiple requests if needed. For 4–6 players, the Location count is small enough.
+- **Implications**: No `GET /locations/{id}/subtree` endpoint.
+
+### Bond-Distance Presence Replaces Curated Lists
+
+- **Decision**: Location presence ("who's here") and Character locations ("where might they be") are computed from the bond graph using hop distance: 1-hop = Commonly, 2-hop = Often, 3-hop = Sometimes. Replaces curated affiliation lists and `common_locations`.
+- **Rationale**: The bond graph already encodes all relationships. Deriving presence from it eliminates redundant data and creates an elegant dual-use model (information visibility + presence proximity). Mirrors the event visibility system.
+- **Implications**: No manual "who's here" maintenance. Computed on read. Bond graph does double duty.
+
+### Unified Bond Concept
+
+- **Decision**: All relationships between Game Objects are Bonds. PC Bonds have full mechanical depth (stress, degradation, +1d). All other bonds are descriptive (active/retired only). One concept, varying richness.
+- **Rationale**: Keeps the mental model simple — "Bonds connect things." The mechanical depth varies because only PCs use the proposal/dice system. UI can render all bond types consistently.
+- **Implications**: Single bond table with optional mechanical fields (stress, degradation, is_trauma) that are only populated for PC bonds. Bond type/context determines which fields are relevant.
+
+### Soft Delete Excludes from Bond Graph
+
+- **Decision**: Soft-deleted Game Objects are excluded from bond-graph traversal. They don't participate in bond-distance visibility, presence, feed, or story visibility computations.
+- **Rationale**: Deleted entities shouldn't influence the active game world. Removing them from the graph ensures clean visibility and presence computations.
+- **Implications**: Bond-graph queries must filter `is_deleted = false` on traversal. Bonds to deleted entities still exist but are dead ends during traversal.
+
+### No Cascade Soft-Delete
+
+- **Decision**: Soft-deleting a Game Object does NOT cascade to associated records (Clocks, Story entries, etc.). They remain accessible independently.
+- **Rationale**: Associated records may have standalone value. Cascading creates unexpected data loss. The GM can clean up manually if desired.
+- **Implications**: Clock `associated_with` may point to a deleted entity. Story entries remain even if the Story's owner is deleted.
+
 ### GM Ownership of World Objects
 
-- **Decision**: NPCs, Groups, Locations, and Stories are created and managed exclusively by the GM. Players have read-only access.
+- **Decision**: Groups, Locations, and NPC Characters are created and managed exclusively by the GM. Players have read-only access.
 - **Rationale**: The GM controls the game world narrative. Players interact with world objects through their characters and the proposal system.
 - **Implications**: All CRUD endpoints for these objects require GM authorization.
 
-### Single NPC Attributes Blob
+### Single Character Attributes Blob
 
-- **Decision**: NPC mechanical data (traits, stats, abilities) stored as a single freeform `attributes` JSON blob. No structured schema.
-- **Rationale**: NPCs don't use the proposal workflow or dice mechanics. The GM needs maximum flexibility. A single blob is simpler than separate traits/stats fields and avoids schema debates for a freeform concept.
-- **Implications**: NPC attribute data is opaque to the system. No validation beyond "valid JSON". Querying NPC attributes requires JSON field access.
-
-### Quantum NPC Locations
-
-- **Decision**: NPCs have a `common_locations` list (references to Locations with optional notes) rather than a single definite `location`. NPCs exist in a probability smear across their common locations until narratively observed.
-- **Rationale**: Reflects the deferred narrative resolution principle. In fiction, NPCs move around — they have daily lives, routines, and go to and fro. Pinning them to one location is too rigid for narrative play.
-- **Implications**: No "NPC is at Location X" queries — instead, "NPC is commonly found at Locations X, Y, Z". Location resolution happens at the table, not in the system.
-
-### NPC Common Locations with Notes
-
-- **Decision**: NPC `common_locations` entries are `{location_id, note?}` — each entry supports an optional freeform note (e.g., "works the night shift", "lives upstairs").
-- **Rationale**: Symmetric with Location affiliation notes. Provides context for *why* an NPC is at a particular location without requiring a full bond.
-- **Implications**: Slightly richer data model than plain references. Notes are optional and freeform.
-
-### NPC Merged Location View
-
-- **Decision**: The NPC detail endpoint merges `common_locations` (curated) with any Location-targeting bonds the NPC has, producing a unified "where to find this NPC" view. Bond-derived locations are flagged as such.
-- **Rationale**: Complete location picture without manual duplication.
-- **Implications**: Server-side join on NPC detail.
-
-### Unified Lightweight Bonds on NPCs and Groups
-
-- **Decision**: NPCs and Groups have a `bonds` list of lightweight bond objects targeting other game objects. Locations are bond targets only and do not have bonds. This replaces the previous design where all three types had bonds.
-- **Rationale**: Relationships are universal — groups ally with groups, NPCs know NPCs, both connect to locations. Locations are passive — things exist *at* locations, but locations don't actively relate to things.
-- **Implications**: Bond-shaped data appears at three levels: PC Bonds (Trait Instances with stress mechanics), lightweight bonds (on NPCs/Groups, no mechanics), and the bond concept in the glossary covers both. UI can render both types consistently.
-
-### Lightweight Bond IDs and Sub-resource API
-
-- **Decision**: Each lightweight bond has its own unique ID and is managed via sub-resource endpoints (e.g., `POST /npcs/{id}/bonds`, `PATCH /npcs/{id}/bonds/{bond_id}`, `DELETE /npcs/{id}/bonds/{bond_id}`).
-- **Rationale**: Enables targeted bond updates without replacing the entire list. Consistent with other sub-resource patterns (story owners, session participants).
-- **Implications**: Bond table with source_type/source_id + target_type/target_id. Individual CRUD operations per bond.
-
-### Bond Directionality Model
-
-- **Decision**: Lightweight bonds follow type-dependent directionality rules. Group↔Group and NPC↔NPC bonds are bidirectional (one record, both sides see it, with `source_label`/`target_label`). Cross-type bonds (NPC→Group, Group→NPC, NPC/Group→Location) are directional. NPC→Group represents membership; Group→NPC represents a special non-membership relationship. Locations are targets only.
-- **Rationale**: Reflects real-world relationship semantics. A member belongs to a group (NPC→Group), but a group having a bond to an individual means something different (patronage, rivalry, etc.). Locations are passive containers.
-- **Implications**: Bond deduplication needed for bidirectional bonds. Membership derived from inbound bonds. API must handle both directions for bidirectional bonds.
+- **Decision**: All Characters have a freeform `attributes` JSON blob. For NPCs, this is the primary place for mechanical info (traits, stats, abilities). For PCs, it's available for GM notes.
+- **Rationale**: Maximum flexibility for the GM. NPCs don't need structured mechanical fields.
+- **Implications**: Attribute data is opaque to the system. No validation beyond "valid JSON".
 
 ### Bidirectional Bond Labels
 
-- **Decision**: Bidirectional bonds (Group↔Group, NPC↔NPC) carry `source_label` and `target_label` fields, allowing each side to describe the relationship in its own terms (e.g., source sees "reluctant allies", target sees "useful pawns").
-- **Rationale**: Real relationships are often perceived differently by each party. A single shared label is too limiting.
-- **Implications**: Bond creation/editing must handle two labels. API should return the appropriate label based on which side is viewing.
+- **Decision**: Bidirectional bonds carry `source_label` and `target_label` fields, allowing each side to describe the relationship in its own terms.
+- **Rationale**: Real relationships are often perceived differently by each party.
+- **Implications**: Bond creation/editing must handle two labels. API returns the appropriate label based on viewing perspective.
 
-### Bidirectional Group Bonds
+### Soft Delete for All Game Objects
 
-- **Decision**: Group-to-Group bonds are bidirectional. One bond record between A and B; both groups see the bond with their respective labels.
-- **Rationale**: Group relationships are typically mutual ("A and B are allies"). Asymmetric perceptions are handled by different source/target labels.
-- **Implications**: Bond deduplication needed — creating a bond from A→B should be visible from B's perspective too.
+- **Decision**: All Game Objects use soft delete via `is_deleted`. No hard deletes. Per-type lifecycle fields are independent.
+- **Rationale**: References must remain valid. Soft delete preserves history.
+- **Implications**: List endpoints filter `is_deleted = false` by default.
+
+### Draft Session Hard Delete
+
+- **Decision**: Draft Sessions use hard delete. Active/Ended sessions are permanent.
+- **Rationale**: Draft sessions have no downstream references. Hard delete keeps the database clean.
+- **Implications**: `DELETE /sessions/{id}` returns 400 if not Draft. Exception to the general soft-delete rule.
 
 ### Faction → Group Rename
 
-- **Decision**: "Faction" renamed to "Group" project-wide — all specs, glossary, API endpoints (`/api/v1/groups/`).
-- **Rationale**: "Group" is more inclusive — covers factions, guilds, families, crews, cults, companies, and any other organization. "Faction" implies political opposition, which is only one type.
-- **Implications**: All specs, glossary entries, and API routes updated. Downstream specs flagged for revision.
+- **Decision**: "Faction" renamed to "Group" project-wide.
+- **Rationale**: "Group" is more inclusive — covers factions, guilds, families, crews, and any organization.
+- **Implications**: All specs, glossary, and API routes updated.
 
-### Drop Group Locations List
+### CRUD/GM Action Split
 
-- **Decision**: Groups do not have a separate `locations` list. Territorial control is represented via Group→Location bonds (e.g., `source_label: "controls"`).
-- **Rationale**: With the unified bond model, a separate locations list is redundant. Bonds already connect Groups to Locations with descriptive labels.
-- **Implications**: Group territories queried via bond target filtering. Location detail shows Group presence via inbound bond queries + curated affiliations.
+- **Decision**: REST CRUD endpoints (POST/GET/PATCH/DELETE) handle structural operations only: creating objects, soft-deleting, and editing non-mechanical fields (name, description, notes). All mechanical state changes (meters, skills, attributes, bonds, traits, effects, clocks, tier, parent_id) go through `POST /api/v1/gm/actions`. No write sub-resource endpoints for bonds, traits, or clocks on game object routes.
+- **Rationale**: Clean separation of concerns. CRUD is for object lifecycle and metadata; GM actions are for game-state-changing operations that produce events. Eliminates redundant endpoints.
+- **Implications**: POST (creation) is the one exception — accepts all fields including mechanical ones (setup). See [actions.md](actions.md) for the full CRUD/GM split definition.
 
-### Location Curated Affiliations
+### Clock Association — Any Game Object
 
-- **Decision**: Locations have `npcs` and `groups` affiliation lists — curated reference lists with optional notes (e.g., `{npc_id, note: "bartender"}`). These are independent of the bond system.
-- **Rationale**: Not every NPC at a location has a meaningful bond to it. The GM needs a quick way to note "these NPCs are commonly here" without creating full bond records. Same for Groups.
-- **Implications**: Location detail merges curated lists with inbound bonds for a complete presence view. Two sources of "who's here" truth that complement each other.
+- **Decision**: Clocks can be associated with any single Game Object (Character, Group, or Location) via polymorphic reference (`associated_type` + `associated_id`), or exist standalone with no association.
+- **Rationale**: Clocks are used for Group projects (most common), but also for Character personal goals and Location-based events. One optional polymorphic reference covers all cases.
+- **Implications**: Replaces the old `group_id` field with `associated_type`/`associated_id`. Clock list endpoint filters by association.
 
-### Location Computed Presence
+### Clock Completion — Computed + Auto-Propose
 
-- **Decision**: The Location detail endpoint merges curated `npcs`/`groups` affiliation lists with inbound bonds (NPCs/Groups with bonds targeting this Location), producing a unified presence view. Bond-derived entries flagged as such.
-- **Rationale**: Gives the GM a complete picture without manual duplication. Curated list = "always here." Inbound bonds = "connected to this place."
-- **Implications**: Server-side join on Location detail. Bond-derived entries carry a flag distinguishing them from curated affiliations.
+- **Decision**: Clock completion is computed on read (`progress >= segments`). No stored flag. When completion is detected, the system auto-generates a `resolve_clock` proposal in pending state.
+- **Rationale**: Computed avoids stale flags. Auto-generation ensures the GM always sees completed clocks requiring resolution.
+- **Implications**: resolve_clock auto-generation must be idempotent — only generate if no pending or approved `resolve_clock` proposal exists for that `clock_id`. One resolve_clock proposal per clock, ever. Once resolved (approved), further advances (soft cap) do not generate new proposals. GM handles ongoing narrative via direct actions.
 
-### Group Members Computed on Detail
+### Clock Soft Cap
 
-- **Decision**: The Group detail endpoint includes a computed `members` list derived from all objects with bonds targeting this Group (primarily NPCs with NPC→Group membership bonds).
-- **Rationale**: Membership is a natural inbound-bond query. Computing server-side saves the client from extra requests.
-- **Implications**: Server-side reverse-bond lookup. Distinguished from the Group's own outbound bonds.
+- **Decision**: Clock progress can exceed the segment count. The GM can advance past completion.
+- **Rationale**: Allows over-achievement tracking. The clock remains flagged as completed.
+- **Implications**: No validation rejecting `progress > segments`.
 
 ### Clock Segment Sizes
 
-- **Decision**: Any positive integer allowed. Default 5.
-- **Rationale**: Full flexibility for the GM. Standard BitD sizes (4, 6, 8) are common but shouldn't be enforced. Default 5 is a good middle ground.
-- **Implications**: Validation: `segments > 0`. UI should handle variable segment counts.
+- **Decision**: Any positive integer. Default 5.
+- **Rationale**: Full flexibility for the GM.
+- **Implications**: Validation: `segments > 0`.
 
 ### Clock Dual Route Access
 
-- **Decision**: Group project clocks are accessible via both `/groups/{id}/clocks/{clock_id}` and the standalone `/clocks/{id}` endpoint. Single underlying storage.
-- **Rationale**: Flexibility — the Group sub-resource is convenient when working with a specific group, the standalone route is useful for cross-group clock queries.
-- **Implications**: Single clock table with optional `group_id`. Both routes perform the same operations.
+- **Decision**: Group project clocks accessible via both `/groups/{id}/clocks/{clock_id}` and `/clocks/{id}`.
+- **Rationale**: Convenience for both group-focused and cross-group workflows.
+- **Implications**: Single clock table with optional association fields.
+
+### Clock Creation — Both Routes, Fixed Association
+
+- **Decision**: Clocks can be created via `POST /api/v1/clocks` (standalone, with optional `associated_type`/`associated_id` in body) or `POST /api/v1/groups/{id}/clocks` (sugar — auto-sets association to that Group). Association is fixed at creation — cannot be changed via PATCH.
+- **Rationale**: Both routes are convenient for different workflows. Fixed association avoids complexity around re-parenting clocks and the events they've already generated.
+- **Implications**: No `associated_type`/`associated_id` fields accepted on PATCH. To change association, delete and recreate.
 
 ### Unlimited Location Nesting
 
 - **Decision**: No system-imposed depth limit on Location hierarchy.
-- **Rationale**: The GM knows their world. A hard limit would be arbitrary and potentially frustrating.
-- **Implications**: API and UI must handle arbitrary nesting. Tree rendering with lazy loading recommended.
+- **Rationale**: The GM knows their world.
+- **Implications**: API and UI must handle arbitrary nesting.
+
+### Story Creation — GM Only
+
+- **Decision**: Only the GM can create Stories. Players contribute via entries.
+- **Rationale**: Stories are world-level narrative structures. GM manages the narrative arc; players contribute content within it.
+- **Implications**: `POST /stories` is GM-only.
+
+### Story Status — Free-Set by GM
+
+- **Decision**: Story status (active/completed/abandoned) can be set to any value at any time by the GM. No transition rules.
+- **Rationale**: Narrative arcs don't follow a predictable lifecycle. The GM needs full flexibility to mark stories as they see fit.
+- **Implications**: No status validation beyond valid enum values.
+
+### Story Mixed Owners — Union Visibility
+
+- **Decision**: A Story can have owners of any type (Character, Group, Location) in any combination. Visibility is the union of all owner rules — if one owner is a Group, anyone bonded to that Group can see the Story, even if another owner is a PC.
+- **Rationale**: Mixed ownership reflects real narrative threads that involve multiple entities. Union visibility ensures the broadest reasonable access.
+- **Implications**: Visibility computation must iterate all owners and take the union of visible players.
+
+### Story Entry Access — See = Write
+
+- **Decision**: If a player can see a Story (via the unified visibility model), they can add entries to it. Players edit own entries, GM edits any.
+- **Rationale**: Narrative collaboration works best when contributors can add to stories they're involved in. The visibility model already gates access appropriately.
+- **Implications**: Entry creation checks visibility, not just ownership.
+
+### Story GM Visibility Override
+
+- **Decision**: GM can manually grant visibility to specific players, overriding the bond-graph computation. Same pattern as event visibility override.
+- **Rationale**: Sometimes the GM wants a player to see a Story for narrative reasons, even without a bond-graph path.
+- **Implications**: Story has a `visibility_overrides` list of player IDs.
 
 ### Story Freeform Tags
 
-- **Decision**: Stories support an optional list of freeform string tags for categorization. No predefined vocabulary.
-- **Rationale**: Flexible enough for any campaign. The GM can establish their own tagging conventions.
-- **Implications**: Tag list stored as JSON array. API supports filtering by tag.
+- **Decision**: Optional list of freeform string tags. No predefined vocabulary.
+- **Rationale**: Flexible enough for any campaign.
+- **Implications**: API supports filtering by tag.
 
 ### Story Embedded Narrative Entries
 
-- **Decision**: Stories have an embedded `entries` array with structured narrative records. Each entry has text, optional character/session/event references, optional game object links, and full audit trail fields (updated_at, updated_by, is_deleted, deleted_by).
-- **Rationale**: Denormalized for easy display. Linked to events for audit. Serves both `work_on_project` proposals and GM-initiated narrative additions.
-- **Implications**: Story objects grow over time. Entries support edit and soft-delete with per-entry audit tracking.
-
-### Story Entry Editability
-
-- **Decision**: Players can edit entries they created. GM can edit any entry. Deletions are soft-deletes with `deleted_by` tracking. Full audit trail per entry (updated_at, updated_by, is_deleted, deleted_by).
-- **Rationale**: Players should be able to fix their own writing. GM needs full control. Soft delete preserves history.
-- **Implications**: Entry edit authorization checks character_id against the requesting player. Edit events logged.
+- **Decision**: Stories have an embedded `entries` array with structured narrative records and audit trail.
+- **Rationale**: Denormalized for easy display. Serves both `work_on_project` proposals and GM additions.
+- **Implications**: Story objects grow over time.
 
 ### Story Owners Sub-resource
 
-- **Decision**: Story owners (polymorphic references to Characters, Groups, etc.) are managed via sub-resource API: `POST/DELETE /stories/{id}/owners` with `{type, id}` per record.
-- **Rationale**: Consistent with other sub-resource patterns (bonds, session participants). Avoids replacing the full owner list on each update.
-- **Implications**: Separate owner records table. Individual add/remove operations.
-
-### Soft Delete for All Game Objects
-
-- **Decision**: All game objects use soft delete via a base `is_deleted` flag. No hard deletes. **Exception**: Draft Sessions use hard delete (no downstream references). Per-type lifecycle fields (Story status) are independent.
-- **Rationale**: References must remain valid. A Bond targeting a deleted NPC should still resolve to that NPC's data. Soft delete is simple and preserves history.
-- **Implications**: All list endpoints filter `is_deleted = false` by default. Direct lookup endpoints return deleted objects (with a deleted flag visible). No cascade logic needed.
-
-### Draft Session Hard Delete
-
-- **Decision**: Draft Sessions use hard delete instead of soft delete. Active and Ended sessions are permanent and cannot be deleted.
-- **Rationale**: Draft sessions have no downstream references — no events, no FT distributions, no participant history. Hard delete keeps the database clean. Once a session is Started (Active), it has side effects and must be preserved.
-- **Implications**: `DELETE /sessions/{id}` returns 400 if session is not in Draft status. Exception to the general soft-delete rule.
+- **Decision**: Story owners managed via `POST/DELETE /stories/{id}/owners` with `{type, id}`.
+- **Rationale**: Consistent sub-resource pattern.
+- **Implications**: Separate owner records table.
 
 ### Group Tier Unbounded
 
-- **Decision**: Group `tier` is any non-negative integer. No upper bound.
-- **Rationale**: The GM decides the power scale for their campaign. Imposing a range (e.g., 0–5) would be arbitrary.
-- **Implications**: Validation: `tier >= 0`. No tier-based game mechanics in the system (tier is informational).
+- **Decision**: `tier` is any non-negative integer. No upper bound.
+- **Rationale**: GM decides the power scale.
+- **Implications**: Informational only — no tier-based game mechanics.
 
 ### Clock Annotations via Event Log
 
-- **Decision**: Clock adjustments are recorded as Events with annotation metadata (notes, event references, game object references). No denormalized annotation history on the Clock object.
-- **Rationale**: The event log is already the audit trail. Duplicating annotation data on the Clock adds complexity without benefit. Clock history = filtered event query.
-- **Implications**: Clock adjustment events need a rich `changes` field supporting notes and polymorphic references. Events spec needs to accommodate this.
+- **Decision**: Clock adjustments recorded as Events with annotation metadata. No denormalized history on Clock.
+- **Rationale**: Event log is already the audit trail.
+- **Implications**: Clock history = filtered event query.
 
 ### Event Auto-Capture to Active Session
 
-- **Decision**: Events generated while a Session is Active are automatically tagged with that session's ID. Callers can override with a specific session_id. When no session is Active, session_id is optional/null.
-- **Rationale**: Eliminates manual session tagging for the common case (most events happen during active play). Override supports edge cases (GM makes changes between sessions, or attributes an event to a different session).
-- **Implications**: Event creation logic checks for an Active session and auto-fills session_id if not provided. Events spec needs to reflect this.
-
-### Clock Completion Flags for GM
-
-- **Decision**: When a clock reaches its segment count, the system flags it as completed and surfaces it to the GM. No automatic game state changes. The GM resolves consequences narratively.
-- **Rationale**: Reflects deferred narrative resolution. Clock completion means "something happened" — what that something is depends on context that only the GM can interpret.
-- **Implications**: Completed clock detection at the point of clock mutation. GM notification mechanism (API response flag, or dashboard indicator). GM creates events to record the resolution.
+- **Decision**: Events generated during Active session auto-tag with session ID.
+- **Rationale**: Eliminates manual session tagging for the common case.
+- **Implications**: Event creation logic checks for Active session.
 
 ### Deferred Narrative Resolution (Design Principle)
 
-- **Decision**: Documented as a named design principle applicable project-wide. Game state is intentionally left ambiguous until narratively observed.
-- **Rationale**: Tabletop RPGs are collaborative fiction. The system should support potential/fuzzy state, not just concrete state. This mirrors how GMs actually run games — they don't decide everything upfront.
-- **Implications**: Affects NPC locations (quantum), Group projects (undefined until clock completion), and potentially other domains. Should be referenced in architecture/overview.md and added to the glossary.
-- **Examples**:
-  - **NPC locations**: NPC has common_locations [Tavern, Market, Guild Hall]. When a player looks for the NPC, the GM decides where they are based on narrative context.
-  - **Group projects**: Group has a project clock at 3/5 with a placeholder description. At 5/5, the GM looks at recent events, the group's bonds and goals, and decides what the project was and what it produced.
+- **Decision**: Named design principle. Game state intentionally left ambiguous until narratively observed.
+- **Rationale**: Tabletop RPGs are collaborative fiction. The system supports potential/fuzzy state.
+- **Implications**: Affects Character locations (bond-distance presence), Group projects (undefined until clock completion), and other domains.
 
 ---
 
 ## API Endpoints
 
-### NPCs
-- `GET /api/v1/npcs` — list (filters: `?location_id=`, `?is_deleted=false` default)
-- `GET /api/v1/npcs/{id}` — detail with bonds, common locations, and merged location view
-- `POST /api/v1/npcs` — create (GM)
-- `PATCH /api/v1/npcs/{id}` — update (GM)
-- `DELETE /api/v1/npcs/{id}` — soft delete (GM, sets `is_deleted = true`)
-- `POST /api/v1/npcs/{id}/bonds` — add a bond (GM)
-- `PATCH /api/v1/npcs/{id}/bonds/{bond_id}` — update a bond (GM)
-- `DELETE /api/v1/npcs/{id}/bonds/{bond_id}` — deactivate a bond (GM)
+### Characters (PCs and NPCs)
+- `GET /api/v1/characters` — list (filters: `?detail_level=`, `?has_player=`, `?is_deleted=false` default)
+- `GET /api/v1/characters/{id}` — detail with bonds, traits, bond-distance locations, and feed
+- `POST /api/v1/characters` — create (GM). Accepts all fields including mechanical ones (meters, skills, etc.).
+- `PATCH /api/v1/characters/{id}` — update name, description, notes only (GM or owner for notes/description). Mechanical fields (meters, skills, attributes, etc.) via `POST /api/v1/gm/actions`.
+- `DELETE /api/v1/characters/{id}` — soft delete (GM)
 
 ### Groups
 - `GET /api/v1/groups` — list (filters: `?is_deleted=false` default)
-- `GET /api/v1/groups/{id}` — detail with clocks, bonds, and computed members
-- `POST /api/v1/groups` — create (GM)
-- `PATCH /api/v1/groups/{id}` — update (GM)
+- `GET /api/v1/groups/{id}` — detail with clocks, traits, bonds, computed members, and feed
+- `POST /api/v1/groups` — create (GM). Accepts all fields including tier.
+- `PATCH /api/v1/groups/{id}` — update name, description, notes only (GM). Tier, traits, bonds, clocks via `POST /api/v1/gm/actions`.
 - `DELETE /api/v1/groups/{id}` — soft delete (GM)
-- `POST /api/v1/groups/{id}/bonds` — add a bond (GM)
-- `PATCH /api/v1/groups/{id}/bonds/{bond_id}` — update a bond (GM)
-- `DELETE /api/v1/groups/{id}/bonds/{bond_id}` — deactivate a bond (GM)
-- `POST /api/v1/groups/{id}/clocks` — add a project clock (GM)
-- `PATCH /api/v1/groups/{id}/clocks/{clock_id}` — advance/modify a clock (GM, generates event with annotations)
 
-### Clocks
-- `GET /api/v1/clocks` — list all clocks including group project clocks (filters: `?associated_with=`, `?group_id=`, `?is_deleted=false` default)
+### Clocks (System Entity)
+- `GET /api/v1/clocks` — list all clocks (filters: `?associated_type=`, `?associated_id=`, `?is_deleted=false` default)
 - `GET /api/v1/clocks/{id}` — detail
-- `POST /api/v1/clocks` — create standalone clock (GM)
-- `PATCH /api/v1/clocks/{id}` — advance or modify any clock (GM, generates event with annotations)
+- `POST /api/v1/clocks` — create clock (GM). Optional `associated_type`/`associated_id` in body for association.
+- `POST /api/v1/groups/{id}/clocks` — create clock auto-associated with this Group (GM). Sugar for `POST /clocks` with association pre-set.
+- `PATCH /api/v1/clocks/{id}` — update name, notes, segments (GM). Association is fixed at creation. Progress changes via `POST /api/v1/gm/actions` (`modify_clock`).
 - `DELETE /api/v1/clocks/{id}` — soft delete (GM)
 
 ### Locations
-- `GET /api/v1/locations` — list (filters: `?parent={id}` for hierarchy, `?is_deleted=false` default)
-- `GET /api/v1/locations/{id}` — detail with curated affiliations and computed presence (merged NPC/Group lists)
-- `POST /api/v1/locations` — create (GM)
-- `PATCH /api/v1/locations/{id}` — update including curated npcs/groups lists (GM)
+- `GET /api/v1/locations` — list (filters: `?parent={id}`, `?is_deleted=false` default)
+- `GET /api/v1/locations/{id}` — detail with traits, bonds, bond-distance presence, and feed
+- `POST /api/v1/locations` — create (GM). Accepts all fields including parent.
+- `PATCH /api/v1/locations/{id}` — update name, description, notes only (GM). Parent, traits, bonds via `POST /api/v1/gm/actions`.
 - `DELETE /api/v1/locations/{id}` — soft delete (GM)
 
-### Stories
-- `GET /api/v1/stories` — list (filters: `?status=active`, `?tag=`, `?owner=`, `?is_deleted=false` default)
-- `GET /api/v1/stories/{id}` — detail with entries and owners
+### Stories (System Entity)
+- `GET /api/v1/stories` — list (filters: `?status=active`, `?tag=`, `?owner=`, `?is_deleted=false` default). **Visibility-filtered** per authenticated user.
+- `GET /api/v1/stories/{id}` — detail with entries and owners (visibility check)
 - `POST /api/v1/stories` — create (GM)
-- `PATCH /api/v1/stories/{id}` — update including status changes (GM)
+- `PATCH /api/v1/stories/{id}` — update (GM)
 - `DELETE /api/v1/stories/{id}` — soft delete (GM)
-- `POST /api/v1/stories/{id}/owners` — add an owner (GM, `{type, id}`)
+- `POST /api/v1/stories/{id}/owners` — add an owner (GM)
 - `DELETE /api/v1/stories/{id}/owners/{type}/{owner_id}` — remove an owner (GM)
-- `POST /api/v1/stories/{id}/entries` — add a narrative entry
-- `PATCH /api/v1/stories/{id}/entries/{entry_id}` — edit an entry (own entries or GM)
-- `DELETE /api/v1/stories/{id}/entries/{entry_id}` — soft-delete an entry (own entries or GM)
+- `POST /api/v1/stories/{id}/entries` — add a narrative entry (visible players or GM)
+- `PATCH /api/v1/stories/{id}/entries/{entry_id}` — edit an entry (own or GM)
+- `DELETE /api/v1/stories/{id}/entries/{entry_id}` — soft-delete an entry (own or GM)
 
-### Sessions
+### Sessions (System Entity)
 (Fully defined in [downtime](downtime.md))
-- `POST /api/v1/sessions` — create a Draft session (GM)
+- `POST /api/v1/sessions` — create Draft (GM)
 - `GET /api/v1/sessions` — list
 - `GET /api/v1/sessions/{id}` — detail with participants
 - `PATCH /api/v1/sessions/{id}` — update (GM, Draft or Active only)
@@ -447,11 +517,22 @@ Narrative threads:
 - `PATCH /api/v1/sessions/{id}/participants/{player_id}` — update contribution flag
 - `GET /api/v1/sessions/{id}/timeline` — events during this session
 
+### Feed (cross-cutting)
+See [feed.md](feed.md) for feed endpoints:
+- `GET /api/v1/{type}/{id}/feed` — per-Game Object feed
+- `GET /api/v1/me/feed` — complete feed across all bonds
+- `GET /api/v1/me/feed/starred` — starred Game Objects only
+
 ---
 
 ## Open Questions
 
-None — all questions resolved.
+_All resolved._
+
+1. ~~**Session participant `distributed` flag**~~: **Resolved** — No flag needed. See [downtime.md](downtime.md) — re-adding re-distributes; GM corrects via direct actions if needed.
+2. ~~**`resolve_clock` idempotency**~~: **Resolved** — One resolve_clock proposal per clock, ever. Only generate if no pending or approved resolve_clock exists for that clock_id. Further soft-cap advances don't generate new proposals.
+3. ~~**Story entry schema mismatch**~~: **Resolved** — Added `author_id` to the embedded entry format, reconciled with data-model.md.
+4. ~~**Clock creation via sub-resource**~~: **Resolved** — Both routes: `POST /clocks` (standalone or with association) and `POST /groups/{id}/clocks` (auto-associates). Association is fixed at creation — cannot be changed via PATCH.
 
 ---
 
@@ -459,18 +540,14 @@ None — all questions resolved.
 
 | Spec | Implication |
 |------|-------------|
-| [character-core](character-core.md) | Characters are a game object type; share the common fields pattern including `is_deleted`. Need `last_session_time_now` field and `session_ids` list (from downtime). 🔄 **Rename**: Faction → Group. |
-| [bonds](bonds.md) | PC Bonds remain Trait Instances with stress mechanics. Lightweight bonds on NPCs/Groups are a simpler model. Bond targets include deleted objects (soft delete preserves references). 🔄 **Rename**: Faction → Group. Bond directionality model affects bond-distance visibility graph. |
-| [events](events.md) | 🔄 Events auto-tag to Active session. Clock adjustment events need annotation support. Session timeline is a filtered event query. **Rename**: Faction → Group. |
-| [downtime](downtime.md) | Session lifecycle fully defined there. Clock adjustments happen during Active via individual calls. Group project completion flags surface to GM. 🔄 **Rename**: Faction → Group. |
-| [proposals](proposals.md) | Player projects use Stories (narrative entries, no segmented clock). `work_on_project` adds entries to the Story object. 🔄 **Rename**: Faction → Group. |
-| [traits](traits.md) | 🔄 **Rename**: Faction → Group in any references. |
-| [magic-system](magic-system.md) | 🔄 **Rename**: Faction → Group in any references. |
-| [auth](auth.md) | 🔄 **Rename**: Faction → Group in any references. |
-| [architecture/overview](../architecture/overview.md) | 🔄 Deferred Narrative Resolution should be documented as a named design principle. **Rename**: Faction → Group. |
-| [architecture/data-model](../architecture/data-model.md) | 🔄 Shared base fields (`is_deleted`). Lightweight bond model with directionality. NPC `attributes` blob. Story entries with audit trail. Clock default segments. Event auto-capture. Location curated affiliations. **Rename**: Faction → Group. |
-| [architecture/mvp-scope](../architecture/mvp-scope.md) | 🔄 **Rename**: Faction → Group. |
+| [character-core](character-core.md) | ✅ PC Bond slots = 8. NPCs = 7. Aligned. |
+| [bonds](bonds.md) | ✅ PC Bond slots = 8. NPCs = 7. Aligned. |
+| [feed](feed.md) | ✅ Unified Feed concept. Aligned. |
+| [events](events.md) | ✅ Unified visibility model. Aligned. |
+| [traits](traits.md) | ✅ Group traits 10 flat, Location Feature traits 5. Aligned. |
+| [actions](actions.md) | ✅ Clean CRUD/GM split. resolve_clock auto-generated on clock completion (one per clock, ever). |
+| [architecture/data-model](../architecture/data-model.md) | ✅ Clock polymorphic association. Story `visibility_overrides`. `starred_objects` table. PC bond slots 8. |
 
 ---
 
-_Last updated: 2026-03-02 (second interrogation — bond directionality model, location curated affiliations, story entry editability, Faction→Group rename, 14 new decisions for 31 total)_
+_Last updated: 2026-03-14 (added cross-reference to events.md Meter Boundary Patterns for clock completion)_

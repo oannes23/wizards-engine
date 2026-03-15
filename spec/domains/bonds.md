@@ -1,54 +1,155 @@
 # Bonds — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-02-26
+**Last interrogated**: 2026-03-07
 **Last verified**: —
 **Depends on**: [game-objects](game-objects.md), [character-core](character-core.md)
-**Depended on by**: [proposals](proposals.md), [downtime](downtime.md)
+**Depended on by**: [actions](actions.md), [downtime](downtime.md), [events](events.md)
 
 ---
 
 ## Overview
 
-Bonds represent meaningful relationships between a Character and other game objects (PCs, NPCs, Groups, Locations, etc.). They provide a flat +1d bonus when invoked in proposals and have their own stress/degradation mechanic that mirrors character Stress/Trauma. Bonds are a type of Trait Instance — they share the unified Trait/Bond architecture but reference a game object as their "template" (inheriting its name and description).
+**Bonds are the connections between Game Objects.** Every relationship in the system — between Characters, Groups, and Locations — is represented as a Bond. Bonds are a unified concept with a single data model and varying mechanical depth depending on context.
+
+All bonds share the same base fields. PC Bonds (on full Characters) add stress, degradation, and dice bonuses. All other bonds are descriptive — they track relationships without mechanical depth.
+
+The bond graph drives two computed systems (same traversal algorithm, different uses):
+- **Unified Visibility** — who can see which events and story entries (see [feed.md](feed.md))
+- **Bond-Distance Presence** — who is present at which locations (defined below)
+
+Both systems use the **Character-intermediary traversal rule**: after a non-Character node (Group or Location), the next hop must go through a Character (PC or NPC). You can't traverse through two Groups or two Locations consecutively. PCs are valid intermediaries — and richer than NPCs since they can connect to other Characters. Soft-deleted Game Objects, inactive bonds, and Trauma bonds (no target) are excluded from traversal (dead ends).
 
 ---
 
-## Core Concepts
+## Unified Bond Model
 
-### Unified Trait/Bond Architecture
+### Shared Bond Fields
 
-Bonds, Core Traits, and Role Traits share a common architecture:
+All bonds, regardless of type, have:
 
-1. **Trait Template** (definition layer): A GM-created catalog entry with name, description, and type. For Core/Role Traits only — Bonds use a game object as their "template" instead.
-2. **Trait Instance** (character layer): A per-character record that links to either a Trait Template (Core/Role) or a game object (Bond). Holds character-specific state: charges (Core/Role) or stress (Bonds), `is_active` flag, and an event history stream.
+```
+{
+  id: string,                // unique identifier
+  source_type: string,       // type of owning Game Object (character/group/location)
+  source_id: string,         // ID of owning Game Object
+  target_type: string,       // type of referenced Game Object
+  target_id: string,         // ID of referenced Game Object
+  source_label: string,      // relationship label from source's perspective
+  target_label: string,      // relationship label from target's perspective (bidirectional)
+  description: string,       // freeform context
+  is_active: boolean,        // supports Past/Retired pattern
+  bidirectional: boolean     // whether both sides see this bond
+}
+```
 
-This means Bonds are a **slot type** on the character sheet, alongside Core and Role Trait slots, all managed through the same instance model.
+### PC Bond Additional Fields
 
-### Bond Structure
+Full (PC) Characters' bonds additionally have:
+- `stress`: integer (0 to effective max) — current bond stress
+- `stress_degradations`: integer — count of max reductions (effective max = `5 - stress_degradations`)
+- `is_trauma`: boolean — true if this slot holds a Trauma instead of a relationship
 
-Each Character has **7 Bond slots**. An active Bond instance has:
-- `target`: polymorphic reference to a game object (PC, NPC, Group, Location, etc.)
-- `name`: inherited from target game object
-- `description`: inherited from target game object
-- `stress`: current bond stress (0 to effective max)
-- `stress_degradations`: count of max reductions (effective max = `5 - stress_degradations`)
-- `is_active`: boolean (active vs retired/past)
-- `is_trauma`: boolean (true if this slot holds a Trauma)
+These fields are null/absent on all non-PC bonds.
 
-Bond slots may be **blank** — not yet filled. Characters don't need all 7 bonds at creation.
+---
 
-**No Bond level.** The meaningful measure of a bond is its accumulated fiction — the stream of event paragraphs from actions involving the bond.
+## Bond Categories
 
-### Bond Stress Mechanic
+### By Owner Type
+
+| Category | Owner | Target | Slots | Direction | Mechanics |
+|----------|-------|--------|-------|-----------|-----------|
+| **PC Bond** | Full Character | Any Game Object | 8 | Varies (see below) | Stress, degradation, +1d, Trauma |
+| **NPC Bond** | Simplified Character | Any Game Object | 7 | Varies (see below) | Descriptive only |
+| **Group Relation** | Group | Group | 7 | Bidirectional | Descriptive only |
+| **Group Holding** | Group | Location | Unlimited | Directional | Descriptive only |
+| **Location Bond** | Location | Any Game Object | Unlimited | Directional | Descriptive only |
+
+### Directionality Rules
+
+Default bidirectionality is auto-inferred from the pairing type. The GM can override on creation.
+
+| Pairing | Default Direction | Notes |
+|---------|-------------------|-------|
+| Character ↔ Character | Bidirectional | One record, both see. `source_label`/`target_label` for each perspective. Includes PC↔PC bonds. |
+| Character ↔ Group | Bidirectional | Character bond = membership in the Group (see Derived Membership). |
+| Group ↔ Group (Relations) | Bidirectional | One record, both groups see with their respective labels. |
+| Character → Location | Directional | Character connected to a place. Source owns the bond. |
+| Group → Location (Holdings) | Directional | Group presence/control at a place. Group owns the bond. |
+| Location → Location | Directional | Geographic connection (path, overlooks, adjacent). |
+| Location → Character/Group | Directional | Notable association. Location owns the bond. |
+
+**Default rule**: Character↔Character, Character↔Group, and Group↔Group = bidirectional. All Location-involved bonds = directional. GM can override at creation.
+
+### Inbound Bond Display
+
+Bidirectional bonds appear in **both** the source's and target's bond lists with **no distinction**. The API normalizes the perspective — the viewing entity sees their label. The client doesn't need to track owned vs inbound.
+
+### Bond Slot Limits
+
+| Owner | Limit | Enforcement | Notes |
+|-------|-------|-------------|-------|
+| Full Character (PC) | 8 | Count-based | Max 8 active bonds. No fixed slot indices. Trauma consumes against the count. Blank slots allowed. The 8th slot accounts for the expected party Group bond. |
+| Simplified Character (NPC) | 7 | Count-based | Max 7 active bonds. Same count-based model as PCs. |
+| Group Relations | 7 | Count-based | Group↔Group only. |
+| Group Holdings | Unlimited | — | Group→Location only. |
+| Location Bonds | Unlimited | — | To any Game Object. |
+
+### Slot Accounting for Bidirectional Bonds
+
+When a bidirectional bond is created (e.g., PC-A bonds to NPC-B), the **source always consumes a slot**. The target receives a **soft-limit warning** if they are at capacity, but the GM can exceed the target's slot limit. Only one database record is created; the source owns it.
+
+- **Source**: Always consumes a slot (hard enforcement).
+- **Target**: Soft limit — system warns GM if target is full, but allows creation.
+- This means an NPC can appear to "have" more than 7 bonds if multiple characters bond to them.
+
+### Duplicate Bond Prevention
+
+At most **one active bond** per (source, target) pair. The system prevents creation of a second bond to the same target. To change the relationship, use "New Bond" to replace it or the GM edits the existing bond.
+
+### Slot Type Auto-Inference
+
+When the GM creates a bond, the system auto-infers `slot_type` from context:
+
+| Owner | Target | Inferred slot_type |
+|-------|--------|--------------------|
+| Full Character | Any | `pc_bond` |
+| Simplified Character | Any | `npc_bond` |
+| Group | Group | `group_relation` |
+| Group | Location | `group_holding` |
+| Location | Any | `location_bond` |
+
+No GM input required — the system determines the type from the owner's type/detail_level and the target type.
+
+---
+
+## Derived Membership
+
+**Group membership is derived from the bond graph, not stored as a separate type.**
+
+When a Character (PC or NPC) has a bond targeting a Group, that Character is a **member** of the Group. The Group's `members` list is computed by querying: "all bonds where target = this Group and source_type = character."
+
+- A PC's bond to a Group uses one of their 8 Bond slots (with full stress mechanics)
+- An NPC's bond to a Group uses one of their 7 Bond slots (descriptive only)
+- The Group does not store a separate membership record
+- The Group detail endpoint computes and returns the member list
+
+**Design intent**: One bond, dual purpose — the Character's bond IS their membership. This keeps the model simple and the bond graph connected. A powerful individual operating at Group scale gets their own single-member Group to participate in Group Relations.
+
+---
+
+## PC Bond Mechanics (Full Characters Only)
+
+### Bond Stress
 
 Bond stress mirrors the character Stress/Trauma pattern:
 
-- **Range**: 0 to effective max (starts at 5, decreases with degradations)
+- **Range**: 0 to effective max (base 5, decreases with degradations)
 - **Gains stress from**: GM narrative actions, or +1 when GM decides a proposal bond use strains it
-- **At max stress**: GM resets stress to 0, increments `stress_degradations` by 1 (effective max decreases), and narrates a bad consequence in the relationship
-- **Healing**: "Heal Bond Stress" downtime activity fully restores current stress to 0. Costs Free Time.
-- **Degradation reversal**: GM can reverse a degradation via direct action (decrement `stress_degradations`, restoring +1 to effective max)
+- **At max stress**: GM resets stress to 0, increments `stress_degradations` by 1 (effective max decreases), narrates consequence. Recorded as `meter.set` (stress reset) + `meter.delta` (degradation increment) in the event. See [events.md](events.md) Meter Boundary Patterns.
+- **Healing**: "Maintain Bond" downtime activity fully restores current stress to 0. Costs 1 FT. Does not reverse degradations.
+- **Degradation reversal**: GM can reverse a degradation via direct action (decrement `stress_degradations`)
 - **At 0 effective max** (5 degradations): GM handles narratively — no additional mechanical rule
 
 ### +1d Bonus on Proposals
@@ -63,12 +164,12 @@ If the GM decides the bond use strains the relationship, +1 bond stress is appli
 
 When a character's Stress hits max, they gain a Trauma which occupies a Bond slot:
 
-1. The existing Bond in the chosen slot is **retired** (`is_active = false`) and moves to the "Past" section of the character sheet. Its full event history is preserved.
-2. A new Bond instance is created in the slot with `is_trauma = true`, a trauma-specific name and description (negotiated between GM and player), no target reference, and fresh stress/degradation values (stress = 0, degradations = 0).
+1. The existing Bond in the chosen slot is **retired** (`is_active = false`) and moves to the "Past" section. Full event history preserved.
+2. A new Bond instance is created in the slot with `is_trauma = true`, trauma-specific name/description (negotiated between GM and player), no target reference, and fresh stress/degradation values (stress = 0, degradations = 0).
 3. Character Stress resets to 0.
 4. Character effective Stress max decreases by 1 (computed: `9 - count(active trauma bonds)`).
 
-**Fixing Trauma**: GM direct action. The GM chooses what happens — can blank the slot, create a new bond, etc. No automatic restoration of the original bond.
+**Fixing Trauma**: GM direct action. The GM chooses what happens — can blank the slot, create a new bond, etc. No automatic restoration of the original bond. The trauma instance retires to Past, slot becomes blank (or GM fills it immediately).
 
 ### Past/Retired Bonds
 
@@ -77,12 +178,10 @@ When a Bond is replaced (by Trauma, "New Bond" downtime action, or GM action), t
 - Cannot be selected for proposals (+1d bonus)
 - Serves as a narrative record of the character's relationship history
 
-This applies equally to retired Core/Role Traits — see [traits.md](traits.md).
+### Bond Lifecycle (PC Bonds)
 
-### Bond Lifecycle
-
-1. **Created**: GM adds a bond via direct action (post character creation), pointing to a game object target. Starts with stress = 0, degradations = 0.
-2. **Active**: Bond is available for use in proposals. Stress accumulates from narrative events and proposal use.
+1. **Created**: GM adds a bond via direct action, pointing to a Game Object target. Starts with stress = 0, degradations = 0.
+2. **Active**: Available for use in proposals. Stress accumulates from narrative events and proposal use.
 3. **Stressed**: Bond stress at max triggers degradation (GM action). Stress resets, max decreases.
 4. **Replaced**: Player submits "New Bond" downtime action or bond becomes Trauma. Old bond retires to Past.
 5. **Retired/Past**: `is_active = false`. Viewable history, no mechanical use.
@@ -90,86 +189,262 @@ This applies equally to retired Core/Role Traits — see [traits.md](traits.md).
 
 ---
 
+## Bond-Distance Presence
+
+Presence at a Location is **computed from the bond graph**, using hop-distance traversal. This replaces the old curated affiliation lists and `common_locations`.
+
+### How It Works
+
+For a Location, the system traverses the bond graph outward using the **Character-intermediary traversal rule** (same algorithm as visibility — see [feed.md](feed.md)):
+
+| Proximity | Hops | Label | Example |
+|-----------|------|-------|---------|
+| Commonly present | 1-hop | Direct bond | Character bonded to the Location |
+| Often present | 2-hop | Through Character | Character bonded to an NPC/PC who is bonded to the Location |
+| Sometimes present | 3-hop | 3 degrees | Character → Character → Group/Location → another Character bonded to the Location |
+
+**Character-intermediary constraint**: After a non-Character node (Group or Location), the next hop must go through a Character (PC or NPC). You can't traverse through two Groups or two Locations consecutively. The first hop from any starting node can go to any type. Characters (both PCs and NPCs) are the social connective tissue.
+
+### Bidirectional
+
+The same model works in reverse — for a Character, the system computes:
+- **Common locations** (1-hop): Locations the Character is directly bonded to
+- **Familiar locations** (2-hop): Locations reachable through one Character intermediary
+- **Known locations** (3-hop): Locations reachable through two intermediaries (Character-alternating)
+
+### Traversal Constraints
+
+- **Only active bonds participate** (`is_active = true`). Past/Retired bonds are excluded from traversal.
+- **Trauma bonds are dead ends**: Explicitly excluded from traversal — they have no target and don't connect to the graph.
+- **Soft-deleted Game Objects are excluded** from traversal. Their bonds exist but are dead ends.
+- **All active bond types participate**: PC bonds (mechanical), NPC bonds (descriptive), Group bonds (Relations, Holdings), Location bonds. The traversal doesn't care about mechanical depth.
+- **Computed on read** (no caching). SQLite handles it for 4–6 players.
+
+### What It Replaced
+
+1. ~~Location curated `npcs`/`groups` affiliation lists~~ → Bond-distance presence
+2. ~~NPC `common_locations` list~~ → Character bond-distance to Locations
+3. Manual "who's here" tracking → Automatic from bond graph
+
+### Shared Algorithm with Visibility
+
+The bond graph does double duty — **one traversal algorithm, two applications**:
+- **Unified Visibility**: Who can see which events and story entries (see [feed.md](feed.md))
+- **Bond-Distance Presence**: Who is present at which locations
+
+Both use the same Character-intermediary hop-distance model. Both computed on read.
+
+---
+
+## Unified Table Architecture
+
+All traits and bonds live in a single unified table with a `slot_type` discriminator. This includes:
+- **Traits**: Core Traits, Role Traits, Group Traits (10 flat slots), Location Feature Traits (5 slots)
+- **Bonds**: PC Bonds, NPC Bonds, Group Relations, Group Holdings, Location Bonds
+
+The complete slot_type catalog and column details are specified in [data-model.md](../architecture/data-model.md). Domain specs (this document and [traits.md](traits.md)) describe the logical model.
+
+**Why unified**: All slot types share common patterns — they have an owner, a name/description, an active/retired status, and varying mechanical fields. A single table with nullable mechanical columns is simpler than multiple tables with identical base structures.
+
+---
+
 ## Decisions
+
+### Unified Bond Concept
+
+- **Decision**: All relationships between Game Objects are Bonds. One concept, varying mechanical depth. PC Bonds have stress/degradation/+1d. All others are descriptive (active/retired only).
+- **Rationale**: Keeps the mental model simple — "Bonds connect things." UI renders all bond types consistently. The bond graph works as one connected structure.
+- **Implications**: Single bond model with optional mechanical fields. Bond type/context determines which fields are relevant.
+
+### Fully Unified Table (Traits + Bonds)
+
+- **Decision**: All traits and bonds live in one table with a `slot_type` discriminator. Covers Core/Role Traits, all bond types, Group traits, and Location Feature traits.
+- **Rationale**: All slot types share common patterns (owner, name, description, active/retired). One table is simpler than many tables with identical bases. Nullable columns for type-specific fields.
+- **Implications**: data-model.md owns the complete slot_type catalog. Queries use slot_type filtering. Performance is fine for 4–6 players.
+
+### bonds.md Is the Authoritative Bond Spec
+
+- **Decision**: This document is the single source of truth for the entire Bond concept — all bond types, directionality, bond-distance presence, and PC-specific mechanics.
+- **Rationale**: Bonds are a cross-cutting concept. Having one authoritative reference prevents fragmentation across specs.
+- **Implications**: game-objects.md and character-core.md reference this spec for bond details.
+
+### PC Bond to Group = Membership
+
+- **Decision**: A Character's bond targeting a Group IS their membership in that Group. One bond, dual purpose — uses a bond slot (with full mechanics for PCs) AND registers as a Group member.
+- **Rationale**: Keeps the bond graph connected. No redundant records. Membership is a natural interpretation of the bond relationship.
+- **Implications**: Group `members` list is a derived query, not stored. "Any Character with a bond targeting this Group" = member. Works for both PCs (mechanical bonds) and NPCs (descriptive bonds).
+
+### Derived Membership (Not a Stored Type)
+
+- **Decision**: Group membership is computed from the bond graph: all Characters with a bond targeting the Group. No separate `group_member` bond type or record.
+- **Rationale**: One bond per relationship, no duplication. The Character owns the bond; the Group sees it as membership. Clean and simple.
+- **Implications**: Group detail endpoint computes the member list via query. Membership changes = bond changes.
+
+### NPC Membership Same as PC
+
+- **Decision**: When an NPC bonds to a Group, that bond IS their membership, same as PCs. Consistent rule across all Characters.
+- **Rationale**: NPCs are Characters. Same entity, same bond model, same membership semantics.
+- **Implications**: NPC bonds use the same table as PC bonds. Group membership query doesn't care about detail_level.
+
+### Group Holdings (Group→Location Bonds)
+
+- **Decision**: Groups have a third bond category called "Holdings" for bonds to Locations. Unlimited slots, directional, descriptive. Covers territories, properties, meeting places, sacred sites.
+- **Rationale**: Groups need direct connections to Locations that aren't mediated through Members. "Holdings" is evocative and covers the dominant use cases.
+- **Implications**: Group detail endpoint shows Holdings alongside Relations and computed Members. `slot_type` in the unified table.
 
 ### No Bond Level
 
 - **Decision**: Bond level is removed from the model. Bonds provide a flat +1d on proposals regardless of any "strength" metric.
-- **Rationale**: The meaningful depth of a bond is captured by its accumulated fiction — the stream of narrative paragraphs from actions involving the bond. A numeric level would be redundant and misleading.
-- **Implications**: Simplifies the model. Bond "strength" is emergent from play, not tracked numerically.
+- **Rationale**: The meaningful depth of a bond is captured by its accumulated fiction — the stream of narrative paragraphs from actions involving the bond.
+- **Implications**: Simplifies the model. Bond "strength" is emergent from play.
 
 ### Bond Stress Range and Degradation
 
 - **Decision**: Bond stress range is 0 to effective max (base 5, minus degradation count). At max stress: GM resets to 0, increments degradation, narrates consequence. At 0 effective max (5 degradations): GM handles narratively.
-- **Rationale**: Mirrors the character Stress/Trauma pattern at the bond level. Creates a consistent degradation mechanic across the system.
-- **Implications**: Bond model needs `stress` and `stress_degradations` fields. Effective max is computed.
+- **Rationale**: Mirrors the character Stress/Trauma pattern at the bond level.
+- **Implications**: Bond model needs `stress` and `stress_degradations` fields (PC bonds only).
 
 ### Bond Stress Sources
 
-- **Decision**: Bond stress comes from GM narrative actions and optionally from proposal bond use (+1 stress when GM decides the use strains the bond).
-- **Rationale**: GM retains control over when bonds are strained. The +1 per proposal use is a risk/reward tradeoff, but only when the GM deems it appropriate.
-- **Implications**: Proposal approval may include a "strain bond" flag or the GM applies stress as a separate action after approval.
+- **Decision**: Bond stress comes from GM narrative actions and optionally +1 when GM decides a proposal bond use strains it.
+- **Rationale**: GM retains control over when bonds are strained. Risk/reward tradeoff.
+- **Implications**: Proposal approval may include a "strain bond" flag.
 
 ### Bond Stress Healing
 
-- **Decision**: "Heal Bond Stress" downtime activity fully restores current bond stress to 0. Costs Free Time. Does not reverse degradations.
-- **Rationale**: Full heal keeps the downtime action simple and impactful. Degradation reversal is a separate GM-controlled action.
-- **Implications**: Downtime spec needs this activity. GM can separately reverse degradation via direct action.
+- **Decision**: "Maintain Bond" downtime activity fully restores current bond stress to 0. Costs 1 FT. Does not reverse degradations.
+- **Rationale**: Full heal keeps the downtime action simple and impactful.
+- **Implications**: GM can separately reverse degradation via direct action.
 
 ### Blank Bond Slots
 
-- **Decision**: Bond slots can be blank. Characters don't need all 7 bonds at creation.
-- **Rationale**: Mirrors trait slots. Allows bonds to form organically during play.
+- **Decision**: Bond slots can be blank. Characters don't need all 8 (PC) or 7 (NPC) bonds at creation.
+- **Rationale**: Allows bonds to form organically during play.
 - **Implications**: Bond setup is via GM direct action post-creation. Players fill bonds via "New Bond" downtime action.
 
 ### Bond CRUD Pattern
 
-- **Decision**: Same pattern as traits. GM creates bonds via direct action. Players replace/fill bonds via "New Bond" downtime action (costs Free Time, proposal workflow for GM approval).
-- **Rationale**: Consistent with the unified Trait/Bond architecture. All player-initiated changes go through proposals.
+- **Decision**: GM creates bonds via direct action. Players replace/fill bonds via "New Bond" downtime action (proposal workflow).
+- **Rationale**: All player-initiated changes go through proposals.
 - **Implications**: No dedicated bond CRUD endpoints for players.
-
-### Bonds as Trait Instances
-
-- **Decision**: Bonds are a type of Trait Instance in the unified architecture. They share the same instance model as Core/Role Traits but reference a game object (instead of a Trait Template) and use stress (instead of charges).
-- **Rationale**: Unifying the model reduces complexity. All three types (Core, Role, Bond) occupy slots on the character sheet, can be active or retired, and have event history streams.
-- **Implications**: Single instance table/model with a slot type discriminator. Bond-specific fields (stress, stress_degradations, target, is_trauma) may be nullable or in a subtype.
-
-### Trauma Creates New Instance
-
-- **Decision**: When Trauma occurs, the old bond retires to Past (is_active = false, full history preserved) and a new trauma instance is created in the slot. Fresh stress/degradation values.
-- **Rationale**: Preserves the narrative history of the original bond. The trauma is a distinct entity, not a mutation of the old bond.
-- **Implications**: "Past" section of the character sheet shows all retired bonds/traits with their event histories.
-
-### Trauma Fix
-
-- **Decision**: GM chooses what happens when fixing Trauma — can blank the slot, create a new bond, or anything else. No automatic restoration of the original bond.
-- **Rationale**: Flexibility for the GM. The original bond exists in Past for reference but the fiction may have moved on.
-- **Implications**: Fixing Trauma is a GM direct action. The trauma instance retires to Past, slot becomes blank (or GM fills it immediately).
 
 ### Polymorphic Targets
 
-- **Decision**: Bond targets can reference any game object type (PC, NPC, Group, Location, etc.).
-- **Rationale**: Relationships aren't limited to other characters — bonds with groups, locations, and NPCs are narratively important.
-- **Implications**: Requires a polymorphic reference pattern in the data model (target_type + target_id, or similar). Bond inherits name/description from target.
+- **Decision**: Bond targets can reference any Game Object type (Character, Group, Location).
+- **Rationale**: Relationships aren't limited to other characters.
+- **Implications**: Polymorphic reference via target_type + target_id. Bond inherits name/description from target.
 
-### Fixed Bond Slot Count
+### Bond Slot Counts
 
-- **Decision**: Characters have exactly 7 Bond slots.
-- **Rationale**: Fixed count ensures a consistent relationship web across characters.
-- **Implications**: Trauma can consume at most 7 slots. Character Stress max can decrease by at most 7 (from 9 to 2).
+- **Decision**: PCs have **8 bond slots** (mechanical). NPCs have **7 bond slots** (descriptive). The 8th PC slot accounts for the expected party Group bond.
+- **Rationale**: PCs need one more slot than NPCs because one slot is typically used for the party Group membership bond. NPCs don't need this expectation.
+- **Implications**: Trauma can consume at most 8 slots (PCs only). Character Stress max can decrease by at most 8 (from 9 to 1). See [character-core.md](character-core.md).
+
+### Character-Intermediary Traversal (renamed from NPC-Intermediary)
+
+- **Decision**: Both visibility and presence traversals use the same Character-intermediary rule: after a non-Character node (Group or Location), the next hop must go through a Character (PC or NPC). The first hop from any starting node can go to any type. PCs are valid intermediaries — richer than NPCs since PCs can connect to other Characters.
+- **Rationale**: Models real-world information and social flow. Characters (PCs and NPCs) are the social connective tissue. One algorithm for both uses simplifies implementation.
+- **Implications**: Traversal algorithm must track node types during hop expansion. See [feed.md](feed.md) for the authoritative visibility rules. Rename across all specs from "NPC-intermediary" to "Character-intermediary."
+
+### Soft-Deleted Excluded from Traversal
+
+- **Decision**: Soft-deleted Game Objects (`is_deleted = true`) are excluded from bond-graph traversal. Their bonds exist in the database but are dead ends during hop expansion.
+- **Rationale**: Deleted entities shouldn't influence who can see what or where someone appears to be present.
+- **Implications**: Traversal queries must filter `is_deleted = false` on intermediate nodes.
+
+### Bidirectional Bond Labels
+
+- **Decision**: Bidirectional bonds carry `source_label` and `target_label`, allowing each side its own perspective.
+- **Rationale**: Real relationships are often perceived differently by each party.
+- **Implications**: API returns the appropriate label based on viewing perspective.
+
+### Count-Based Slots (Not Indexed)
+
+- **Decision**: Bond slots are count-based, not indexed. The system enforces a maximum number of active bonds per owner type but assigns no fixed ordinal positions. Bonds are referenced by ID.
+- **Rationale**: Indexed slots add complexity with no gameplay benefit. Count-based is simpler and lets bonds be referenced by their unique ID.
+- **Implications**: Proposals reference bonds by `bond_id`, not `slot_index`. Display ordering is by creation time. The proposals spec needs updating — `slot_index` references should become `bond_id` or `retire_bond_id`.
+
+### Source-Owned Slot Accounting with Soft Target Limit
+
+- **Decision**: The source always consumes a slot (hard enforcement). Bidirectional bonds count against the target's slot limit as a soft warning — the GM can exceed it.
+- **Rationale**: One record, one hard constraint. Targets (especially NPCs) may be bonded to by many characters; a hard limit would be overly restrictive and require the GM to manage NPC slot counts.
+- **Implications**: NPCs can appear to have more bonds than their slot limit via inbound bidirectional bonds. The slot limit is a guide for the GM, not a hard cap on visibility.
+
+### Bidirectionality Default Rules
+
+- **Decision**: Character↔Character, Character↔Group, and Group↔Group bonds default to bidirectional. All Location-involved bonds default to directional. GM can override at creation.
+- **Rationale**: People and organizations have mutual relationships. Location associations are naturally one-way (a character is connected to a place, not vice versa — Locations have their own unlimited outbound bonds).
+- **Implications**: Auto-inferred from pairing type. `bidirectional` field is optional on creation.
+
+### No Duplicate Active Bonds
+
+- **Decision**: At most one active bond per (source, target) pair. System prevents creation of a second active bond to the same target.
+- **Rationale**: One bond per relationship. Different facets are captured in the bond's labels and description, not separate bonds.
+- **Implications**: Validation on bond creation. "New Bond" replaces the relationship if you want to change the target.
+
+### Slot Type Auto-Inferred
+
+- **Decision**: When creating a bond, the system auto-determines `slot_type` from the owner's type/detail_level and the target type. No GM input needed.
+- **Rationale**: The mapping is deterministic — there's no case where the GM would need to choose a different slot type.
+- **Implications**: Bond creation API doesn't expose `slot_type` as a field.
+
+### Inbound Bonds Merged in API
+
+- **Decision**: Bidirectional bonds appear in both the source's and target's bond lists with no owned/inbound distinction. The API normalizes perspective — the viewing entity sees their label.
+- **Rationale**: Simplest client experience. The bond is the same relationship from both sides.
+- **Implications**: Bond list endpoints return owned + inbound bidirectional bonds in one list. `source_label`/`target_label` are swapped based on viewer.
+
+### Active-Only Traversal
+
+- **Decision**: Only active bonds (`is_active = true`) participate in bond-graph traversal. Past/Retired bonds are excluded.
+- **Rationale**: Retired relationships shouldn't influence current visibility or presence.
+- **Implications**: Traversal queries must filter `is_active = true`.
+
+### Trauma Bonds Excluded from Traversal
+
+- **Decision**: Trauma bonds are explicitly excluded from bond-graph traversal — they are dead ends. They have no target and don't connect to the graph.
+- **Rationale**: Trauma represents a broken connection. It occupies a slot mechanically but shouldn't influence the social graph.
+- **Implications**: Traversal algorithm skips bonds where `is_trauma = true` (or equivalently, where `target_id` is null).
+
+### New Bond Proposal UX
+
+- **Decision**: Player specifies the target Game Object for "New Bond" downtime action. If at max active bond count, they must also specify `retire_bond_id` (which bond to retire). If under max, `retire_bond_id` is optional (fills a blank slot).
+- **Rationale**: Player-centric UX — "I want a bond to X" is the primary intent. Retirement is only required when at capacity.
+- **Implications**: Proposals spec needs `target_type`, `target_id`, and optional `retire_bond_id` in selections for `new_bond` action type.
 
 ---
 
 ## API Endpoints
 
-Bonds are sub-resources of Characters, managed via GM direct action and downtime proposals:
+### Bond Management (GM Actions)
 
-- `GET /api/v1/characters/{id}` — full sheet includes all bond slots (active, blank, trauma, and past/retired)
-- GM direct action: create/update/delete bonds on a character (standard GM bypass)
-- "New Bond" downtime action: submitted as a proposal via `POST /api/v1/proposals`
-- "Heal Bond Stress" downtime action: submitted as a proposal via `POST /api/v1/proposals`
+All bond creation, modification, and deactivation is handled via `POST /api/v1/gm/actions` with action types `create_bond`, `modify_bond`, and `retire_bond`. See [actions.md](actions.md) for the full GM action type catalog.
 
-No dedicated bond CRUD endpoints for players — all player-initiated bond changes go through proposals.
+Bond detail is returned inline on Game Object detail endpoints (e.g., `GET /api/v1/characters/{id}` includes all bonds).
+
+#### Bond Creation Fields (via `create_bond` GM action)
+
+| Field | Required | Default | Notes |
+|-------|----------|---------|-------|
+| `target_type` | Yes | — | `character`, `group`, or `location` |
+| `target_id` | Yes | — | ID of target Game Object |
+| `source_label` | No | `""` | Label from source's perspective |
+| `target_label` | No | `""` | Label from target's perspective (bidirectional only) |
+| `description` | No | `""` | Freeform context |
+| `bidirectional` | No | Auto-inferred | Char↔Char, Char↔Group, Group↔Group = true; Location-involved = false |
+
+`slot_type` is auto-inferred (see Slot Type Auto-Inference above). System validates: no duplicate active bond to the same target, source slot count within hard limit. If target is at capacity for a bidirectional bond, system returns a warning but allows creation.
+
+### Character Sheet Integration
+
+- `GET /api/v1/characters/{id}` — full sheet includes all bonds (active, trauma, and past/retired) plus bond-distance locations. Bidirectional inbound bonds are merged into the bond list with no distinction.
+
+### Player Actions (via Proposals)
+
+- **"New Bond"** downtime action: `POST /api/v1/proposals` — player specifies the target Game Object. If at max active bond count, must also specify `retire_bond_id` (which existing bond to retire to Past). If under max, `retire_bond_id` is optional.
+- **"Maintain Bond"** downtime action: `POST /api/v1/proposals` — reset bond stress to 0. Player specifies the bond by ID.
+
+No dedicated bond CRUD endpoints for players — all player-initiated bond changes go through proposals. Bonds are referenced by ID, not by slot index.
 
 ---
 
@@ -177,14 +452,22 @@ No dedicated bond CRUD endpoints for players — all player-initiated bond chang
 
 | Spec | Implication |
 |------|-------------|
-| [traits](traits.md) | 🔄 Unified Trait/Bond architecture: shared instance model, Trait Template catalog, `is_active` for Past section. Replaced traits also go to Past. |
-| [proposals](proposals.md) | Bond provides flat +1d. GM may optionally apply +1 bond stress on approval. Modifier stacking: max 1 Bond per proposal. |
-| [downtime](downtime.md) | Two bond-related downtime activities: "Heal Bond Stress" (full restore) and "New Bond" (replace/fill slot). Both cost Free Time. |
-| [game-objects](game-objects.md) | Bond targets reference game objects via polymorphic ref. Bond inherits name/description from target. |
-| [character-core](character-core.md) | Bonds are sub-entities of the Character sheet. Trauma occupies bond slots. Effective Stress max computed from trauma bond count. |
-| [events](events.md) | Bond stress changes, degradations, replacements, and trauma events are logged. Event history stream per bond instance. |
-| [architecture/data-model](../architecture/data-model.md) | 🔄 Unified Trait/Bond instance model. Trait Template catalog. Polymorphic refs for bond targets. |
+| [traits](traits.md) | Shares the unified `slots` table. Trait Template catalog for Core/Role traits. Group/Location traits are descriptive (no charges). |
+| [game-objects](game-objects.md) | Bond-distance presence defined here. game-objects.md references this spec. Group Holdings as a bond category. |
+| [character-core](character-core.md) | PCs have 8 Bond slots (mechanical). NPCs have 7 (descriptive). Trauma occupies bond slots (max 8). Character-to-Group bond = membership. |
+| [actions](actions.md) | ✅ **Updated 2026-03-07**: Count-based bond model propagated. `new_bond` uses `{target_type, target_id, retire_bond_id?}`. Bond provides flat +1d. GM may apply +1 bond stress on approval via `bond_strained`. |
+| [downtime](downtime.md) | "Maintain Bond" and "New Bond" downtime activities. Both cost 1 FT. New Bond now specifies target + optional retire_bond_id. |
+| [feed](feed.md) | ✅ **Updated 2026-03-10**: Renamed "NPC-intermediary" to "Character-intermediary" throughout. PCs are valid intermediaries noted. |
+| [events](events.md) | Bond changes logged as events. Visibility references feed.md. |
+| [glossary](../glossary.md) | ✅ **Updated 2026-03-07**: Character-intermediary rename done. Action/GM Action/Player Direct Action terms added. |
+| [architecture/data-model](../architecture/data-model.md) | Unified `slots` table with 9 slot_types. `pc_bond` (8 max), `npc_bond` (7 max). Nullable mechanical fields. See [data-model.md](../architecture/data-model.md). |
 
 ---
 
-_Last updated: 2026-02-26_
+## Open Questions
+
+None — all open questions resolved in 2026-03-07 interrogation.
+
+---
+
+_Last updated: 2026-03-14 (added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior)_

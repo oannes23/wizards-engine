@@ -1,6 +1,6 @@
 # System Overview
 
-**Status**: 🟡 In progress
+**Status**: 🟢 Complete
 **Last verified**: —
 
 ---
@@ -32,6 +32,12 @@ This is **not** a dice roller or virtual tabletop — all rolling happens at the
 - **Decision**: API-first REST backend. All endpoints under `/api/v1/` with standard CRUD patterns and action-specific sub-routes.
 - **Rationale**: Enables a decoupled web UI and potential future clients (bots, scripts, etc.).
 - **Implications**: The web UI is a separate concern that consumes the API.
+
+### Deferred Narrative Resolution
+
+- **Decision**: Game state is intentionally left ambiguous until narratively observed. Rather than tracking precise "current state" for every game object, the system records what is known and defers resolution to the moment it matters in play.
+- **Rationale**: Matches how narrative TTRPGs actually work — the GM doesn't decide where an NPC is until a player goes looking for them. Forcing precise state creates busywork and false precision.
+- **Implications**: Character presence at Locations is derived via Bond-Distance Presence (computed from the bond graph — 1-hop = commonly present, 2-hop = often present, 3-hop = sometimes present) rather than a pinned position. Group project outcomes follow Deferred Narrative Resolution — clocks track mechanical progress, outcomes are defined retroactively when the clock completes. This principle should guide future design decisions — prefer "known facts + GM resolution" over "precise simulation."
 
 ---
 
@@ -70,7 +76,7 @@ This is **not** a dice roller or virtual tabletop — all rolling happens at the
 - **Complex auth** — no OAuth, no external identity providers
 - **Multi-campaign support** — one database, one campaign
 - **Generic RPG engine** — no DSL, no configurable rule systems
-- **Real-time features** — no WebSockets, no live updates (polling or manual refresh is fine)
+- **Real-time features** — deferred. Polling/manual refresh for MVP. SSE is a possible future addition if players find stale data frustrating. Architecture should not preclude it.
 
 ---
 
@@ -104,12 +110,38 @@ This is **not** a dice roller or virtual tabletop — all rolling happens at the
 
 ---
 
-## Open Questions
+## Deployment & Serving
 
-1. What is the deployment model? (local-only, self-hosted VPS, cloud?)
-2. How is the web UI served? (same process, separate static hosting?)
-3. Should there be any real-time notification mechanism (e.g., SSE for proposal status)?
+### Deployment Model
+
+- **Decision**: Self-hosted VPS. Single process serving both API and frontend. SQLite database file on disk.
+- **Rationale**: Simple, cheap, full control. No cloud vendor dependency. SQLite is ideal for single-process deployment.
+- **Implications**: Need a reverse proxy (e.g., Caddy or Nginx) for TLS termination. Process management via systemd or Docker. Backup strategy needed for the SQLite file. Specific tooling deferred to implementation.
+
+### Web UI Serving
+
+- **Decision**: FastAPI serves both the REST API (under `/api/v1/`) and static frontend files. Single deployment artifact.
+- **Rationale**: Simplest possible setup for a small project. No CORS configuration, no separate hosting, one thing to deploy.
+- **Implications**: Frontend build output is bundled with the backend. Static file serving via FastAPI's `StaticFiles` mount.
+
+### API Pagination
+
+- **Decision**: ULID cursor-based pagination. All list endpoints support `?after=<ulid>&limit=N` (default limit TBD, likely 50). Response includes a `next_cursor` field when more results exist.
+- **Rationale**: Natural fit — ULIDs are already sortable by creation time. No offset drift issues. Consistent across all endpoints.
+- **Implications**: All list endpoints return a standard paginated response shape. API conventions doc (to be created) will define the exact response envelope.
+
+### API Conventions
+
+- **Decision**: A separate `spec/architecture/api-conventions.md` document will define error response format, HTTP status code conventions, validation error shape, response envelopes, and naming conventions.
+- **Rationale**: These cross-cutting concerns deserve their own spec rather than cluttering the system overview.
+- **Implications**: New spec document needed. Should be written before implementation begins.
 
 ---
 
-_Last updated: 2026-02-24_
+## Open Questions
+
+All resolved.
+
+---
+
+_Last updated: 2026-03-05 (interrogation — resolved all 5 open questions: deployment model, UI serving, pagination, real-time, stale reference fix)_

@@ -1,10 +1,10 @@
 # Events — Domain Specification
 
 **Status**: 🟢 Complete
-**Last interrogated**: 2026-03-01
+**Last interrogated**: 2026-03-12
 **Last verified**: —
-**Depends on**: [game-objects](game-objects.md) (bond graph for visibility)
-**Depended on by**: [proposals](proposals.md), [downtime](downtime.md)
+**Depends on**: [game-objects](game-objects.md), [bonds](bonds.md) (bond graph), [feed](feed.md) (visibility model)
+**Depended on by**: [actions](actions.md), [downtime](downtime.md)
 
 ---
 
@@ -12,7 +12,7 @@
 
 The event log is an append-only record of every state change in the system. Events provide history, audit trail, activity feed, and session timelines. State is the source of truth — events are the history.
 
-A distinctive feature is **bond-distance visibility**: events are visible to players based on their character's proximity in the bond graph, creating an emergent information network where you learn about things you're connected to.
+Events are visible to players based on their character's proximity in the bond graph, using the **unified visibility model** defined in [feed.md](feed.md). This creates an emergent information network where you learn about things you're connected to.
 
 ---
 
@@ -20,97 +20,140 @@ A distinctive feature is **bond-distance visibility**: events are visible to pla
 
 ### Event Schema
 
-Every mutation to game state produces an event record:
+Every mutation to game state produces an event record. See [data-model.md](../architecture/data-model.md) for the complete physical schema.
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `id` | string | yes | Primary key |
+| `id` | ULID | yes | Primary key (time-sortable — provides sort order) |
 | `type` | string | yes | Convention-based: `{domain}.{action}` (e.g., `character.stress_changed`, `clock.advanced`) |
-| `actor` | JSON | yes | `{type: 'player'\|'gm'\|'system', id?: string}` — who caused the change |
-| `targets` | list of refs | yes | Game objects affected. First element is primary. All affected objects listed. |
-| `changes` | JSON | yes | Keyed before/after pairs: `{field: {before: X, after: Y}}` |
-| `created` | JSON list | no | Objects created by this event: `[{type, id, ...snapshot}]` |
-| `deleted` | JSON list | no | Objects deleted (soft): `[{type, id}]` |
-| `narrative` | text | no | Describes the fiction. Source: GM (proposals/direct actions), system (auto-generated for lifecycle events), or player (direct actions like Effect Use). |
-| `proposal_id` | ref | no | Link to the proposal that triggered this event (when applicable) |
-| `session_id` | ref | no | Auto-captured from Active session. Override-capable. Null when no session is Active. |
-| `visibility` | string | yes | One of: `global`, `gm_only`, `private`, `bonded`, `familiar`, `public`. Default per event type, GM can override. |
-| `metadata` | JSON | no | Freeform context: clock annotations (`notes`, `related_events`, `related_objects`), or any per-event data |
-| `timestamp` | datetime | yes | When the event was created |
+| `actor_type` | string | yes | `player`, `gm`, or `system` |
+| `actor_id` | ref → users | no | FK to users table. Null for `system` actor. |
+| `changes` | JSON | yes | Fully qualified before/after pairs: `{type.id.field: {before: X, after: Y}}` |
+| `created_objects` | JSON | no | List of `{type, id}` for newly created objects |
+| `deleted_objects` | JSON | no | List of `{type, id}` for soft-deleted objects |
+| `narrative` | text | no | From GM, player, or system |
+| `visibility` | string | yes | One of 7 levels: `silent`, `gm_only`, `private`, `bonded`, `familiar`, `public`, `global`. See [feed.md](feed.md). |
+| `proposal_id` | ref → proposals | no | Back-ref for proposal-originated events |
+| `parent_event_id` | ref → events | no | For rider events — links to the approval event |
+| `session_id` | ref → sessions | no | Auto-captured from Active session. Rider events inherit from parent. |
+| `metadata` | JSON | no | Freeform: clock annotations, event links, extensions |
+| `created_at` | datetime | yes | When the event was created (auto) |
+
+**No separate `timestamp` column.** The ULID `id` provides time-sortable ordering. `created_at` is the only timestamp — events are created in real-time, so there's no meaningful distinction between "when it happened" and "when the row was inserted."
+
+**Targets** are stored in the `event_targets` association table (not inline on the event row):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `event_id` | ref → events | Composite PK |
+| `target_type` | string | `character`, `group`, or `location` |
+| `target_id` | string | ID of affected Game Object |
+| `is_primary` | boolean | First/main target = true |
 
 ### Changes Field
 
-The `changes` field uses **keyed before/after pairs**:
+The `changes` field uses **fully qualified before/after pairs** with the convention `{type}.{id}.{field}`:
 
 ```json
 {
-  "character.gnosis": {"before": 15, "after": 5},
-  "character.stress": {"before": 2, "after": 4},
-  "trait_42.charges": {"before": 3, "after": 2},
-  "bond_7.stress": {"before": 1, "after": 2}
+  "character.01HXYZ.gnosis": {"op": "meter.delta", "before": 15, "after": 5},
+  "character.01HXYZ.stress": {"op": "meter.delta", "before": 2, "after": 4},
+  "slot.01HABC.charge": {"op": "meter.delta", "before": 3, "after": 2},
+  "slot.01HDEF.stress": {"op": "meter.delta", "before": 1, "after": 2}
 }
 ```
 
-- Keys use dotted paths to identify the field: `{object_type_or_id}.{field_name}`
-- Values are `{before, after}` pairs — enables inversion for future undo
+**Key convention**: `{type}.{id}.{field}` where `type` matches the **database table name** (singular):
+- Game Objects: `character`, `group`, `location`
+- System Entities: `clock`, `session`
+- Sub-entities: `slot` (all traits and bonds), `magic_effect`
+- Workflow: `proposal`
+
+All keys are fully qualified — no shorthand, no ambiguity. Every key includes the entity type, its ULID, and the field name.
+
+- Values are `{op, before, after}` — the `op` tag classifies the mutation; `before`/`after` enable inversion for future undo
 - For compound changes (e.g., a proposal approval affecting multiple objects), all changes go in a single event
-- New objects go in the `created` list, not in `changes`
-- Soft-deleted objects go in the `deleted` list
+- New objects go in the `created_objects` list, not in `changes`
+- Soft-deleted objects go in the `deleted_objects` list
+
+### Operation Types
+
+Each entry in the `changes` dict carries an `op` field that classifies the mutation. Three operation types:
+
+| Op | When to use | Example |
+|----|-------------|---------|
+| `field.set` | Non-numeric or unbounded fields (name, status, is_active, target_id) | `"slot.01HABC.is_active": {"op": "field.set", "before": true, "after": false}` |
+| `meter.delta` | Bounded numeric adjusted by a signed amount (stress +2, charge -1, progress +1) | `"character.01HXYZ.stress": {"op": "meter.delta", "before": 2, "after": 4}` |
+| `meter.set` | Bounded numeric set to an absolute value (stress reset to 0, bond stress reset via Maintain Bond) | `"character.01HXYZ.stress": {"op": "meter.set", "before": 7, "after": 0}` |
+
+The `op` tag is set by the Python code that creates the event — it is not caller-supplied. It makes the event log queryable by mutation kind (e.g., "show me all meter changes") without introducing a DSL.
+
+`created_objects` / `deleted_objects` already cover object lifecycle — no `op` tag needed there.
 
 ### Compound Changes
 
 **One event per state-changing action.** A single proposal approval that modifies Gnosis, creates a Magic Effect, spends a trait charge, and strains a bond produces one event with:
 - `changes`: all field mutations across all affected objects
-- `created`: any new objects (Magic Effects, Bond instances, etc.)
-- `deleted`: any soft-deleted objects (retired traits, etc.)
-- `targets`: all affected game objects listed
+- `created_objects`: any new objects (Magic Effects, Bond instances, etc.)
+- `deleted_objects`: any soft-deleted objects (retired traits, etc.)
+- Targets in `event_targets`: all affected game objects listed
 
-This matches the "one event per approval" decision from the proposals spec.
+This matches the "one event per approval" decision from the actions spec.
+
+**Exception**: Session start is a composite action that produces **3 separate events** (see Session Start Decomposition decision below).
 
 ### Event Types
 
-Convention-based strings following `{domain}.{action}` naming:
+Convention-based strings following `{domain}.{action}` naming. NPCs use `character.*` types (NPCs are Characters with `detail_level = simplified`):
 
 | Domain | Example Types |
 |--------|--------------|
 | `proposal` | `proposal.approved`, `proposal.rejected`, `proposal.revised` |
-| `character` | `character.stress_changed`, `character.gnosis_changed`, `character.meter_updated` |
+| `character` | `character.created`, `character.updated`, `character.deleted`, `character.stress_changed`, `character.gnosis_changed`, `character.meter_updated` |
 | `trait` | `trait.charge_spent`, `trait.recharged`, `trait.retired`, `trait.created` |
 | `bond` | `bond.stress_changed`, `bond.degraded`, `bond.maintained`, `bond.retired`, `bond.created` |
 | `magic` | `magic.effect_created`, `magic.effect_used`, `magic.effect_retired`, `magic.effect_charged` |
-| `clock` | `clock.advanced`, `clock.completed`, `clock.created`, `clock.modified` |
-| `session` | `session.started`, `session.ended`, `session.participant_added`, `session.participant_removed` |
-| `npc` | `npc.created`, `npc.updated`, `npc.deleted` |
+| `clock` | `clock.advanced`, `clock.completed`, `clock.created`, `clock.modified`, `clock.resolve_generated` |
+| `session` | `session.started`, `session.ended`, `session.ft_distributed`, `session.plot_distributed`, `session.participant_added`, `session.participant_removed` |
 | `group` | `group.created`, `group.updated`, `group.bond_changed` |
 | `location` | `location.created`, `location.updated` |
-| `story` | `story.created`, `story.updated`, `story.entry_added` |
+| `story` | `story.created`, `story.updated` |
 | `player` | `player.find_time` |
-| `gm` | `gm.direct_action` |
 
 No category field — the domain prefix provides natural grouping. New types can be added without schema changes.
 
-### Actor Field
+**GM actions reuse domain event types** — e.g., a GM changing a character's stress produces a `character.stress_changed` event, not a `gm.direct_action` event. The `actor_type: "gm"` field distinguishes GM-initiated events from player-initiated ones. See [actions.md](actions.md) for the full GM action type catalog.
 
-Identifies who caused the event:
+**Story entries do not produce events.** Direct story entry creation by players/GM appears in the feed as a `story_entry` feed item — no backing event. The `work_on_project` downtime action produces a `proposal.approved` event (FT deducted) and separately adds a story entry. `story.created` and `story.updated` are events for GM Story object mutations only.
 
-```json
-{"type": "player", "id": "player_42"}   // Player action (proposals, direct actions)
-{"type": "gm", "id": "gm_1"}            // GM action (approvals, direct actions)
-{"type": "system"}                        // Automated (FT distribution, clock ticks)
-```
+**User-level actions do not produce events.** Profile changes (display name), starring/unstarring, and other preference changes are not game state and do not generate events.
+
+### Rider Events
+
+When the GM approves a proposal, they can optionally attach a **rider event** — a bundled direct-action event that fires atomically in the same transaction. Rider events are full Event rows with:
+- `parent_event_id` set to the approval event's ID
+- `session_id` inherited from the parent event (always the same session)
+- Their own targets, changes, narrative, and visibility
+- Same schema as any event
+
+**Use cases:**
+- Side effects alongside approval: "your skill check succeeds AND the clock advances +2 AND this NPC reacts"
+- Clock resolution: GM fills in the `resolve_clock` proposal and attaches a rider event with world state changes
+
+See [data-model.md](../architecture/data-model.md) for the `parent_event_id` column.
 
 ### Narrative Field
 
 The narrative field is optional and comes from different sources:
 
-- **Proposal approvals**: GM's `gm_narrative` from the approval payload
+- **Proposal approvals**: Player-written narrative from submission (GM can edit)
 - **GM direct actions**: GM provides narrative text
 - **Player direct actions**: Player provides narrative (e.g., Magic Effect use)
-- **System actions**: Auto-generated descriptive text (e.g., "Session 5 started. Free Time distributed to 4 participants.")
+- **System actions**: Auto-generated descriptive text (e.g., "Session 5 started.")
 
 ### Session Auto-Capture
 
-Events generated while a Session is Active are automatically tagged with that session's ID (decided in [game-objects](game-objects.md)). Callers can override with a specific `session_id`. When no session is Active, `session_id` is null.
+Events generated while a Session is Active are automatically tagged with that session's ID (decided in [game-objects](game-objects.md)). Callers can override with a specific `session_id`. When no session is Active, `session_id` is null. Rider events always inherit `session_id` from their parent event.
 
 ### Metadata Field
 
@@ -122,51 +165,44 @@ A freeform JSON field for per-event context. Primary use cases:
 
 ---
 
-## Bond-Distance Visibility
+## Visibility
 
-Events are visible to players based on their character's proximity in the bond graph. This creates an emergent information network — you learn about things you're connected to.
+Event visibility uses the **unified 7-level visibility model** defined in [feed.md](feed.md). This section summarizes event-specific behavior; feed.md is authoritative for the model itself.
 
-### Visibility Levels
+### Visibility Levels (Summary)
 
 | Level | Who sees it | Hop distance |
 |-------|------------|--------------|
-| `global` | All players | — |
-| `gm_only` | GM only | — |
-| `private` | Actor + owner(s) of target object(s) | — |
-| `bonded` | Anyone with a direct bond to any target | 1 hop |
-| `familiar` | Anyone within 2 hops via bond graph | 2 hops |
-| `public` | Anyone within 3 hops via bond graph | 3 hops |
+| `silent` | GM only (silent feed) | — |
+| `gm_only` | GM only (normal feed) | — |
+| `private` | Owner-scoped + GM | 0-hop |
+| `bonded` | Direct bond to any target + GM | 1-hop |
+| `familiar` | 2-hop via Character-intermediary traversal + GM | 2-hop |
+| `public` | 3-hop via Character-intermediary traversal + GM | 3-hop |
+| `global` | All players + GM | All |
 
-**Default**: `bonded` for most events. Each event type has a default visibility level.
+**Traversal rule**: `familiar` and `public` use the Character-intermediary traversal — after a non-Character node (Group or Location), the next hop must go through a Character (PC or NPC). PCs are valid intermediaries. See [feed.md](feed.md) and [bonds.md](bonds.md) for details.
 
-### Bond Graph
-
-The visibility graph includes **all bonds**:
-- **PC Bonds** (Trait Instances on character sheets)
-- **Lightweight bonds** (on NPCs, Groups, Locations — see [game-objects](game-objects.md))
-
-The unified bond graph creates a social network. A PC bonded to an NPC, where that NPC is bonded to a Group, creates a 2-hop path — the PC would see `familiar`-level events about that Group.
-
-### Hop Traversal
-
-- **1-hop (bonded)**: Player's character has a direct Bond to any of the event's `targets`. Also includes: the character *is* one of the targets.
-- **2-hop (familiar)**: Player's character has a Bond to entity X, and entity X has a bond to any of the event's `targets`.
-- **3-hop (public)**: Three bond links between the character and any target.
+**Computed on read** (no caching). SQLite handles it for 4–6 players. Add caching only if performance becomes an issue.
 
 ### Defaults Per Event Type
 
 | Type pattern | Default visibility | Rationale |
 |-------------|-------------------|-----------|
-| `session.*` | Matches target | Session events inherit from target's proximity |
+| `session.started`, `session.ended` | `global` | All players see session lifecycle |
+| `session.ft_distributed` | `silent` | Batch FT calculation is bookkeeping |
+| `session.plot_distributed` | `silent` | Batch Plot awards are bookkeeping |
+| `clock.resolve_generated` | `silent` | Auto-proposal creation is system plumbing |
 | `proposal.approved` | `bonded` | You hear about actions involving your connections |
 | `proposal.rejected` | `private` | Only the proposer and GM see rejections |
+| `proposal.revised` | `private` | Only the proposer and GM see revisions |
 | `character.*` | `bonded` | Character changes visible to bonded entities |
-| `clock.*` | `bonded` | Clock changes visible to entities bonded to the clock/group |
-| `npc.*`, `group.*`, `location.*` | `bonded` | World object changes visible to bonded entities |
+| `clock.*` (except `resolve_generated`) | `bonded` | Clock changes visible to entities bonded to the clock's associated object |
+| `group.*`, `location.*` | `bonded` | World object changes visible to bonded entities |
 | `magic.effect_used` | `bonded` | Magic use is observable by connections |
-| `gm.direct_action` | `gm_only` | GM corrections are private by default |
+| `story.*` | `bonded` | Story object mutations visible to bonded entities |
+| GM-initiated domain events | Per action type default | GM actions reuse domain event types (e.g., `character.stress_changed`) with `actor_type: "gm"`. Default visibility per action type — see [actions.md](actions.md). |
 | `player.find_time` | `private` | Resource conversion is personal |
-| System lifecycle events | Matches target | Inherit from affected object's proximity |
 
 ### GM Override
 
@@ -174,12 +210,6 @@ The GM can change any event's visibility after creation. This allows:
 - Making a secret Group event `gm_only` to prevent spoilers
 - Elevating a private event to `global` for dramatic reveals
 - Adjusting visibility after the fact as the narrative evolves
-
-### Caching
-
-Visibility is **pre-computed and cached** per character. The cache is invalidated when bonds change (created, retired, or modified). This avoids expensive graph traversal on every event query.
-
-Implementation note: The cache maps each character to the set of game objects within 1, 2, and 3 hops. When querying events, the system checks if any of the event's targets fall within the character's cached hop sets.
 
 ---
 
@@ -194,12 +224,14 @@ Exception: `visibility` is the one field the GM can change post-creation. This i
 ## Event Sources
 
 Events are created by:
-- **Approved proposals**: All mechanical consequences of approval produce a single event
-- **Rejected proposals**: A `proposal.rejected` event is created
-- **Revised proposals**: A `proposal.revised` event is created
+- **Approved proposals**: All mechanical consequences of approval produce a single event. Optionally includes a rider event.
+- **Rejected proposals**: A `proposal.rejected` event is created (private visibility)
+- **Revised proposals**: A `proposal.revised` event is created (private visibility)
 - **GM direct actions**: Any GM state change produces an event
 - **Player direct actions**: Find Time, Magic Effect use/retirement produce events
-- **System actions**: Session start (FT/Plot distribution), session end, clock completions
+- **Session start**: Produces 3 separate events — `session.started` (global), `session.ft_distributed` (silent), `session.plot_distributed` (silent)
+- **Session end**: Produces a `session.ended` event (global)
+- **Clock completion**: System detects completion, produces `clock.completed` event (bonded) and auto-generates a `resolve_clock` proposal with a `clock.resolve_generated` event (silent)
 
 Events are never created directly via the API — they are always a side-effect of state changes.
 
@@ -207,17 +239,62 @@ Events are never created directly via the API — they are always a side-effect 
 
 ## Uses
 
-- **Activity feed**: Recent events filtered by bond-distance visibility per player
+- **Activity feed**: Events merged with Story entries into the unified Feed, visibility-filtered per player. See [feed.md](feed.md).
 - **Session timeline**: Events filtered by `session_id` — reconstructs what happened during a session
-- **Character history**: Events filtered by `targets` containing the character
-- **Game object history**: Events filtered by `targets` for any game object (NPC, Group, Clock, etc.)
-- **Audit trail**: Full unfiltered event log (GM only)
+- **Character history**: Events filtered by `event_targets` containing the character
+- **Game object history**: Events filtered by `event_targets` for any game object
+- **Audit trail**: Full unfiltered event log (GM only), including `silent` events via the silent feed endpoint
+- **Low-level events API**: Events-only endpoint (`GET /api/v1/events`) for programmatic access, GM audit, and debugging — separate from the feed endpoints which merge events with story entries
 
 ### No System Undo for MVP
 
 Undo is deferred to a future version. The GM corrects mistakes via direct actions, which produce their own events. The event log shows the full history, including corrections.
 
 The `changes` field with before/after values preserves the information needed to implement undo later (by applying the inverse).
+
+---
+
+## Meter Boundary Patterns
+
+Several meters have boundary behaviors — side effects that fire when a meter hits its min or max. These are hardcoded in Python (not a generic trigger system) and documented here as a cross-referenced catalog.
+
+### The `clamped` Annotation
+
+When a meter operation hits a boundary and the actual delta differs from the requested delta, or when the boundary triggers a side effect, the change entry gains `"clamped": true`:
+
+```json
+{
+  "character.01HXYZ.stress": {"op": "meter.delta", "before": 7, "after": 8, "clamped": true}
+}
+```
+
+The `clamped` flag is informational — Python code handles all boundary logic. It signals to consumers that the change was constrained or triggered additional effects.
+
+### Boundary Catalog
+
+| Meter | Boundary | Behavior | Spec |
+|-------|----------|----------|------|
+| Character Stress | Max (`9 - trauma_count`) | **Trauma**: chosen bond retired, trauma bond created, stress reset to 0 | [character-core.md](character-core.md) |
+| Bond Stress (PC) | Max (`5 - degradations`) | Reset to 0, `stress_degradations` incremented by 1 | [bonds.md](bonds.md) |
+| Free Time | Max 20 | Excess from Time Now delta lost (clamped) | [downtime.md](downtime.md) |
+| Plot | Exceeds 5 | Clamped to 5 at Session End | [downtime.md](downtime.md) |
+| Clock Progress | `>= segments` | Auto-generates `resolve_clock` proposal (one per clock, ever) | [game-objects.md](game-objects.md) |
+
+### Compound Consequences
+
+When a boundary triggers additional mutations, all changes are recorded within the **same event** (preserving the "one event per action" rule). The canonical example is **Trauma**:
+
+A stress increase that hits max produces one event containing:
+- The stress delta (`meter.delta`, `clamped: true`)
+- The old bond retirement (`deleted_objects`)
+- The new trauma bond creation (`created_objects`)
+- The stress reset to 0 (`meter.set`)
+
+All fields within a single event — no separate "boundary triggered" event.
+
+### No Trigger System
+
+Boundary behaviors are hardcoded Python functions, not a configurable trigger engine. This catalog documents what the code does — it is not configuration. This reinforces the project's core principle: **no DSL, all game logic in Python**.
 
 ---
 
@@ -235,17 +312,41 @@ The `changes` field with before/after values preserves the information needed to
 - **Rationale**: Ensures events are accurate — every event corresponds to a real state change.
 - **Implications**: Event creation is internal to the state-change handlers. The events API is read-only (except GM visibility override).
 
-### Keyed Before/After Changes
+### Fully Qualified Changes Keys
 
-- **Decision**: The `changes` field uses keyed before/after pairs: `{field: {before: X, after: Y}}`. Keys use dotted paths for cross-object fields. Separate `created` and `deleted` lists for object lifecycle.
-- **Rationale**: Before/after is the most readable format. Enables future undo (apply inverse). Dotted paths handle compound changes across multiple objects. Separate lists for creations/deletions keep the schema clean.
-- **Implications**: State-change handlers must capture before-state before mutation. The changes JSON can be large for compound events.
+- **Decision**: The `changes` field uses fully qualified keys: `{type}.{id}.{field}` where `type` is the database table name (singular). Examples: `character.01HXYZ.stress`, `slot.01HABC.charge`, `clock.01HDEF.progress`, `magic_effect.01HGHI.charges_current`. Each value carries `{op, before, after}` plus an optional `clamped` flag (see Operation Type Tags and Meter Boundary Annotations). Separate `created_objects` and `deleted_objects` lists for object lifecycle.
+- **Rationale**: Fully qualified keys are unambiguous — no special-casing for primary targets vs secondary objects. Table names are what implementers already know. Before/after pairs enable future undo. The `op` tag makes the log queryable by mutation kind.
+- **Implications**: State-change handlers must capture before-state before mutation and set the appropriate `op` tag. All keys include the entity's ULID. The changes JSON can be large for compound events.
+
+### Operation Type Tags
+
+- **Decision**: Each entry in the `changes` dict carries an `op` field: `field.set`, `meter.delta`, or `meter.set`. Set by the Python code creating the event.
+- **Rationale**: Makes the event log queryable by mutation kind ("show me all meter changes") without introducing a DSL. Three tags cover all current mutations: non-numeric/unbounded sets, bounded numeric deltas, and absolute meter resets.
+- **Implications**: State-change handlers must classify each mutation. `op` is part of the stored JSON value. No impact on existing key convention or object lifecycle patterns.
+
+### Meter Boundary Annotations
+
+- **Decision**: When a meter operation hits a boundary (actual delta differs from requested, or boundary triggers a side effect), the change entry gains `"clamped": true`.
+- **Rationale**: Consumers can identify boundary-triggered changes without re-deriving meter limits. Informational only — Python code handles all boundary logic. Keeps the event log self-describing.
+- **Implications**: `clamped` is an optional boolean on change entries. Only present when true. Does not affect event structure or visibility.
+
+### Boundary Behaviors Are Hardcoded
+
+- **Decision**: All meter boundary behaviors (Trauma on max stress, bond degradation on max bond stress, clock auto-proposal on completion, Plot clamp at Session End, FT cap) are hardcoded in Python. No generic trigger or rule engine.
+- **Rationale**: Reinforces the project's core principle: no DSL, all game logic in Python. The boundary catalog in this spec documents what the code does — it is not configuration for a trigger system.
+- **Implications**: Adding a new boundary behavior requires a code change, not a data entry. The catalog in the Meter Boundary Patterns section must be kept in sync with implementation.
 
 ### One Event Per Action
 
-- **Decision**: Each state-changing action produces exactly one event, even if it affects multiple game objects. Compound changes go into a single event's `changes`, `created`, and `deleted` fields.
-- **Rationale**: Clean event log. One action = one event. Avoids noisy multi-event patterns. Matches the "one event per approval" from proposals spec.
-- **Implications**: Events can be large for complex actions (e.g., magic proposals with sacrifice + effect creation + trait charge + bond strain).
+- **Decision**: Each state-changing action produces exactly one event, even if it affects multiple game objects. Compound changes go into a single event's `changes`, `created_objects`, and `deleted_objects` fields. Rider events are the exception — they're separate rows linked via `parent_event_id`.
+- **Rationale**: Clean event log. One action = one event. Avoids noisy multi-event patterns. Rider events need independent targets and visibility.
+- **Implications**: Events can be large for complex actions. Rider events are created in the same transaction.
+
+### Session Start Decomposition
+
+- **Decision**: Session start is a composite action that produces **3 separate events**: `session.started` (global, session status change), `session.ft_distributed` (silent, all character FT changes), `session.plot_distributed` (silent, all character Plot changes).
+- **Rationale**: Separates the visible session lifecycle event from silent bookkeeping. Players see "Session started" without the noise of individual FT/Plot calculations. The GM can audit resource distribution via the silent feed. Different visibility levels require separate events.
+- **Implications**: Exception to the one-event-per-action rule. Session start handler creates 3 events in one transaction. FT/Plot distribution events can have large `changes` payloads (one entry per participating character).
 
 ### Convention-Based Event Types
 
@@ -253,11 +354,54 @@ The `changes` field with before/after values preserves the information needed to
 - **Rationale**: Extensible without code changes. The domain prefix provides natural grouping for filtering. New event types can be added as new features are built.
 - **Implications**: No compile-time type safety for event types. Naming conventions must be documented and followed. Filtering uses string prefix matching.
 
-### No Category Field
+### Unified Character Event Types
 
-- **Decision**: No separate category field. The domain prefix in the type string (`character.*`, `clock.*`, `session.*`) provides natural grouping.
-- **Rationale**: A category field would duplicate information already in the type string. The prefix convention is sufficient for filtering.
-- **Implications**: UI filtering extracts the domain from the type string.
+- **Decision**: NPCs use `character.*` event types, not separate `npc.*` types. NPCs are Characters with `detail_level = simplified`.
+- **Rationale**: Consistent with the unified Character model. The event's target Game Object tells you the detail_level if needed.
+- **Implications**: No `npc.*` event type prefix. Filter by target's `detail_level` if NPC-specific queries are needed.
+
+### Story Entries Are Not Events
+
+- **Decision**: Direct story entry creation (by players or GM) does not produce an event. Story entries appear directly in the feed as `story_entry` feed items. Only Story object-level mutations (`story.created`, `story.updated`) produce events. The `work_on_project` downtime action produces a `proposal.approved` event (mechanical: FT deducted) and separately creates a story entry.
+- **Rationale**: Story entries are their own feed item type — creating an event for each would duplicate content in the feed. The entry itself is the narrative content; the event would be redundant.
+- **Implications**: No `story.entry_added` event type. Story entries and events are parallel feed item types merged in the feed query.
+
+### No User-Level Events
+
+- **Decision**: User-level actions (profile changes, starring/unstarring) do not produce events. Only game state changes are recorded in the event log.
+- **Rationale**: User preferences and profile data are not game state. The user record itself tracks current state. Keeping the event log focused on game state maintains its value as a game history.
+- **Implications**: No `user.*` event type prefix.
+
+### Workflow Events
+
+- **Decision**: Proposal rejection and revision produce events (`proposal.rejected`, `proposal.revised`) with `private` visibility.
+- **Rationale**: Rejection is a GM decision worth recording. Revision is a player action that changes the proposal. Both are useful audit trail for the proposer and GM. Low noise since they're private.
+- **Implications**: Proposal status changes create events even though they don't change game state. These are workflow events, not game-state events.
+
+### Silent Event Defaults
+
+- **Decision**: Three event types default to `silent` visibility: `session.ft_distributed`, `session.plot_distributed`, and `clock.resolve_generated`. All other event types default to a visible level.
+- **Rationale**: These are mechanical bookkeeping that clutters feeds without narrative value. Players see the effects (updated meters, pending proposals) without the plumbing. The GM can audit via the silent feed.
+- **Implications**: Event type definitions must specify default visibility. Silent events only appear in the GM's dedicated silent feed endpoint.
+
+### Physical Schema Alignment
+
+- **Decision**: The event schema in this spec aligns with data-model.md: `actor_type`/`actor_id` as separate columns, targets in an `event_targets` association table, `parent_event_id` for rider events. No separate `timestamp` column — `created_at` is the only timestamp, with ULID providing sort order.
+- **Rationale**: One source of truth. The domain spec should match what's actually implemented. Events are created in real-time with no backdating, so a separate `timestamp` adds complexity without value.
+- **Implications**: See [data-model.md](../architecture/data-model.md) for the complete column definitions. Data-model.md `timestamp` column should be removed.
+
+### Unified Visibility Model
+
+- **Decision**: Events use the unified 7-level visibility model from [feed.md](feed.md): `silent`, `gm_only`, `private`, `bonded`, `familiar`, `public`, `global`. Visibility is computed on read using Character-intermediary bond-graph traversal.
+- **Rationale**: One visibility model for all feed items (Events and Story entries). Compute-on-read is sufficient for 4–6 players. Character-intermediary traversal models realistic information flow.
+- **Implications**: No visibility cache needed for MVP. feed.md is the authoritative spec for visibility rules.
+- **Alternatives considered**: Pre-computed cache (unnecessary for this scale), separate visibility models for events vs stories (added complexity for no benefit).
+
+### Rider Events as Separate Rows
+
+- **Decision**: Rider events are full Event rows in the `events` table with a `parent_event_id` FK linking to the approval event. Created atomically in the same transaction. Rider events always inherit `session_id` from the parent event.
+- **Rationale**: Same schema, same queryability, same visibility filtering. Rider events can have their own targets, visibility, and narrative. Session inheritance is correct because both events occur in the same session.
+- **Implications**: `parent_event_id` column on events table. Rider events appear in feeds independently.
 
 ### Proposal Reference Field
 
@@ -265,11 +409,11 @@ The `changes` field with before/after values preserves the information needed to
 - **Rationale**: Enables easy proposal → event linking. Useful for activity feed ("Player X did Y" with link to the proposal).
 - **Implications**: Set by the proposal approval handler. Null for events not triggered by proposals.
 
-### Narrative from GM + System
+### Narrative from GM + Player + System
 
-- **Decision**: The narrative field is optional and comes from: GM (approval narrative, direct actions), player (direct actions like Effect Use), or system (auto-generated for lifecycle events).
-- **Rationale**: Narrative adds context to the activity feed. GM narrative is most common (from proposal approvals). System narrative keeps lifecycle events readable.
-- **Implications**: System must auto-generate readable narrative for session start/end, FT distribution, etc.
+- **Decision**: The narrative field is optional and comes from: player (submission narrative, GM can edit), GM (direct actions), or system (auto-generated for lifecycle events).
+- **Rationale**: Narrative adds context to the activity feed. Player-written narrative from proposals is the most common. System narrative keeps lifecycle events readable.
+- **Implications**: System must auto-generate readable narrative for session start/end events.
 
 ### Retain Forever
 
@@ -277,30 +421,11 @@ The `changes` field with before/after values preserves the information needed to
 - **Rationale**: For a single campaign with a small group (4–6 players + GM), the event volume is manageable. Permanent history is valuable. No benefit to archival complexity.
 - **Implications**: No TTL or cleanup jobs. Database may grow over a long campaign but within manageable bounds.
 
-### Actor Type + Ref Pair
+### Session Auto-Capture
 
-- **Decision**: `actor` is a JSON object: `{type: 'player'|'gm'|'system', id?: string}`. For player/GM, includes their ID. For system, no ID.
-- **Rationale**: Distinguishes between player actions, GM actions, and automated system actions. Simple structure covers all cases.
-- **Implications**: Actor field is not a simple foreign key — it's a typed reference.
-
-### Targets as List
-
-- **Decision**: `targets` is always a list of game object references. First element is the primary target. All affected objects are listed.
-- **Rationale**: Compound events affect multiple objects (character + traits + bonds). A list captures all of them, enabling rich querying ("show me all events affecting this NPC").
-- **Implications**: Event queries can filter by any target in the list. Index on target IDs for performance.
-
-### Generic Metadata Field
-
-- **Decision**: Events have an optional freeform `metadata` JSON field for per-event context. Used for clock annotations (notes + refs), event-to-event links, and future extensions.
-- **Rationale**: Flexible — accommodates clock annotations, related event links, and any future per-event data without schema changes.
-- **Implications**: No type safety on metadata contents. Consuming code must handle varied structures.
-
-### Bond-Distance Visibility
-
-- **Decision**: Events have a `visibility` field with 6 levels: `global`, `gm_only`, `private`, `bonded` (1-hop, default), `familiar` (2-hop), `public` (3-hop). Visibility is determined by bond-graph proximity between the querying player's character and the event's targets.
-- **Rationale**: Creates an emergent information network. Players learn about things they're connected to. Deeper connections (familiar, public) propagate information further. The bond graph — both PC Bonds and lightweight bonds on world objects — forms a social network.
-- **Implications**: Requires bond-graph traversal for visibility checks. Cached per character, invalidated on bond changes. GM can override any event's visibility. Significant architectural feature that affects all event queries.
-- **Alternatives considered**: All-visible (too simple, spoiler-prone), GM-manual-per-event (too tedious), role-based (misses the social graph opportunity).
+- **Decision**: Events generated while a Session is Active are automatically tagged with that session's `session_id`. Callers can override. Null when no session is Active. Rider events always inherit from their parent event.
+- **Rationale**: Eliminates manual session tagging. Most events occur during active play. Override handles edge cases. Rider inheritance is correct since both occur in the same transaction during the same session.
+- **Implications**: Event creation checks for Active session and auto-fills.
 
 ### No System Undo for MVP
 
@@ -308,30 +433,46 @@ The `changes` field with before/after values preserves the information needed to
 - **Rationale**: Implementing undo (especially for compound events) adds complexity. GM direct actions provide a good-enough correction path. The before/after changes data preserves the option to add undo later.
 - **Implications**: No inverse-operation logic needed for MVP. GM is the error correction mechanism.
 
-### Session Auto-Capture
+### Generic Metadata Field
 
-- **Decision**: Events generated while a Session is Active are automatically tagged with that session's `session_id`. Callers can override. Null when no session is Active.
-- **Rationale**: Eliminates manual session tagging. Most events occur during active play. Override handles edge cases.
-- **Implications**: Event creation checks for Active session and auto-fills. Decided in [game-objects](game-objects.md), documented here for completeness.
+- **Decision**: Events have an optional freeform `metadata` JSON field for per-event context. Used for clock annotations (notes + refs), event-to-event links, and future extensions.
+- **Rationale**: Flexible — accommodates clock annotations, related event links, and any future per-event data without schema changes.
+- **Implications**: No type safety on metadata contents. Consuming code must handle varied structures.
+
+### ULID Cursor Pagination
+
+- **Decision**: `GET /api/v1/events` uses ULID cursor-based pagination, consistent with all feed endpoints: `?after=<ulid>&limit=N` (default 50, max 100). Response envelope: `{items, next_cursor, has_more}`.
+- **Rationale**: Consistent with feed endpoint pagination. ULIDs are time-sortable, making them natural cursors. No offset drift issues.
+- **Implications**: Same pagination pattern across events and feed endpoints. `next_cursor` is the ULID of the last item in the page.
+
+### Events API Alongside Feed
+
+- **Decision**: Keep `GET /api/v1/events` as a standalone events-only endpoint alongside the feed endpoints. The events API is the low-level, events-only view; the feed merges events with story entries.
+- **Rationale**: Different audiences and use cases. Events API is useful for: GM audit (events only, no story noise), programmatic access (integrations, debugging), `proposal_id` filtering (trace a specific proposal's event). Feed endpoints serve the primary player UI.
+- **Implications**: Two ways to access events: via `/events` (events only) and via `/me/feed` or `/{type}/{id}/feed` (merged with story entries). Both use the same visibility filtering and pagination.
 
 ---
 
 ## API Endpoints
 
 - `GET /api/v1/events` — list with filtering, visibility-scoped per player
-  - Filters: `?type=`, `?target=`, `?session_id=`, `?since=`, `?actor_type=`, `?proposal_id=`
+  - Pagination: `?after=<ulid>&limit=N` (default 50, max 100)
+  - Response: `{items: [...], next_cursor: "<ulid or null>", has_more: true}`
+  - Filters: `?type=`, `?target_type=`, `?target_id=`, `?session_id=`, `?since=`, `?until=`, `?actor_type=`, `?proposal_id=`
   - Type prefix filtering: `?type=character.*` returns all character events
-  - Results filtered by bond-distance visibility for the requesting player. GM sees all.
+  - Results filtered by unified visibility for the requesting player. GM sees all (except `silent` — use silent feed).
 - `GET /api/v1/events/{id}` — single event detail (visibility check applied)
 - `PATCH /api/v1/events/{id}/visibility` — GM-only: change an event's visibility level
 
 Read-only for events themselves — never created directly via API. Visibility is the only mutable field (GM-only).
 
+Note: Events are also surfaced via the Feed endpoints (see [feed.md](feed.md)) merged with Story entries.
+
 ---
 
 ## Open Questions
 
-None — all questions resolved.
+_None — all questions resolved during 2026-03-12 interrogation._
 
 ---
 
@@ -339,14 +480,14 @@ None — all questions resolved.
 
 | Spec | Implication |
 |------|-------------|
-| [proposals](proposals.md) | Approved proposals generate one event with `proposal_id` set. Rejection and revision also generate events. |
-| [downtime](downtime.md) | Session lifecycle events (start/end, FT distribution, clock adjustments) all produce events with auto-captured `session_id`. |
-| [game-objects](game-objects.md) | All game object mutations produce events. Bond graph (PC + lightweight) drives event visibility. |
-| [character-core](character-core.md) | Character state changes produce events. Character bond graph determines what events the player sees. |
-| [bonds](bonds.md) | 🔄 Bond changes invalidate the visibility cache. Both PC Bonds and lightweight bonds participate in the visibility graph. |
-| [auth](auth.md) | 🔄 Event visibility is bond-distance based, not role-based (except `gm_only` and `global`). Auth must support per-player visibility filtering. The `actor` field uses a typed ref, not a simple user ID. |
-| [architecture/data-model](../architecture/data-model.md) | 🔄 Event model with `changes` JSON, `created`/`deleted` lists, `targets` list, `metadata` JSON, `visibility` enum, `actor` typed ref. Bond-graph visibility cache model. |
+| [actions](actions.md) | Approved proposals generate one event with `proposal_id` set. Rider event optionally created in same transaction. Rejection and revision also generate events. |
+| [downtime](downtime.md) | Session lifecycle events (start/end, FT/Plot distribution) produce events with auto-captured `session_id`. |
+| [game-objects](game-objects.md) | All game object mutations produce events. Character events use `character.*` types for both PCs and NPCs. |
+| [bonds](bonds.md) | Bond changes logged as events. Bond graph drives visibility (Character-intermediary traversal). |
+| [feed](feed.md) | Events are one of two feed item types (with Story entries). Visibility model defined in feed.md. |
+| [auth](auth.md) | Event visibility is bond-graph based. Auth supports per-player visibility filtering. `actor_type`/`actor_id` reference users. |
+| [architecture/data-model](../architecture/data-model.md) | ✅ Aligned. No separate `timestamp` column (uses `created_at` only). Changes key convention `{type}.{id}.{field}` documented. |
 
 ---
 
-_Last updated: 2026-03-01 (interrogation complete)_
+_Last updated: 2026-03-14 (added operation type tags on changes entries (field.set, meter.delta, meter.set), meter boundary patterns catalog with clamped annotation, compound consequence documentation, cross-references to boundary behaviors in other specs)_

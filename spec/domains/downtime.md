@@ -107,7 +107,7 @@ Seven Downtime Action types (defined in [actions](actions.md)):
 During Active state (typically as the session wraps up), the GM adjusts group project clocks individually:
 
 - **Individual calls**: Each clock is adjusted via a separate API call (not bundled into End Session).
-- **Default**: each clock starts with a suggested +1 tick.
+- **Default suggestion**: the UI pre-fills a suggested +1 tick per clock. This is a **UX convenience**, not an automated system behavior — the system does not auto-advance clocks.
 - **GM adjusts**: GM can change the tick amount for each clock (including 0 or negative values).
 - **Annotations**: Each adjustment can include:
   - **Notes**: freeform text explaining why the clock changed
@@ -170,9 +170,9 @@ Sessions have a participant list tracking who played:
 
 ### Group Clock GM-Adjusted Ticks
 
-- **Decision**: At End Session, group clocks get a default +1 but the GM can adjust each (up/down/skip). Adjustments include optional annotations (notes + event/game object links).
+- **Decision**: During Active sessions, the GM adjusts group clocks individually via API calls. The UI pre-fills a suggested +1 per clock (UX suggestion, not automated). The GM can adjust each (up/down/skip). Adjustments include optional annotations (notes + event/game object links).
 - **Rationale**: Player actions during the session may accelerate, delay, or prevent group progress. The GM reflects this in the clock adjustments. Annotations create a rich narrative history of why groups progressed or didn't.
-- **Implications**: End Session UI shows all clocks with adjustment controls. Clock mutation model needs annotation support (notes + polymorphic refs).
+- **Implications**: Clock adjustments are individual API calls during Active state. End Session simply transitions status — no clock logic in the End payload. Clock mutation model needs annotation support (notes + polymorphic refs).
 
 ### No Activity Limit
 
@@ -326,4 +326,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-10 (interrogation complete — resolved all open questions: registration body ({character_id, additional_contribution?}), no distributed flag, Find Time empty body, Time Now defaults (0), Plot overflow with session-end clamp)_
+_Last updated: 2026-03-15 (clarified clock +1 default as UX suggestion, not automated system behavior)_

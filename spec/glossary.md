@@ -42,7 +42,7 @@ A **System Entity** (not a Game Object) tracking a narrative thread. Stories hav
 A meter on a Character representing accumulated harm and pressure. Range 0–9 (effective max decreases by 1 per Trauma; computed as `9 - count(trauma bonds)`). When Stress hits max, the character gains a Trauma and Stress resets to 0. Healed via the "Rest" downtime action (3 base + up to +3 from modifiers, costs 1 Free Time).
 
 ### Trauma
-The consequence of maxing character Stress. The existing Bond in the chosen slot retires to Past (`is_active = false`, history preserved). A new Bond instance is created with `is_trauma = true`, trauma-specific name/description, no target, and fresh stress values. Each Trauma reduces the character's effective Stress max by 1. Fixable via GM direct action (GM chooses outcome — blank slot, new bond, etc.). If all Bonds are already Trauma, the GM handles narratively.
+The consequence of maxing character Stress. When Stress hits its effective max, the system auto-generates a `resolve_trauma` proposal (similar to `resolve_clock` for clock completion). The GM fills in which bond becomes the trauma and the trauma description. On approval: the existing Bond in the chosen slot retires to Past (`is_active = false`, history preserved). A new Bond instance is created with `is_trauma = true`, trauma-specific name/description, no target, and fresh charges (5). Each Trauma reduces the character's effective Stress max by 1. Fixable via GM direct action (GM chooses outcome — blank slot, new bond, etc.). If all Bonds are already Trauma, the GM handles narratively.
 
 ### Free Time
 A resource meter (0–20) on a Character, spent on downtime activities (1 FT per action). Gained automatically at Session Start via Time Now delta: `session.time_now - character.last_session_time_now`. Also gained via Find Time (3 Plot → 1 FT). Carries over between sessions. Capped at 20 (excess lost).
@@ -90,13 +90,13 @@ A meter (0–5) on a Trait that is spent (1 per invocation) to activate its +1d 
 The rule governing how many modifiers a player can select on a single proposal: at most 1 Core Trait (+1d), 1 Role Trait (+1d), and 1 Bond (+1d), for a maximum of +3d on top of the base skill dice pool.
 
 ### Bond
-The unified relationship primitive connecting Game Objects. Every relationship in the system is a Bond — between Characters, Groups, Locations, or any combination. All bonds share common fields: id, source (type + id), target (type + id), source_label, target_label, description, is_active, bidirectional flag. **Mechanical depth varies by context**: PC Bonds (on full Characters) have stress (0–5), degradation, and +1d on proposals (8 slots). NPC Bonds, Group bonds (Relations/Holdings), and Location bonds are descriptive only (active/retired, no mechanics). Bond depth for PCs is captured by accumulated fiction, not a numeric level. **Slot model**: Count-based (not indexed) — system enforces max active bonds per owner type, bonds referenced by ID. At most one active bond per (source, target) pair. Slot type is auto-inferred from owner/target types. Source always consumes a slot (hard limit); target gets a soft-limit warning for bidirectional bonds. Bidirectional bonds appear in both sides' bond lists with no distinction (API normalizes perspective). Only active bonds participate in traversal. The bond graph drives both **event visibility** and **presence proximity**. All traits and bonds live in one fully unified table with a `slot_type` discriminator. A Character's bond to a Group IS their Group membership (derived, not stored as a separate type). See [bonds.md](domains/bonds.md) for authoritative spec.
+The unified relationship primitive connecting Game Objects. Every relationship in the system is a Bond — between Characters, Groups, Locations, or any combination. All bonds share common fields: id, source (type + id), target (type + id), source_label, target_label, description, is_active, bidirectional flag. **Mechanical depth varies by context**: PC Bonds (on full Characters) have charges (0–5, conceptually same as trait charges), degradation, and +1d on proposals (8 slots). NPC Bonds, Group bonds (Relations/Holdings), and Location bonds are descriptive only (active/retired, no mechanics). Bond depth for PCs is captured by accumulated fiction, not a numeric level. **Slot model**: Count-based (not indexed) — system enforces max active bonds per owner type, bonds referenced by ID. At most one active bond per (source, target) pair. Slot type is auto-inferred from owner/target types. Source always consumes a slot (hard limit); target gets a soft-limit warning for bidirectional bonds. Bidirectional bonds appear in both sides' bond lists with no distinction (API normalizes perspective). Only active bonds participate in traversal. The bond graph drives both **event visibility** and **presence proximity**. All traits and bonds live in one fully unified table with a `slot_type` discriminator. A Character's bond to a Group IS their Group membership (derived, not stored as a separate type). See [bonds.md](domains/bonds.md) for authoritative spec.
 
-### Bond Stress
-A stress meter on a Bond (base max 5). Accumulates from GM narrative actions or +1 when GM decides a proposal bond use strains it. At max: GM resets to 0, effective max decreases by 1 (degradation), GM narrates consequence. Healed fully via "Maintain Bond" downtime activity. GM can reverse degradation via direct action.
+### Bond Charges
+A charge meter on a Bond (base max 5). Conceptually the same as trait charges — a measure of how much the bond can be drawn upon before it strains. Lost from GM narrative actions or −1 when GM decides a proposal bond use strains it (via `bond_strained` flag). At 0 charges: charges reset to effective max, degradation count increments by 1 (effective max decreases), GM narrates consequence. Restored fully via "Maintain Bond" downtime activity. GM can reverse degradation via direct action. Physical DB column: `stress` (historical naming; the conceptual reframe to "charges" aligns bonds with traits).
 
 ### Bond Degradation
-A count on a Bond tracking how many times its stress has maxed out. Effective bond stress max = `5 - degradation_count`. At 5 degradations (effective max 0), GM handles narratively.
+A count on a Bond tracking how many times its charges have hit 0. Effective bond charge max = `5 - degradation_count`. At 5 degradations (effective max 0), GM handles narratively. Physical DB column: `stress_degradations`.
 
 ### Skill
 One of exactly 8 canonical abilities hardcoded in code: Awareness, Composure, Influence, Finesse, Speed, Power, Knowledge, Technology. The same list for all characters. Each Skill has a level (0–3) that equals the base dice pool size for related actions. All characters have all 8 skills at different levels. Skill levels increase via "Work on Project" downtime action — player targets a Story/Arc for the skill being trained. GM resolves (and applies level change via direct action) when the narrative warrants it.
@@ -201,7 +201,7 @@ A downtime activity where a player replaces an existing Core/Role Trait or fills
 A downtime activity where a player creates a new Bond or replaces an existing one. Player specifies the target Game Object and writes narrative fiction. If at max active bond count, player must also specify `retire_bond_id` (which existing bond to retire to Past). If under max, fills a blank slot. Submitted as a proposal for GM approval. Old bond (if retiring) moves to Past.
 
 ### Maintain Bond (Downtime Action)
-A downtime action (renamed from "Heal Bond Stress") that fully restores a Bond's current stress to 0. Costs 1 Free Time. Does not reverse degradations. Player selects which bond to maintain.
+A downtime action that fully restores a Bond's charges to effective max. Costs 1 Free Time. Does not reverse degradations. Player selects which bond to maintain.
 
 ### Regain Gnosis (Downtime Action)
 A downtime action that restores Gnosis to a character. Costs 1 Free Time. Formula: **3 Gnosis base + lowest Magic Stat level + up to +3 from trait/bond invocation** (standard stacking: 1 Core +1, 1 Role +1, 1 Bond +1). Submitted as a proposal. Trait charges spent as usual; bond may strain per GM decision.
@@ -220,6 +220,9 @@ A proposal submitted during session play. Three types: `use_skill`, `use_magic`,
 
 ### Downtime Action (Proposal Category)
 A proposal submitted during the downtime phase. Seven types: `regain_gnosis`, `recharge_trait`, `maintain_bond`, `work_on_project`, `rest`, `new_trait`, `new_bond`. All automatically cost 1 Free Time, deducted on approval.
+
+### Resolve Trauma (System Proposal)
+A system-generated proposal created automatically when a character's Stress hits its effective max (`9 - count(trauma_bonds)`). Pre-linked to the character. The GM fills in which bond becomes the trauma (`trauma_bond_id`) and the trauma name/description. On approval, the system retires the chosen bond to Past, creates a new trauma bond (`is_trauma = true`, no target, fresh charges), and resets Stress to 0 — all recorded in a single event (compound consequence). Parallels the `resolve_clock` pattern. Idempotent: only generated if no pending `resolve_trauma` proposal exists for that character.
 
 ### Resolve Clock (System Proposal)
 A system-generated proposal created automatically when a clock reaches completion (progress >= segments). Pre-linked to the clock and its containing game objects (e.g., the Group that owns a project clock). The GM fills in narrative describing the outcome and optionally attaches a rider event to apply world state changes. Extends the Deferred Narrative Resolution principle — the clock tracked mechanical progress, the resolution is written when it completes.
@@ -268,4 +271,4 @@ The unified database table containing all traits and bonds across all Game Objec
 
 ---
 
-_Last updated: 2026-03-14 (added Operation Type, Meter Boundary, Compound Consequence terms; updated Event and Meter definitions with op tag and clamped flag references)_
+_Last updated: 2026-03-15 (reframed "bond stress" as "bond charges"; added Resolve Trauma system proposal; updated Trauma, Bond, Maintain Bond entries)_

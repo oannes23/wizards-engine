@@ -119,6 +119,7 @@ Convention-based strings following `{domain}.{action}` naming. NPCs use `charact
 | `location` | `location.created`, `location.updated` |
 | `story` | `story.created`, `story.updated` |
 | `player` | `player.find_time` |
+| `character` | `character.resolve_trauma_generated` |
 
 No category field — the domain prefix provides natural grouping. New types can be added without schema changes.
 
@@ -193,6 +194,7 @@ Event visibility uses the **unified 7-level visibility model** defined in [feed.
 | `session.ft_distributed` | `silent` | Batch FT calculation is bookkeeping |
 | `session.plot_distributed` | `silent` | Batch Plot awards are bookkeeping |
 | `clock.resolve_generated` | `silent` | Auto-proposal creation is system plumbing |
+| `character.resolve_trauma_generated` | `silent` | Auto-proposal creation is system plumbing |
 | `proposal.approved` | `bonded` | You hear about actions involving your connections |
 | `proposal.rejected` | `private` | Only the proposer and GM see rejections |
 | `proposal.revised` | `private` | Only the proposer and GM see revisions |
@@ -232,6 +234,7 @@ Events are created by:
 - **Session start**: Produces 3 separate events — `session.started` (global), `session.ft_distributed` (silent), `session.plot_distributed` (silent)
 - **Session end**: Produces a `session.ended` event (global)
 - **Clock completion**: System detects completion, produces `clock.completed` event (bonded) and auto-generates a `resolve_clock` proposal with a `clock.resolve_generated` event (silent)
+- **Stress hitting max**: System detects boundary, auto-generates a `resolve_trauma` proposal (one per character, pending only) with a `character.resolve_trauma_generated` event (silent). Parallels the clock completion pattern.
 
 Events are never created directly via the API — they are always a side-effect of state changes.
 
@@ -274,23 +277,28 @@ The `clamped` flag is informational — Python code handles all boundary logic. 
 
 | Meter | Boundary | Behavior | Spec |
 |-------|----------|----------|------|
-| Character Stress | Max (`9 - trauma_count`) | **Trauma**: chosen bond retired, trauma bond created, stress reset to 0 | [character-core.md](character-core.md) |
-| Bond Stress (PC) | Max (`5 - degradations`) | Reset to 0, `stress_degradations` incremented by 1 | [bonds.md](bonds.md) |
+| Character Stress | Max (`9 - trauma_count`) | Auto-generates `resolve_trauma` proposal (one per character, pending only). On approval: chosen bond retired, trauma bond created, stress reset to 0. | [character-core.md](character-core.md) |
+| Bond Stress (PC) (conceptually "bond charges" per [bonds.md](bonds.md)) | Max (`5 - degradations`) | Reset to 0, `stress_degradations` incremented by 1 | [bonds.md](bonds.md) |
 | Free Time | Max 20 | Excess from Time Now delta lost (clamped) | [downtime.md](downtime.md) |
 | Plot | Exceeds 5 | Clamped to 5 at Session End | [downtime.md](downtime.md) |
 | Clock Progress | `>= segments` | Auto-generates `resolve_clock` proposal (one per clock, ever) | [game-objects.md](game-objects.md) |
 
 ### Compound Consequences
 
-When a boundary triggers additional mutations, all changes are recorded within the **same event** (preserving the "one event per action" rule). The canonical example is **Trauma**:
+When a boundary triggers additional mutations, the pattern depends on whether those mutations happen immediately or on proposal approval.
 
-A stress increase that hits max produces one event containing:
-- The stress delta (`meter.delta`, `clamped: true`)
-- The old bond retirement (`deleted_objects`)
-- The new trauma bond creation (`created_objects`)
-- The stress reset to 0 (`meter.set`)
+**Immediate boundary effects** (Bond Stress / bond charges, FT cap, Plot clamp) are recorded within the **same event** (preserving the "one event per action" rule).
 
-All fields within a single event — no separate "boundary triggered" event.
+**Trauma** follows the auto-proposal pattern, paralleling clock completion:
+
+1. The stress-increase event records the stress change with `clamped: true` — the stress is clamped at the max value and the event notes the boundary was hit. No bond retirement or trauma creation happens yet.
+2. A `resolve_trauma` proposal is auto-generated (silent `character.resolve_trauma_generated` event).
+3. On `resolve_trauma` proposal **approval**, a single approval event records all the Trauma mutations:
+   - The old bond retirement (`deleted_objects`)
+   - The new trauma bond creation (`created_objects`)
+   - The stress reset to 0 (`meter.set`)
+
+This means the stress-hit event and the Trauma-consequence event are **separate events** linked via `proposal_id`. The stress hit records what happened to the meter; the approval event records what the player chose and the resulting state changes.
 
 ### No Trigger System
 
@@ -332,7 +340,7 @@ Boundary behaviors are hardcoded Python functions, not a configurable trigger en
 
 ### Boundary Behaviors Are Hardcoded
 
-- **Decision**: All meter boundary behaviors (Trauma on max stress, bond degradation on max bond stress, clock auto-proposal on completion, Plot clamp at Session End, FT cap) are hardcoded in Python. No generic trigger or rule engine.
+- **Decision**: All meter boundary behaviors (Trauma auto-proposal on max stress, bond degradation on max bond stress, clock auto-proposal on completion, Plot clamp at Session End, FT cap) are hardcoded in Python. No generic trigger or rule engine.
 - **Rationale**: Reinforces the project's core principle: no DSL, all game logic in Python. The boundary catalog in this spec documents what the code does — it is not configuration for a trigger system.
 - **Implications**: Adding a new boundary behavior requires a code change, not a data entry. The catalog in the Meter Boundary Patterns section must be kept in sync with implementation.
 
@@ -380,7 +388,7 @@ Boundary behaviors are hardcoded Python functions, not a configurable trigger en
 
 ### Silent Event Defaults
 
-- **Decision**: Three event types default to `silent` visibility: `session.ft_distributed`, `session.plot_distributed`, and `clock.resolve_generated`. All other event types default to a visible level.
+- **Decision**: Four event types default to `silent` visibility: `session.ft_distributed`, `session.plot_distributed`, `clock.resolve_generated`, and `character.resolve_trauma_generated`. All other event types default to a visible level.
 - **Rationale**: These are mechanical bookkeeping that clutters feeds without narrative value. Players see the effects (updated meters, pending proposals) without the plumbing. The GM can audit via the silent feed.
 - **Implications**: Event type definitions must specify default visibility. Silent events only appear in the GM's dedicated silent feed endpoint.
 
@@ -483,11 +491,11 @@ _None — all questions resolved during 2026-03-12 interrogation._
 | [actions](actions.md) | Approved proposals generate one event with `proposal_id` set. Rider event optionally created in same transaction. Rejection and revision also generate events. |
 | [downtime](downtime.md) | Session lifecycle events (start/end, FT/Plot distribution) produce events with auto-captured `session_id`. |
 | [game-objects](game-objects.md) | All game object mutations produce events. Character events use `character.*` types for both PCs and NPCs. |
-| [bonds](bonds.md) | Bond changes logged as events. Bond graph drives visibility (Character-intermediary traversal). |
+| [bonds](bonds.md) | Bond changes logged as events. Bond graph drives visibility (Character-intermediary traversal). Bond stress is conceptually "bond charges" per bonds.md terminology. |
 | [feed](feed.md) | Events are one of two feed item types (with Story entries). Visibility model defined in feed.md. |
 | [auth](auth.md) | Event visibility is bond-graph based. Auth supports per-player visibility filtering. `actor_type`/`actor_id` reference users. |
-| [architecture/data-model](../architecture/data-model.md) | ✅ Aligned. No separate `timestamp` column (uses `created_at` only). Changes key convention `{type}.{id}.{field}` documented. |
+| [architecture/data-model](../architecture/data-model.md) | Aligned. No separate `timestamp` column (uses `created_at` only). Changes key convention `{type}.{id}.{field}` documented. |
 
 ---
 
-_Last updated: 2026-03-14 (added operation type tags on changes entries (field.set, meter.delta, meter.set), meter boundary patterns catalog with clamped annotation, compound consequence documentation, cross-references to boundary behaviors in other specs)_
+_Last updated: 2026-03-15 (trauma auto-proposal pattern: stress hit event records clamped stress only; resolve_trauma proposal auto-generated on boundary; Trauma mutations (bond retirement, trauma bond creation, stress reset) happen on resolve_trauma approval. Added resolve_trauma to Event Sources and Event Types. Added bond charges terminology note. Updated Silent Event Defaults decision to include character.resolve_trauma_generated.)_

@@ -400,7 +400,9 @@ game-objects (primitive)        events (primitive)        auth (primitive)
 - MVP Scope status: 🟡 → 🟢 — all 4 open questions resolved + 9 new decisions
 - **Single MVP, phased build**: No MVP 0/1 split. Full system is the target. 6-phase build order: Foundation → World → Characters → Actions → Sessions → Web UI.
 - **Rider events**: GM can optionally attach a bundled direct-action event when approving a proposal. Fires atomically. Used for side effects and clock resolution.
-- **`resolve_clock` proposal type**: System auto-generates when a clock completes. Pre-linked to clock + containing game objects. GM fills narrative + optional rider event. 11th proposal type (system-initiated).
+- **`resolve_clock` proposal type**: System auto-generates when a clock completes. Pre-linked to clock + containing game objects. GM fills narrative + optional rider event.
+- **`resolve_trauma` proposal type**: System auto-generates when character Stress hits effective max. GM fills in which bond becomes Trauma and the trauma details. Parallels resolve_clock pattern.
+- **12 action types total**: 3 session + 7 downtime + 2 system proposals.
 - **Typed `calculated_effect`**: Each action type has a known schema for its pre-computed result. GM can override any field.
 - **Player-written narratives**: Players write narrative on submission. GM usually just approves. Can edit or reject with note.
 - **Simplified story entries**: Simple CRUD with soft-delete. `updated_at` + `updated_by` fields, no full audit trail.

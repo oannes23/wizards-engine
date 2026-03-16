@@ -32,7 +32,7 @@ The five schools/aspects of magic:
 
 Each has:
 - `level`: 0–5 — determines the **base dice pool** for magic actions using that stat (like Skills for normal actions)
-- `xp`: meter, flat 5 XP per level — tracks progress toward the next level
+- `xp`: meter, flat 5 XP per level — tracks progress toward the next level. Resets to 0 on level-up (excess does not carry over).
 
 **XP is awarded by the GM directly** — no automatic gain from magic use or downtime study. GM controls all Magic Stat progression.
 
@@ -159,9 +159,9 @@ Like Traits and Bonds, retired Magic Effects move to the Past section of the cha
 
 ### XP System
 
-- **Decision**: Flat 5 XP per level. GM awards XP directly. No automatic gain.
-- **Rationale**: GM controls progression pacing. Flat rate is simple. 5 XP per level provides granular progress (25 total for 0→5).
-- **Implications**: Magic Stat model needs an `xp` field. Level-up is triggered when XP reaches threshold.
+- **Decision**: Flat 5 XP per level. GM awards XP directly. No automatic gain. XP resets to 0 when a Magic Stat gains a level — excess does not carry over.
+- **Rationale**: GM controls progression pacing. Flat rate is simple. 5 XP per level provides granular progress (25 total for 0→5). Reset-to-0 is simpler to track than overflow.
+- **Implications**: Magic Stat model needs an `xp` field. Level-up is triggered when XP reaches threshold. No overflow accounting needed.
 
 ### Freeform Magic Model
 
@@ -348,4 +348,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-13 (interrogation — resolved all open questions: effect use body ({narrative?: string}), charge_magic approval outcome (charges_added/power_boost in gm_overrides))_
+_Last updated: 2026-03-15 (added XP reset-to-0 on level-up clarification)_

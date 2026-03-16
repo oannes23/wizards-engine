@@ -42,7 +42,7 @@ The system does **not** record dice results. Dice are rolled at the physical tab
 
 ### Action Types
 
-Three categories, 11 types total:
+Three categories, 12 types total:
 
 **Actions** (session play):
 
@@ -69,6 +69,7 @@ Three categories, 11 types total:
 | Type | Description | Trigger |
 |------|-------------|---------|
 | `resolve_clock` | Resolve a completed clock | Clock reaches completion (progress >= segments) |
+| `resolve_trauma` | Resolve a Trauma event | Character Stress hits effective max |
 
 **Downtime structural rule**: All Downtime Actions automatically cost 1 Free Time, deducted on approval. This cost is implicit — not specified by the player.
 
@@ -82,7 +83,7 @@ Three categories, 11 types total:
 |-------|------|----------|-------|
 | id | string | yes | Primary key (ULID) |
 | character_id | ref → Character | no | Submitting character. Null for system-generated proposals. |
-| action_type | enum | yes | One of the 11 types |
+| action_type | enum | yes | One of the 12 types |
 | origin | enum | yes | `player` or `system`. Distinguishes player-submitted from system-generated. |
 | narrative | text | yes | Player's description of their action (player-written). GM can edit on approval. |
 | modifiers | JSON | no | `{core_trait_id?, role_trait_id?, bond_id?}` — up to 1 of each |
@@ -112,6 +113,7 @@ Three categories, 11 types total:
 | `new_trait` | `{slot_type: "core"\|"role", template_id?: string, proposed_name?: string, proposed_description?: string, retire_trait_id?: string}` — retire_trait_id required when at max active count for that slot_type |
 | `new_bond` | `{target_type: string, target_id: string, retire_bond_id?: string}` — retire_bond_id required when at max active bond count |
 | `resolve_clock` | `{clock_id: string, associated_object_type: string, associated_object_id: string}` — auto-populated by the system |
+| `resolve_trauma` | `{character_id: string}` — auto-populated by the system |
 
 ### Typed Calculated Effect Schemas
 
@@ -214,6 +216,7 @@ new_bond: {
 
 ```
 resolve_clock: {}  // No calculation — GM fills in narrative and outcome
+resolve_trauma: {}  // No calculation — GM fills in trauma details
 ```
 
 ### Player-Written Narratives
@@ -286,6 +289,33 @@ When a Clock reaches completion (progress >= segments), the system auto-generate
 - `calculated_effect`: `{}` — no calculation needed
 
 The GM resolves it by approving with narrative describing the outcome, optionally attaching a rider event with world state changes. This extends the **Deferred Narrative Resolution** principle — the clock tracked mechanical progress, the resolution is written when it completes.
+
+### System Proposals: resolve_trauma
+
+When a Character's Stress hits its effective max (`9 - count(trauma_bonds)`), the system auto-generates a `resolve_trauma` proposal:
+
+- `origin`: `system`
+- `character_id`: the affected character
+- `status`: `pending`
+- `action_type`: `resolve_trauma`
+- `details`: `{character_id}` — auto-populated
+- `narrative`: auto-generated stub (e.g., "Stress max reached — Trauma must be resolved")
+- `calculated_effect`: `{}` — no calculation needed; GM determines the outcome
+
+**Idempotent**: Only generated if no pending `resolve_trauma` proposal exists for that character.
+
+The GM resolves it by:
+1. Choosing which active bond becomes the Trauma (`trauma_bond_id` in `gm_overrides`)
+2. Providing the trauma name and description (`trauma_name`, `trauma_description` in `gm_overrides`)
+3. Optionally attaching a rider event for narrative consequences
+
+**On approval**, the system atomically:
+- Retires the chosen bond to Past (`is_active = false`)
+- Creates a new Trauma bond (`is_trauma = true`, no target, fresh charges at 5, degradation 0)
+- Resets character Stress to 0
+- All mutations recorded in a single event (compound consequence)
+
+This parallels the `resolve_clock` pattern — the system detects a boundary condition, generates a pending proposal, and the GM resolves it with narrative and mechanical details.
 
 ### Modifier Stacking
 
@@ -440,14 +470,14 @@ All player direct actions validate ownership and produce events.
 
 ### Action Type Enumeration
 
-- **Decision**: 11 action types in three categories — Actions (`use_skill`, `use_magic`, `charge_magic`), Downtime Actions (`regain_gnosis`, `recharge_trait`, `maintain_bond`, `work_on_project`, `rest`, `new_trait`, `new_bond`), and System Proposals (`resolve_clock`).
-- **Rationale**: Covers all player-initiated mechanical actions plus system-generated prompts. Clean split between session play, downtime, and system triggers. `resolve_clock` reuses the same proposal model.
+- **Decision**: 12 action types in three categories — Actions (`use_skill`, `use_magic`, `charge_magic`), Downtime Actions (`regain_gnosis`, `recharge_trait`, `maintain_bond`, `work_on_project`, `rest`, `new_trait`, `new_bond`), and System Proposals (`resolve_clock`, `resolve_trauma`).
+- **Rationale**: Covers all player-initiated mechanical actions plus system-generated prompts. Clean split between session play, downtime, and system triggers. System proposals reuse the same proposal model.
 - **Implications**: Each type has its own validation and calculation logic in Python. The `action_type` enum drives which `details` fields are required.
 
 ### resolve_clock as Same Model
 
-- **Decision**: `resolve_clock` shares the proposals table with player proposals. `character_id` is nullable. An `origin` field (`player` | `system`) distinguishes player-submitted from system-generated proposals.
-- **Rationale**: Reuses the existing approval workflow. The GM approves resolve_clock the same way as any proposal. Avoids a separate model for a single system-generated type.
+- **Decision**: System proposals (`resolve_clock`, `resolve_trauma`) share the proposals table with player proposals. `character_id` is nullable for `resolve_clock`, set to the affected character for `resolve_trauma`. An `origin` field (`player` | `system`) distinguishes player-submitted from system-generated proposals.
+- **Rationale**: Reuses the existing approval workflow. The GM approves system proposals the same way as any proposal. Avoids a separate model for system-generated types.
 - **Implications**: `character_id` becomes nullable. `origin` field added. System proposals have no modifiers, no plot_spend, no costs.
 
 ### Typed Calculated Effect Per Action Type
@@ -711,4 +741,4 @@ All resolved.
 
 ---
 
-_Last updated: 2026-03-10 (interrogation — resolved all 3 open questions. GM actions reuse domain event types (no gm.* prefix), distinguished by actor_type. GM validation is integrity-only (no game-logic constraints). GM action payload shapes defined at implementation time. New decisions: proposal withdrawal via hard DELETE (pending/rejected only, player-owner or GM). Proposals persist across sessions. Clean CRUD/GM action split — CRUD for structural fields (name/desc/notes + creation/deletion), GM actions for all mechanical state changes. Write sub-resource endpoints removed. PATCH scope narrowed to name/desc/notes across all game object types. Creation endpoints accept all fields as setup exception. ULID cursor pagination on proposals list.)_
+_Last updated: 2026-03-15 (added resolve_trauma system proposal type — auto-generated when Stress hits max, parallels resolve_clock pattern; updated action type count to 12; updated System Proposals decision block)_

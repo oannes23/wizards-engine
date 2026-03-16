@@ -38,7 +38,7 @@ All Characters (PCs and NPCs) share:
 |-------|-----------|-------------------|
 | name, description, notes | Yes | Yes |
 | attributes (JSON blob) | Yes | Yes |
-| Bonds (8 slots PC / 7 NPC) | Mechanical (stress, degradation, +1d) | Descriptive only (active/retired) |
+| Bonds (8 slots PC / 7 NPC) | Mechanical (stress (conceptually "bond charges"), degradation, +1d) | Descriptive only (active/retired) |
 | Core Traits (2 slots) | Yes (charges, +1d) | No |
 | Role Traits (3 slots) | Yes (charges, +1d) | No |
 | Stress (0–9) | Yes | No |
@@ -64,7 +64,7 @@ All Characters (PCs and NPCs) share:
 - Range: 0–9 (effective max decreases by 1 per Trauma; computed as `9 - count(trauma_bonds)`)
 - With 8 bond slots, max possible Traumas = 8 (Stress max drops to 1). No cap on Trauma count.
 - Tracks accumulated harm and pressure
-- At max Stress: character gains a **Trauma** — negotiated between GM and player. Stress resets to 0 after Trauma is gained. This is a **compound consequence** — all mutations (stress delta, bond retirement, trauma creation, stress reset) are recorded in a single event. See [events.md](events.md) Meter Boundary Patterns.
+- At max Stress: the system auto-generates a `resolve_trauma` proposal (analogous to `resolve_clock` for clock completion). The GM fills in which bond becomes the trauma and the trauma description. On approval, the system retires the chosen bond, creates a trauma bond in its place, and resets Stress to 0. This is a **compound consequence** — all mutations (stress delta, bond retirement, trauma creation, stress reset) are recorded in a single event. See [events.md](events.md) Meter Boundary Patterns.
 - Trauma replaces a Bond (sets `is_trauma` flag on the Bond, clears target/level, sets trauma name/description). See [bonds.md](bonds.md).
 - If all 8 Bonds are already Trauma and Stress hits max again, the GM handles narratively (no mechanical rule).
 - Healed via **Rest** downtime action: **3 base + up to +3 from trait/bond modifiers** (standard stacking: 1 Core Trait +1, 1 Role Trait +1, 1 Bond +1). Costs 1 FT. See [actions.md](actions.md).
@@ -113,7 +113,7 @@ The five schools/aspects of magic:
 
 Each has:
 - `level`: 0–5 — determines the base dice pool for magic actions using that stat
-- `xp`: meter, flat 5 XP per level — tracks progress toward the next level
+- `xp`: meter, flat 5 XP per level — tracks progress toward the next level. **XP resets to 0 on level-up; excess does not carry over.**
 
 Stored as a JSON column on Character: `{being: {level: 0, xp: 3}, wyrding: {...}, ...}`. See [data-model.md](../architecture/data-model.md).
 
@@ -188,14 +188,14 @@ See [magic-system.md](magic-system.md) for creation mechanics, Charge Actions, a
 
 ### Bond Slot Counts
 
-- **Decision**: PCs have **8 bond slots** (mechanical: stress, degradation, +1d). NPCs have **7 bond slots** (descriptive only). The 8th PC slot accounts for the expected party Group bond.
+- **Decision**: PCs have **8 bond slots** (mechanical: stress (conceptually "bond charges"), degradation, +1d). NPCs have **7 bond slots** (descriptive only). The 8th PC slot accounts for the expected party Group bond.
 - **Rationale**: PCs need one more slot than NPCs because one slot is typically used for the party Group membership bond. NPCs don't need this expectation baked in.
 - **Implications**: PC bonds use `slot_type = pc_bond` (8 max). NPC bonds use `slot_type = npc_bond` (7 max). See [data-model.md](../architecture/data-model.md).
 
 ### Stress Range and Consequences
 
-- **Decision**: Stress ranges 0–9. Effective max decreases by 1 per Trauma (computed: `9 - count(trauma bonds)`). When Stress hits max, the character gains a Trauma and Stress resets to 0.
-- **Rationale**: 0–9 gives enough granularity without excess bookkeeping. Trauma as the max-stress consequence creates meaningful narrative stakes. Resetting to 0 gives the character breathing room after the consequence fires.
+- **Decision**: Stress ranges 0–9. Effective max decreases by 1 per Trauma (computed: `9 - count(trauma bonds)`). When Stress hits max, the system auto-generates a `resolve_trauma` proposal. The GM resolves it via the proposal workflow (selecting which bond becomes the trauma and filling in the trauma description). On approval, the chosen bond is retired as a trauma and Stress resets to 0.
+- **Rationale**: 0–9 gives enough granularity without excess bookkeeping. Trauma as the max-stress consequence creates meaningful narrative stakes. Resetting to 0 gives the character breathing room after the consequence fires. Using the proposal workflow keeps the GM in control without requiring out-of-band negotiation.
 - **Implications**: Trauma mechanic lives on the Bond model (`is_trauma` flag). Stress max is a computed value, not stored.
 
 ### Trauma Mechanic
@@ -345,7 +345,7 @@ Active and past/retired items are returned grouped separately:
 |------|-------------|
 | [auth](auth.md) | **Major change**: Invite flow now creates the Character atomically with the User account. Invites are bare (no pre-linked character). `POST /api/v1/game/join` accepts character name + display name + invite code. `invites` table no longer needs `character_id` at creation — it's set on redemption. |
 | [traits](traits.md) | Core and Role Traits attach to full Characters only (2 Core + 3 Role slots). Charge mechanic (0–5). Trait invocation on proposals (+1d, costs 1 charge). NPCs have no trait slots. |
-| [bonds](bonds.md) | PCs have 8 Bond slots (mechanical: stress, degradation, +1d). NPCs have 7 (descriptive only). Bond model has `is_trauma` flag. Max 8 Traumas (Stress min = 1). |
+| [bonds](bonds.md) | PCs have 8 Bond slots (mechanical: stress (conceptually "bond charges"), degradation, +1d). NPCs have 7 (descriptive only). Bond model has `is_trauma` flag. Max 8 Traumas (Stress min = 1). |
 | [magic-system](magic-system.md) | Gnosis, Magic Stats, and Magic Effects attach to full Characters only. Stress sacrifice in Magic Actions can trigger Trauma. |
 | [actions](actions.md) | Only full Characters submit proposals via `POST /proposals`. Plot spend = guaranteed 6s. Rest heals 3+mods Stress. All downtime actions cost 1 FT. GM actions via `POST /gm/actions`. |
 | [downtime](downtime.md) | FT gained via Time Now delta (full Characters only). New PCs get 0 FT on first session (last_session_time_now set to session.time_now). Plot +1/+2 per session. Find Time (3 Plot → 1 FT). Skill growth via work_on_project. |
@@ -361,4 +361,4 @@ _None — all open questions resolved during 2026-03-12 interrogation._
 
 ---
 
-_Last updated: 2026-03-14 (resolved first-session FT contradiction: delta from default 0, not null/zero-gain. Aligned character list pagination with api-conventions.md: ULID cursor, no limit/offset or sort param)_
+_Last updated: 2026-03-15 (trauma now auto-generates resolve_trauma proposal via workflow — GM fills in bond and description, system retires bond and resets Stress on approval; XP resets to 0 on Magic Stat level-up, no carry-over; added "bond charges" parenthetical to bond stress references)_

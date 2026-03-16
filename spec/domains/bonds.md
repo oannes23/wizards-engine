@@ -12,7 +12,7 @@
 
 **Bonds are the connections between Game Objects.** Every relationship in the system — between Characters, Groups, and Locations — is represented as a Bond. Bonds are a unified concept with a single data model and varying mechanical depth depending on context.
 
-All bonds share the same base fields. PC Bonds (on full Characters) add stress, degradation, and dice bonuses. All other bonds are descriptive — they track relationships without mechanical depth.
+All bonds share the same base fields. PC Bonds (on full Characters) add charges, degradation, and dice bonuses. All other bonds are descriptive — they track relationships without mechanical depth.
 
 The bond graph drives two computed systems (same traversal algorithm, different uses):
 - **Unified Visibility** — who can see which events and story entries (see [feed.md](feed.md))
@@ -46,11 +46,13 @@ All bonds, regardless of type, have:
 ### PC Bond Additional Fields
 
 Full (PC) Characters' bonds additionally have:
-- `stress`: integer (0 to effective max) — current bond stress
-- `stress_degradations`: integer — count of max reductions (effective max = `5 - stress_degradations`)
+- `charges`: integer (0 to effective max) — current bond charges. Conceptually the same as trait charges — a measure of how much the bond can be drawn upon before it strains. Physical DB column: `stress`.
+- `degradation_count`: integer — count of times charges have hit 0 (effective max charges = `5 - degradation_count`). Physical DB column: `stress_degradations`.
 - `is_trauma`: boolean — true if this slot holds a Trauma instead of a relationship
 
 These fields are null/absent on all non-PC bonds.
+
+> **Design note**: Bonds and traits share the "charges" concept. Both start at 5 and deplete through use. The key difference: traits at 0 charges simply can't be invoked for the +1d bonus. Bonds at 0 charges trigger **degradation** — the effective max drops by 1, and the GM narrates a consequence. This makes bond depletion more dramatic than trait depletion.
 
 ---
 
@@ -60,7 +62,7 @@ These fields are null/absent on all non-PC bonds.
 
 | Category | Owner | Target | Slots | Direction | Mechanics |
 |----------|-------|--------|-------|-----------|-----------|
-| **PC Bond** | Full Character | Any Game Object | 8 | Varies (see below) | Stress, degradation, +1d, Trauma |
+| **PC Bond** | Full Character | Any Game Object | 8 | Varies (see below) | Charges, degradation, +1d, Trauma |
 | **NPC Bond** | Simplified Character | Any Game Object | 7 | Varies (see below) | Descriptive only |
 | **Group Relation** | Group | Group | 7 | Bidirectional | Descriptive only |
 | **Group Holding** | Group | Location | Unlimited | Directional | Descriptive only |
@@ -130,7 +132,7 @@ No GM input required — the system determines the type from the owner's type/de
 
 When a Character (PC or NPC) has a bond targeting a Group, that Character is a **member** of the Group. The Group's `members` list is computed by querying: "all bonds where target = this Group and source_type = character."
 
-- A PC's bond to a Group uses one of their 8 Bond slots (with full stress mechanics)
+- A PC's bond to a Group uses one of their 8 Bond slots (with full charges mechanics)
 - An NPC's bond to a Group uses one of their 7 Bond slots (descriptive only)
 - The Group does not store a separate membership record
 - The Group detail endpoint computes and returns the member list
@@ -141,31 +143,33 @@ When a Character (PC or NPC) has a bond targeting a Group, that Character is a *
 
 ## PC Bond Mechanics (Full Characters Only)
 
-### Bond Stress
+### Bond Charges
 
-Bond stress mirrors the character Stress/Trauma pattern:
+Bond charges are the bond equivalent of trait charges — a measure of how much the relationship can be drawn upon before it strains:
 
 - **Range**: 0 to effective max (base 5, decreases with degradations)
-- **Gains stress from**: GM narrative actions, or +1 when GM decides a proposal bond use strains it
-- **At max stress**: GM resets stress to 0, increments `stress_degradations` by 1 (effective max decreases), narrates consequence. Recorded as `meter.set` (stress reset) + `meter.delta` (degradation increment) in the event. See [events.md](events.md) Meter Boundary Patterns.
-- **Healing**: "Maintain Bond" downtime activity fully restores current stress to 0. Costs 1 FT. Does not reverse degradations.
-- **Degradation reversal**: GM can reverse a degradation via direct action (decrement `stress_degradations`)
+- **Loses charges from**: GM narrative actions, or −1 when GM decides a proposal bond use strains it (via `bond_strained` flag on approval)
+- **At 0 charges**: GM resets charges to full, increments degradation count by 1 (effective max decreases), narrates consequence. Recorded as `meter.set` (charge reset) + `meter.delta` (degradation increment) in the event. See [events.md](events.md) Meter Boundary Patterns.
+- **Restoration**: "Maintain Bond" downtime activity fully restores current charges to effective max. Costs 1 FT. Does not reverse degradations.
+- **Degradation reversal**: GM can reverse a degradation via direct action (decrement degradation count)
 - **At 0 effective max** (5 degradations): GM handles narratively — no additional mechanical rule
+
+> **Physical DB columns**: Bond charges map to the `stress` column and degradations to `stress_degradations` in the `slots` table. The column names reflect the original "bond stress" terminology; the conceptual reframe to "charges" aligns bonds with traits without requiring a schema change.
 
 ### +1d Bonus on Proposals
 
-When a Bond is selected on a proposal, it provides a flat **+1d** to the dice pool. No charge cost — Bonds don't use the charge mechanic.
+When a Bond is selected on a proposal, it provides a flat **+1d** to the dice pool. Unlike traits, using a bond does not automatically cost a charge — the GM decides whether the use strains the relationship (via `bond_strained` flag), which costs 1 charge.
 
 Per the Modifier Stacking rule (see [traits.md](traits.md)), a proposal can include at most 1 Core Trait + 1 Role Trait + 1 Bond = max +3d.
 
-If the GM decides the bond use strains the relationship, +1 bond stress is applied.
+If the GM decides the bond use strains the relationship, −1 bond charge is applied.
 
 ### Trauma
 
 When a character's Stress hits max, they gain a Trauma which occupies a Bond slot:
 
 1. The existing Bond in the chosen slot is **retired** (`is_active = false`) and moves to the "Past" section. Full event history preserved.
-2. A new Bond instance is created in the slot with `is_trauma = true`, trauma-specific name/description (negotiated between GM and player), no target reference, and fresh stress/degradation values (stress = 0, degradations = 0).
+2. A new Bond instance is created in the slot with `is_trauma = true`, trauma-specific name/description (negotiated between GM and player), no target reference, and fresh charge/degradation values (charges = 5, degradations = 0).
 3. Character Stress resets to 0.
 4. Character effective Stress max decreases by 1 (computed: `9 - count(active trauma bonds)`).
 
@@ -180,9 +184,9 @@ When a Bond is replaced (by Trauma, "New Bond" downtime action, or GM action), t
 
 ### Bond Lifecycle (PC Bonds)
 
-1. **Created**: GM adds a bond via direct action, pointing to a Game Object target. Starts with stress = 0, degradations = 0.
-2. **Active**: Available for use in proposals. Stress accumulates from narrative events and proposal use.
-3. **Stressed**: Bond stress at max triggers degradation (GM action). Stress resets, max decreases.
+1. **Created**: GM adds a bond via direct action, pointing to a Game Object target. Starts with charges = 5 (full), degradations = 0.
+2. **Active**: Available for use in proposals. Charges deplete from narrative events and GM-decided strain on proposal use.
+3. **Depleted**: Bond charges at 0 triggers degradation. Charges reset to (new) effective max, max decreases.
 4. **Replaced**: Player submits "New Bond" downtime action or bond becomes Trauma. Old bond retires to Past.
 5. **Retired/Past**: `is_active = false`. Viewable history, no mechanical use.
 6. **Trauma**: `is_trauma = true`. Occupies a slot, reduces character Stress max, fixable via GM action.
@@ -252,7 +256,7 @@ The complete slot_type catalog and column details are specified in [data-model.m
 
 ### Unified Bond Concept
 
-- **Decision**: All relationships between Game Objects are Bonds. One concept, varying mechanical depth. PC Bonds have stress/degradation/+1d. All others are descriptive (active/retired only).
+- **Decision**: All relationships between Game Objects are Bonds. One concept, varying mechanical depth. PC Bonds have charges/degradation/+1d. All others are descriptive (active/retired only).
 - **Rationale**: Keeps the mental model simple — "Bonds connect things." UI renders all bond types consistently. The bond graph works as one connected structure.
 - **Implications**: Single bond model with optional mechanical fields. Bond type/context determines which fields are relevant.
 
@@ -298,22 +302,22 @@ The complete slot_type catalog and column details are specified in [data-model.m
 - **Rationale**: The meaningful depth of a bond is captured by its accumulated fiction — the stream of narrative paragraphs from actions involving the bond.
 - **Implications**: Simplifies the model. Bond "strength" is emergent from play.
 
-### Bond Stress Range and Degradation
+### Bond Charge Range and Degradation
 
-- **Decision**: Bond stress range is 0 to effective max (base 5, minus degradation count). At max stress: GM resets to 0, increments degradation, narrates consequence. At 0 effective max (5 degradations): GM handles narratively.
-- **Rationale**: Mirrors the character Stress/Trauma pattern at the bond level.
-- **Implications**: Bond model needs `stress` and `stress_degradations` fields (PC bonds only).
+- **Decision**: Bond charges range from 0 to effective max (base 5, minus degradation count). At 0 charges: charges reset to full, degradation count increments, GM narrates consequence. At 0 effective max (5 degradations): GM handles narratively.
+- **Rationale**: Mirrors the trait charge pattern — bonds and traits share the "charges" concept. Bonds add a degradation penalty at 0 that traits lack, making bond depletion more consequential.
+- **Implications**: Bond model uses `stress` and `stress_degradations` columns (PC bonds only). Conceptually "charges" and "degradation count."
 
-### Bond Stress Sources
+### Bond Charge Sources
 
-- **Decision**: Bond stress comes from GM narrative actions and optionally +1 when GM decides a proposal bond use strains it.
+- **Decision**: Bond charges are lost from GM narrative actions and optionally −1 when GM decides a proposal bond use strains it (via `bond_strained` flag).
 - **Rationale**: GM retains control over when bonds are strained. Risk/reward tradeoff.
-- **Implications**: Proposal approval may include a "strain bond" flag.
+- **Implications**: Proposal approval includes a `bond_strained` flag.
 
-### Bond Stress Healing
+### Bond Charge Restoration
 
-- **Decision**: "Maintain Bond" downtime activity fully restores current bond stress to 0. Costs 1 FT. Does not reverse degradations.
-- **Rationale**: Full heal keeps the downtime action simple and impactful.
+- **Decision**: "Maintain Bond" downtime activity fully restores current bond charges to effective max. Costs 1 FT. Does not reverse degradations.
+- **Rationale**: Full restore keeps the downtime action simple and impactful. Mirrors "Recharge Trait" for traits.
 - **Implications**: GM can separately reverse degradation via direct action.
 
 ### Blank Bond Slots
@@ -442,7 +446,7 @@ Bond detail is returned inline on Game Object detail endpoints (e.g., `GET /api/
 ### Player Actions (via Proposals)
 
 - **"New Bond"** downtime action: `POST /api/v1/proposals` — player specifies the target Game Object. If at max active bond count, must also specify `retire_bond_id` (which existing bond to retire to Past). If under max, `retire_bond_id` is optional.
-- **"Maintain Bond"** downtime action: `POST /api/v1/proposals` — reset bond stress to 0. Player specifies the bond by ID.
+- **"Maintain Bond"** downtime action: `POST /api/v1/proposals` — restore bond charges to effective max. Player specifies the bond by ID.
 
 No dedicated bond CRUD endpoints for players — all player-initiated bond changes go through proposals. Bonds are referenced by ID, not by slot index.
 
@@ -452,15 +456,15 @@ No dedicated bond CRUD endpoints for players — all player-initiated bond chang
 
 | Spec | Implication |
 |------|-------------|
-| [traits](traits.md) | Shares the unified `slots` table. Trait Template catalog for Core/Role traits. Group/Location traits are descriptive (no charges). |
+| [traits](traits.md) | Shares the unified `slots` table. Trait Template catalog for Core/Role traits. Group/Location traits are descriptive (no charges). Both traits and bonds now use the "charges" concept: traits spend charges for +1d; bonds lose charges when `bond_strained` is applied by the GM. Difference: bond charges at 0 trigger degradation; trait charges at 0 simply block invocation. |
 | [game-objects](game-objects.md) | Bond-distance presence defined here. game-objects.md references this spec. Group Holdings as a bond category. |
 | [character-core](character-core.md) | PCs have 8 Bond slots (mechanical). NPCs have 7 (descriptive). Trauma occupies bond slots (max 8). Character-to-Group bond = membership. |
-| [actions](actions.md) | ✅ **Updated 2026-03-07**: Count-based bond model propagated. `new_bond` uses `{target_type, target_id, retire_bond_id?}`. Bond provides flat +1d. GM may apply +1 bond stress on approval via `bond_strained`. |
-| [downtime](downtime.md) | "Maintain Bond" and "New Bond" downtime activities. Both cost 1 FT. New Bond now specifies target + optional retire_bond_id. |
+| [actions](actions.md) | ✅ **Updated 2026-03-07**: Count-based bond model propagated. `new_bond` uses `{target_type, target_id, retire_bond_id?}`. Bond provides flat +1d. GM may apply −1 bond charge on approval via `bond_strained` flag. |
+| [downtime](downtime.md) | "Maintain Bond" and "New Bond" downtime activities. Both cost 1 FT. New Bond now specifies target + optional retire_bond_id. Maintain Bond restores charges to effective max. |
 | [feed](feed.md) | ✅ **Updated 2026-03-10**: Renamed "NPC-intermediary" to "Character-intermediary" throughout. PCs are valid intermediaries noted. |
 | [events](events.md) | Bond changes logged as events. Visibility references feed.md. |
-| [glossary](../glossary.md) | ✅ **Updated 2026-03-07**: Character-intermediary rename done. Action/GM Action/Player Direct Action terms added. |
-| [architecture/data-model](../architecture/data-model.md) | Unified `slots` table with 9 slot_types. `pc_bond` (8 max), `npc_bond` (7 max). Nullable mechanical fields. See [data-model.md](../architecture/data-model.md). |
+| [glossary](../glossary.md) | ✅ **Updated 2026-03-07**: Character-intermediary rename done. Action/GM Action/Player Direct Action terms added. Bond charges terminology should be reviewed for alignment with trait charges entry. |
+| [architecture/data-model](../architecture/data-model.md) | Unified `slots` table with 9 slot_types. `pc_bond` (8 max), `npc_bond` (7 max). Nullable mechanical fields. Physical columns `stress` and `stress_degradations` store bond charges and degradation count respectively. See [data-model.md](../architecture/data-model.md). |
 
 ---
 
@@ -470,4 +474,4 @@ None — all open questions resolved in 2026-03-07 interrogation.
 
 ---
 
-_Last updated: 2026-03-14 (added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior)_
+_Last updated: 2026-03-15 (reframed "bond stress" as "bond charges" to unify with trait charges concept; physical DB columns `stress`/`stress_degradations` unchanged)_

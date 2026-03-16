@@ -10,7 +10,7 @@ A backend state tracker for a single narrative-heavy, low-crunch tabletop RPG ca
 
 **Core principle**: Mutable state + append-only event log. No DSL — all game logic is hardcoded in Python. API-first REST.
 
-**Current phase**: Specification and design.
+**Current phase**: Specification complete. Ready for implementation.
 
 ---
 
@@ -21,10 +21,12 @@ wizards-engine/
 ├── spec/                    # Agent-centric specifications (structured for LLM consumption)
 │   ├── MASTER.md            # Central index and status tracker
 │   ├── glossary.md          # Canonical term definitions
+│   ├── walkthrough.md       # End-to-end UX walkthrough (player + GM journeys)
 │   ├── architecture/        # System-level design docs
-│   ├── domains/             # Feature area specifications
-│   └── implementation/      # Epic and Story specs for building
-├── docs/                    # Human-readable documentation
+│   ├── domains/             # Feature area specifications (11 specs, all complete)
+│   └── implementation/      # Epic and Story specs (13 epics, 46 stories, Phases 1-5)
+├── docs/
+│   └── archive/             # Historical design notes (engine-original-notes.md)
 ├── .claude/
 │   ├── CLAUDE.md            # This file
 │   └── commands/            # Custom slash commands
@@ -152,21 +154,31 @@ Phase (major milestone)
 
 ---
 
-## Technical Conventions (For Future Implementation)
+## Technical Conventions
 
 ### Stack
-- **Language**: Python
+- **Language**: Python 3.11+
 - **Framework**: FastAPI
 - **Database**: SQLite
 - **ORM**: SQLAlchemy
 - **Migrations**: Alembic
 - **Validation**: Pydantic
 - **IDs**: ULIDs (python-ulid)
+- **Package management**: uv + pip (`pip install -e .`)
+- **Dev server**: `uvicorn --reload`
 
 ### Code Style
 - Type hints where applicable
 - Docstrings for public functions
-- Tests alongside code
+- Tests alongside code (pytest + httpx test client)
+- Integration tests against fixture DB (canonical seed data per test)
+
+### Key Implementation Decisions
+- **Bond-graph traversal**: App-layer BFS in Python (load active bonds into memory, traverse with standard BFS). Not SQL recursive CTEs. See `spec/architecture/overview.md`.
+- **System proposals**: Two auto-generated proposal types — `resolve_clock` (on clock completion) and `resolve_trauma` (on Stress hitting max). Both follow the same pattern: system detects boundary → generates pending proposal → GM fills in details and approves.
+- **Bond charges**: Bonds use "charges" (0–5) conceptually identical to trait charges. Physical DB columns are named `stress`/`stress_degradations` for historical reasons. See `spec/domains/bonds.md`.
+- **12 action types**: 3 session actions + 7 downtime actions + 2 system proposals. See `spec/domains/actions.md`.
+- **Magic Stat XP**: Resets to 0 on level-up. No overflow carry.
 
 ---
 

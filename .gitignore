@@ -201,6 +201,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+ops-claude-personas/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

@@ -136,6 +136,12 @@ This is **not** a dice roller or virtual tabletop — all rolling happens at the
 - **Rationale**: These cross-cutting concerns deserve their own spec rather than cluttering the system overview.
 - **Implications**: New spec document needed. Should be written before implementation begins.
 
+### Bond-Graph Traversal Strategy
+
+- **Decision**: Bond-graph traversal (for visibility and presence) is implemented as app-layer BFS in Python — loading active bonds into memory and traversing with standard breadth-first search — rather than as SQL recursive CTEs.
+- **Rationale**: Simpler to reason about, debug, and test. The bond graph for 4–6 players fits comfortably in memory. Python BFS with a visited set naturally handles cycles and the Character-intermediary traversal constraint.
+- **Implications**: No complex SQL queries for hop-distance computation. Bond data is loaded once per request and traversed in application code. Performance is not a concern at this scale.
+
 ---
 
 ## Open Questions
@@ -144,4 +150,4 @@ All resolved.
 
 ---
 
-_Last updated: 2026-03-05 (interrogation — resolved all 5 open questions: deployment model, UI serving, pagination, real-time, stale reference fix)_
+_Last updated: 2026-03-15 (added bond-graph traversal strategy: app-layer BFS in Python)_

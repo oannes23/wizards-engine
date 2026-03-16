@@ -190,8 +190,8 @@ starred_objects ──> users + Game Object (user_id + object_type + object_id)
 | bidirectional | BOOLEAN | no | Whether both sides see this bond. Bonds only. |
 | template_id | TEXT | no | FK → `trait_templates`. Core/Role traits only. |
 | charge | INTEGER | no | 0–5. Core/Role traits only. |
-| stress | INTEGER | no | 0–5 (effective max = `5 - stress_degradations`). PC bonds only. |
-| stress_degradations | INTEGER | no | Count of max reductions. PC bonds only. |
+| stress | INTEGER | no | 0–5 (effective max = `5 - stress_degradations`). PC bonds only. Conceptually "bond charges" in bonds.md terminology — the physical column name `stress` is kept for simplicity. |
+| stress_degradations | INTEGER | no | Count of max reductions. PC bonds only. Conceptually "degradation count" in bonds.md terminology — the physical column name `stress_degradations` is kept for simplicity. |
 | is_trauma | BOOLEAN | no | True if slot holds a Trauma. PC bonds only. |
 | created_at | DATETIME | yes | Auto |
 | updated_at | DATETIME | yes | Auto |
@@ -384,7 +384,7 @@ starred_objects ──> users + Game Object (user_id + object_type + object_id)
 |--------|------|----------|-------|
 | id | TEXT (ULID) | yes | PK |
 | character_id | TEXT | no | FK → `characters`. Submitting character. **Null for system-generated proposals** (e.g., `resolve_clock`). |
-| action_type | TEXT | yes | One of 11 types (see catalog below). |
+| action_type | TEXT | yes | One of 12 types (see catalog below). |
 | origin | TEXT | yes | `player` or `system`. Distinguishes player-submitted from system-generated. |
 | narrative | TEXT | yes | Player-written description of the action. GM can override on approval. |
 | selections | JSON | yes | All player selections: modifiers (`{core_trait_id?, role_trait_id?, bond_id?}`), plot_spend, and type-specific details. Structure varies by action_type. |
@@ -413,6 +413,7 @@ starred_objects ──> users + Game Object (user_id + object_type + object_id)
 | `new_trait` | Downtime | 1 FT | Replace/fill a Core or Role trait slot |
 | `new_bond` | Downtime | 1 FT | Replace/fill a bond slot |
 | `resolve_clock` | System | — | System-generated when clock completes. `origin = system`, `character_id = null`. |
+| `resolve_trauma` | System | — | System-generated when character Stress hits max. `origin = system`, `character_id = affected character`. GM fills in trauma details. |
 
 ### `starred_objects`
 
@@ -557,4 +558,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-14 (added stories.visibility_level column per feed.md. Updated last_session_time_now default to 0 per downtime.md/character-core.md alignment)_
+_Last updated: 2026-03-15 (added `resolve_trauma` action type; updated action type count to 12; added bonds.md terminology note for `stress`/`stress_degradations` columns in `slots`)_

@@ -15,6 +15,15 @@ Implement the authentication system (cookie-based magic links), core API endpoin
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 1.2.1 — Auth Middleware | 🔴 Not started | — |
+| 1.2.2 — Setup Endpoint | 🔴 Not started | — |
+| 1.2.3 — Login Endpoint | 🔴 Not started | — |
+| 1.2.4 — Identity & Profile | 🔴 Not started | — |
+| 1.2.5 — Test Fixture System | 🔴 Not started | — |
+| 1.2.6 — API Conventions | 🔴 Not started | — |
+
 ### Story 1.2.1 — Auth Middleware
 
 **Files to create**:

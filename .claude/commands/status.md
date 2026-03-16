@@ -93,6 +93,28 @@ For staleness detection involving source files:
 
 ---
 
+## Implementation Progress
+
+After the spec status sections, add an implementation progress section by reading `spec/implementation/README.md` and the story status tables in each epic file.
+
+```markdown
+## Implementation Progress
+
+| Phase | Epic | Status | Progress |
+|-------|------|--------|----------|
+| 1 | 1.1 — Scaffolding & DB | 🔴 Not started | 0/4 |
+| 1 | 1.2 — Auth & API Skeleton | 🔴 Not started | 0/6 |
+| ... | ... | ... | ... |
+
+**Overall**: X/46 stories complete
+
+**Next up**: [First story in the first non-complete epic, following dependency order]
+```
+
+Read the status table from `spec/implementation/README.md` for the epic-level view, and check individual epic files for story-level detail when needed. Identify the next actionable story by following the dependency graph in README.md.
+
+---
+
 ## Important Notes
 
 - This is a **read-only** command — don't modify any files

@@ -15,6 +15,14 @@ Implement the player proposal system: submit, calculate effects, GM approve/reje
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 4.3.1 — Proposal CRUD + Submission | 🔴 Not started | — |
+| 4.3.2 — Skill Action Calculations | 🔴 Not started | — |
+| 4.3.3 — GM Approval + Rejection | 🔴 Not started | — |
+| 4.3.4 — Downtime Action Types | 🔴 Not started | — |
+| 4.3.5 — Magic Actions + Sacrifice | 🔴 Not started | — |
+
 ### Story 4.3.1 — Proposal CRUD + Submission
 
 **Files to create**:

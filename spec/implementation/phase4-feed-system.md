@@ -15,6 +15,13 @@ Implement the unified feed — merging events and story entries into a single vi
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 4.4.1 — Per-Game Object Feed | 🔴 Not started | — |
+| 4.4.2 — Personal + Starred + Silent Feeds | 🔴 Not started | — |
+| 4.4.3 — Starring API | 🔴 Not started | — |
+| 4.4.4 — Story Visibility | 🔴 Not started | — |
+
 ### Story 4.4.1 — Per-Game Object Feed
 
 **Files to create**:

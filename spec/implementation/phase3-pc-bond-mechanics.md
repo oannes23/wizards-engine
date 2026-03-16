@@ -15,6 +15,11 @@ Extend the bond service from Epic 2.3 with PC-specific mechanics: bond stress, d
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 3.3.1 — PC Bond Stress & Degradation | 🔴 Not started | — |
+| 3.3.2 — Trauma Mechanic | 🔴 Not started | — |
+
 ### Story 3.3.1 — PC Bond Stress & Degradation
 
 **Files to modify**:

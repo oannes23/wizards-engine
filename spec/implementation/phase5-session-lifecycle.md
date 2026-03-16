@@ -15,6 +15,14 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 5.1.1 — Session Start | 🔴 Not started | — |
+| 5.1.2 — Late Joins | 🔴 Not started | — |
+| 5.1.3 — Session End | 🔴 Not started | — |
+| 5.1.4 — Find Time | 🔴 Not started | — |
+| 5.1.5 — Session Timeline | 🔴 Not started | — |
+
 ### Story 5.1.1 — Session Start
 
 **Files to modify**:

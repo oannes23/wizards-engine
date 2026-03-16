@@ -15,6 +15,12 @@ Implement the event creation service, the events API (read-only with filtering),
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 4.1.1 — Event Creation Service | 🔴 Not started | — |
+| 4.1.2 — Events API | 🔴 Not started | — |
+| 4.1.3 — Bond-Distance Visibility Filtering | 🔴 Not started | — |
+
 ### Story 4.1.1 — Event Creation Service
 
 **Files to create**:

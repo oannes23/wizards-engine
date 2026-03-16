@@ -15,6 +15,13 @@ Bootstrap the entire project: Python package structure, FastAPI application, SQL
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 1.1.1 — Project Structure | 🔴 Not started | — |
+| 1.1.2 — Database & ORM Setup | 🔴 Not started | — |
+| 1.1.3 — All Table Migrations | 🔴 Not started | — |
+| 1.1.4 — SQLAlchemy Models | 🔴 Not started | — |
+
 ### Story 1.1.1 — Project Structure
 
 **Files to create**:

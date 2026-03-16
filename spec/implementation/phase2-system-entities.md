@@ -15,6 +15,14 @@ Implement CRUD for the three System Entity types: Clocks, Stories (with owners a
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 2.2.1 — Clock CRUD | 🔴 Not started | — |
+| 2.2.2 — Story CRUD + Owners | 🔴 Not started | — |
+| 2.2.3 — Story Entries | 🔴 Not started | — |
+| 2.2.4 — Session CRUD (Draft Only) | 🔴 Not started | — |
+| 2.2.5 — Session Participants | 🔴 Not started | — |
+
 ### Story 2.2.1 — Clock CRUD
 
 **Files to create**:

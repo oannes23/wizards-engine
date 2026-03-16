@@ -15,6 +15,12 @@ Implement the bond graph service layer (descriptive bonds only — PC bond mecha
 
 ## Stories
 
+| Story | Status | Completed |
+|-------|--------|-----------|
+| 2.3.1 — Bond-Graph Service (Descriptive Bonds Only) | 🔴 Not started | — |
+| 2.3.2 — Bond Display on Game Object Detail | 🔴 Not started | — |
+| 2.3.3 — Bond-Distance Presence | 🔴 Not started | — |
+
 ### Story 2.3.1 — Bond-Graph Service (Descriptive Bonds Only)
 
 **Files to create**:

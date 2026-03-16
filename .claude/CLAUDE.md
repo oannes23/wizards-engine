@@ -154,6 +154,31 @@ Phase (major milestone)
 
 ---
 
+## Implementation Progress Tracking
+
+After completing a Story, update progress tracking in this order:
+
+1. **Epic file** (`spec/implementation/phase*-*.md`): In the story status table, set the story's status to `🟢 Complete` and the Completed column to today's date (YYYY-MM-DD).
+2. **README** (`spec/implementation/README.md`): Increment the Progress column for the epic (e.g., `0/4` → `1/4`). Update the epic's Status using the derivation rules below.
+
+### Status Values
+
+- `🔴 Not started` — no stories started
+- `🟡 In progress` — at least one story is `🟡 In progress` or `🟢 Complete`, but not all `🟢 Complete`
+- `🟢 Complete` — all stories `🟢 Complete`
+
+### Epic Status Derivation
+
+- All stories `🔴` → Epic is `🔴 Not started`
+- Any story `🟡` or `🟢` but not all `🟢` → Epic is `🟡 In progress`
+- All stories `🟢` → Epic is `🟢 Complete`
+
+### When Starting a Story
+
+Set the story's status to `🟡 In progress` in the epic file's status table. If the epic was `🔴`, update it to `🟡 In progress` in README.md.
+
+---
+
 ## Technical Conventions
 
 ### Stack

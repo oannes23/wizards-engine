@@ -105,18 +105,18 @@ Phase 5 (sequential)
 
 ## Status Tracking
 
-| Epic | Status |
-|------|--------|
-| 1.1 — Scaffolding & DB | 🔴 Not started |
-| 1.2 — Auth & API Skeleton | 🔴 Not started |
-| 2.1 — Game Object CRUD | 🔴 Not started |
-| 2.2 — System Entities | 🔴 Not started |
-| 2.3 — Bonds & Presence | 🔴 Not started |
-| 3.1 — Character Sheet Model | 🔴 Not started |
-| 3.2 — Traits & Magic Effects | 🔴 Not started |
-| 3.3 — PC Bond Mechanics | 🔴 Not started |
-| 4.1 — Event Log | 🔴 Not started |
-| 4.2 — GM Actions | 🔴 Not started |
-| 4.3 — Proposal Workflow | 🔴 Not started |
-| 4.4 — Feed System | 🔴 Not started |
-| 5.1 — Session Lifecycle | 🔴 Not started |
+| Epic | Status | Progress |
+|------|--------|----------|
+| 1.1 — Scaffolding & DB | 🔴 Not started | 0/4 |
+| 1.2 — Auth & API Skeleton | 🔴 Not started | 0/6 |
+| 2.1 — Game Object CRUD | 🔴 Not started | 0/4 |
+| 2.2 — System Entities | 🔴 Not started | 0/5 |
+| 2.3 — Bonds & Presence | 🔴 Not started | 0/3 |
+| 3.1 — Character Sheet Model | 🔴 Not started | 0/4 |
+| 3.2 — Traits & Magic Effects | 🔴 Not started | 0/3 |
+| 3.3 — PC Bond Mechanics | 🔴 Not started | 0/2 |
+| 4.1 — Event Log | 🔴 Not started | 0/3 |
+| 4.2 — GM Actions | 🔴 Not started | 0/3 |
+| 4.3 — Proposal Workflow | 🔴 Not started | 0/5 |
+| 4.4 — Feed System | 🔴 Not started | 0/4 |
+| 5.1 — Session Lifecycle | 🔴 Not started | 0/5 |

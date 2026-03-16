@@ -189,8 +189,15 @@ Set the story's status to `🟡 In progress` in the epic file's status table. If
 - **Migrations**: Alembic
 - **Validation**: Pydantic
 - **IDs**: ULIDs (python-ulid)
-- **Package management**: uv + pip (`pip install -e .`)
-- **Dev server**: `uvicorn --reload`
+- **Package management**: uv (`uv pip install -e ".[dev]"`)
+- **Dev server**: `uv run uvicorn --reload`
+
+### Running Commands
+Always use `uv run` to execute project commands. This ensures the correct virtual environment and dependencies are used.
+- **Tests**: `uv run pytest` (not bare `pytest`)
+- **Alembic**: `uv run alembic upgrade head` (not bare `alembic`)
+- **Dev server**: `uv run uvicorn wizards_engine.app:app --reload`
+- **Any Python script**: `uv run python ...`
 
 ### Code Style
 - Type hints where applicable

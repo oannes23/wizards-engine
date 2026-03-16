@@ -144,3 +144,62 @@ class LoginInviteResponse(BaseModel):
     """
 
     type: str = "invite"
+
+
+class JoinRequest(BaseModel):
+    """Request body for POST /api/v1/game/join.
+
+    Attributes
+    ----------
+    code:
+        The invite code to redeem — must match an unconsumed ``Invite.id``.
+    character_name:
+        Name for the new Character.  1–200 characters, trimmed, non-empty.
+    display_name:
+        Display name for the new User.  1–50 characters, trimmed, non-empty.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    code: str
+    character_name: str
+    display_name: str
+
+    @field_validator("character_name")
+    @classmethod
+    def validate_character_name(cls, v: str) -> str:
+        """Ensure character_name is non-empty and at most 200 characters."""
+        if not v:
+            raise ValueError("character_name must not be empty")
+        if len(v) > 200:
+            raise ValueError("character_name must be 200 characters or fewer")
+        return v
+
+    @field_validator("display_name")
+    @classmethod
+    def validate_display_name_field(cls, v: str) -> str:
+        """Ensure display_name is non-empty and at most 50 characters."""
+        return _validate_display_name(v)
+
+
+class JoinResponse(BaseModel):
+    """Response body for a successful POST /api/v1/game/join.
+
+    Attributes
+    ----------
+    id:
+        ULID of the newly created User.
+    display_name:
+        The player's display name as stored.
+    role:
+        Always ``"player"`` for the join endpoint.
+    character_id:
+        ULID of the newly created Character linked to this User.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    display_name: str
+    role: str
+    character_id: str | None

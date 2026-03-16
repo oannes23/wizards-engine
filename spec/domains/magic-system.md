@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-13
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [character-core](character-core.md), [traits](traits.md), [bonds](bonds.md)
 **Depended on by**: [actions](actions.md), [downtime](downtime.md)
 

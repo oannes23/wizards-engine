@@ -17,8 +17,8 @@ Extend the bond service from Epic 2.3 with PC-specific mechanics: bond stress, d
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 3.3.1 — PC Bond Stress & Degradation | 🔴 Not started | — |
-| 3.3.2 — Trauma Mechanic | 🔴 Not started | — |
+| 3.3.1 — PC Bond Stress & Degradation | 🟢 Complete | 2026-03-16 |
+| 3.3.2 — Trauma Mechanic | 🟢 Complete | 2026-03-16 |
 
 ### Story 3.3.1 — PC Bond Stress & Degradation
 
@@ -32,13 +32,13 @@ Extend the bond service from Epic 2.3 with PC-specific mechanics: bond stress, d
 - PC bonds (`slot_type = "pc_bond"`) have `stress` (0–effective max) and `stress_degradations` (count)
 - Effective bond stress max = `5 - stress_degradations`
 - Stress increment: service validates against effective max
-- At max stress:
-  - Stress resets to 0
+- At max stress (charges reach 0):
   - `stress_degradations` incremented by 1
-  - Effective max decreases by 1
-  - All in one operation
+  - Effective max decreases by 1 (`5 - stress_degradations`)
+  - Charges reset to the new effective max (not to 0)
+  - All in one compound operation
 - Stress decrement (healing): service supports setting stress to 0 (Maintain Bond)
-- Degradation reversal: service supports decrementing `stress_degradations` (GM action)
+- Degradation reversal: service supports decrementing `stress_degradations` (GM action). Charges are NOT automatically adjusted on reversal — a separate restore_bond_charges call is needed to reflect the new effective max.
 - At 0 effective max (5 degradations): no additional mechanical rule — GM handles narratively
 - Bond stress fields are null/absent on non-PC bonds (npc_bond, group_relation, etc.)
 

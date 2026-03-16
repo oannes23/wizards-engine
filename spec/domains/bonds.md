@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-07
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [game-objects](game-objects.md), [character-core](character-core.md)
 **Depended on by**: [actions](actions.md), [downtime](downtime.md), [events](events.md)
 
@@ -149,9 +149,9 @@ Bond charges are the bond equivalent of trait charges — a measure of how much 
 
 - **Range**: 0 to effective max (base 5, decreases with degradations)
 - **Loses charges from**: GM narrative actions, or −1 when GM decides a proposal bond use strains it (via `bond_strained` flag on approval)
-- **At 0 charges**: GM resets charges to full, increments degradation count by 1 (effective max decreases), narrates consequence. Recorded as `meter.set` (charge reset) + `meter.delta` (degradation increment) in the event. See [events.md](events.md) Meter Boundary Patterns.
-- **Restoration**: "Maintain Bond" downtime activity fully restores current charges to effective max. Costs 1 FT. Does not reverse degradations.
-- **Degradation reversal**: GM can reverse a degradation via direct action (decrement degradation count)
+- **At 0 charges**: GM resets charges to the new effective max (`5 - new_degradation_count`), increments degradation count by 1 (effective max decreases), narrates consequence. Both mutations happen in a single compound operation. Recorded as `meter.set` (charge reset) + `meter.delta` (degradation increment) in the event. See [events.md](events.md) Meter Boundary Patterns.
+- **Restoration**: "Maintain Bond" downtime activity fully restores current charges to effective max (`5 - degradation_count`). Costs 1 FT. Does not reverse degradations.
+- **Degradation reversal**: GM can reverse a degradation via direct action (decrement degradation count). Does **not** automatically adjust the current charge value — a follow-up "Maintain Bond" or direct charge set is needed to restore charges after reversal.
 - **At 0 effective max** (5 degradations): GM handles narratively — no additional mechanical rule
 
 > **Physical DB columns**: Bond charges map to the `stress` column and degradations to `stress_degradations` in the `slots` table. The column names reflect the original "bond stress" terminology; the conceptual reframe to "charges" aligns bonds with traits without requiring a schema change.
@@ -474,4 +474,4 @@ None — all open questions resolved in 2026-03-07 interrogation.
 
 ---
 
-_Last updated: 2026-03-15 (reframed "bond stress" as "bond charges" to unify with trait charges concept; physical DB columns `stress`/`stress_degradations` unchanged)_
+_Last updated: 2026-03-16 (verified against Phase 3 implementation; clarified degradation-boundary behavior: charges reset to new effective max in single compound operation; degradation reversal does not auto-restore charges)_

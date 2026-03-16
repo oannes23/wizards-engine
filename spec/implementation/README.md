@@ -109,12 +109,12 @@ Phase 5 (sequential)
 |------|--------|----------|
 | 1.1 — Scaffolding & DB | 🟢 Complete | 4/4 |
 | 1.2 — Auth & API Skeleton | 🟢 Complete | 6/6 |
-| 2.1 — Game Object CRUD | 🔴 Not started | 0/4 |
-| 2.2 — System Entities | 🔴 Not started | 0/5 |
-| 2.3 — Bonds & Presence | 🔴 Not started | 0/3 |
-| 3.1 — Character Sheet Model | 🔴 Not started | 0/4 |
-| 3.2 — Traits & Magic Effects | 🔴 Not started | 0/3 |
-| 3.3 — PC Bond Mechanics | 🔴 Not started | 0/2 |
+| 2.1 — Game Object CRUD | 🟢 Complete | 4/4 |
+| 2.2 — System Entities | 🟢 Complete | 5/5 |
+| 2.3 — Bonds & Presence | 🟢 Complete | 3/3 |
+| 3.1 — Character Sheet Model | 🟢 Complete | 4/4 |
+| 3.2 — Traits & Magic Effects | 🟢 Complete | 3/3 |
+| 3.3 — PC Bond Mechanics | 🟢 Complete | 2/2 |
 | 4.1 — Event Log | 🔴 Not started | 0/3 |
 | 4.2 — GM Actions | 🔴 Not started | 0/3 |
 | 4.3 — Proposal Workflow | 🔴 Not started | 0/5 |

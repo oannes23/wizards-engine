@@ -17,9 +17,9 @@ Implement the Trait Template catalog (GM CRUD), Core/Role trait instance managem
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 3.2.1 — Trait Template Catalog | 🔴 Not started | — |
-| 3.2.2 — Trait Instances on Characters | 🔴 Not started | — |
-| 3.2.3 — Magic Effects on Characters | 🔴 Not started | — |
+| 3.2.1 — Trait Template Catalog | 🟢 Complete | 2026-03-16 |
+| 3.2.2 — Trait Instances on Characters | 🟢 Complete | 2026-03-16 |
+| 3.2.3 — Magic Effects on Characters | 🟢 Complete | 2026-03-16 |
 
 ### Story 3.2.1 — Trait Template Catalog
 

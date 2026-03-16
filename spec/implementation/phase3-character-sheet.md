@@ -17,10 +17,10 @@ Complete the character sheet model: full character creation via invite flow, inv
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 3.1.1 — Full Character Creation (Invite Flow) | 🔴 Not started | — |
-| 3.1.2 — Invite Management | 🔴 Not started | — |
-| 3.1.3 — GM Character + Link Refresh | 🔴 Not started | — |
-| 3.1.4 — Character Detail Response (Full Sheet) | 🔴 Not started | — |
+| 3.1.1 — Full Character Creation (Invite Flow) | 🟢 Complete | 2026-03-16 |
+| 3.1.2 — Invite Management | 🟢 Complete | 2026-03-16 |
+| 3.1.3 — GM Character + Link Refresh | 🟢 Complete | 2026-03-16 |
+| 3.1.4 — Character Detail Response (Full Sheet) | 🟢 Complete | 2026-03-16 |
 
 ### Story 3.1.1 — Full Character Creation (Invite Flow)
 

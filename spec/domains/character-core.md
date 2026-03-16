@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-12
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [game-objects](game-objects.md), [auth](auth.md)
 **Depended on by**: [traits](traits.md), [bonds](bonds.md), [magic-system](magic-system.md), [actions](actions.md)
 

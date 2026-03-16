@@ -57,10 +57,10 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Area | Doc | Status | Key Open Questions |
 |------|-----|--------|-------------------|
 | Game Objects | [game-objects.md](domains/game-objects.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for clock completion. |
-| Character Core | [character-core.md](domains/character-core.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for Stress/Trauma compound consequence. |
-| Traits | [traits.md](domains/traits.md) | 🟢 | All resolved. **Updated 2026-03-13**: Trait template CRUD endpoints (standard REST, GM-only). Auto-catalog on new_trait approval. Template propagation (name/desc only, type immutable, soft-delete orphans). |
-| Bonds | [bonds.md](domains/bonds.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior. |
-| Magic System | [magic-system.md](domains/magic-system.md) | 🟢 | All resolved. **Updated 2026-03-13**: Effect use body ({narrative?: string}). charge_magic approval outcome (charges_added/power_boost in gm_overrides). |
+| Character Core | [character-core.md](domains/character-core.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for Stress/Trauma compound consequence. **Verified 2026-03-16**: Aligned with Phase 3 implementation. |
+| Traits | [traits.md](domains/traits.md) | 🟢 | All resolved. **Updated 2026-03-13**: Trait template CRUD endpoints (standard REST, GM-only). Auto-catalog on new_trait approval. Template propagation (name/desc only, type immutable, soft-delete orphans). **Verified 2026-03-16**: Aligned with Phase 3 implementation. Note: `DELETE /trait-templates/{id}` is idempotent in code (re-deleting returns 204 silently); spec says 204 but does not specify idempotency — code is stricter (better). |
+| Bonds | [bonds.md](domains/bonds.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior. **Verified 2026-03-16**: Aligned with Phase 3 implementation. `apply_bond_strain` resets charges to new effective max after degradation (not to 0). `reverse_degradation` does not auto-restore charges — separate `restore_bond_charges` call required. `retire_effect` is idempotent (no guard on already-inactive). |
+| Magic System | [magic-system.md](domains/magic-system.md) | 🟢 | All resolved. **Updated 2026-03-13**: Effect use body ({narrative?: string}). charge_magic approval outcome (charges_added/power_boost in gm_overrides). **Verified 2026-03-16**: Aligned with Phase 3 implementation. `retire_effect` service function is idempotent (retires without checking current is_active state). |
 | Actions | [actions.md](domains/actions.md) | 🟢 | All resolved. Unified action system. GM actions reuse domain event types. Integrity-only validation. Clean CRUD/GM split. Proposal withdrawal (hard delete). ULID pagination. |
 | Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). |
 | Events | [events.md](domains/events.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added operation type tags (field.set, meter.delta, meter.set) on changes entries. Meter boundary patterns catalog with clamped annotation. Compound consequence documentation. Cross-references to boundary behaviors in other specs. |
@@ -155,12 +155,12 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 |-------|------|------|---------|--------|
 | 1 | 1.1 — Scaffolding & DB | [phase1-scaffolding-db.md](implementation/phase1-scaffolding-db.md) | 4 | 🟢 |
 | 1 | 1.2 — Auth & API Skeleton | [phase1-auth-api-skeleton.md](implementation/phase1-auth-api-skeleton.md) | 6 | 🟢 |
-| 2 | 2.1 — Game Object CRUD | [phase2-game-object-crud.md](implementation/phase2-game-object-crud.md) | 4 | 🔴 |
-| 2 | 2.2 — System Entities | [phase2-system-entities.md](implementation/phase2-system-entities.md) | 5 | 🔴 |
-| 2 | 2.3 — Bonds & Presence | [phase2-bonds-presence.md](implementation/phase2-bonds-presence.md) | 3 | 🔴 |
-| 3 | 3.1 — Character Sheet Model | [phase3-character-sheet.md](implementation/phase3-character-sheet.md) | 4 | 🔴 |
-| 3 | 3.2 — Traits & Magic Effects | [phase3-traits-effects.md](implementation/phase3-traits-effects.md) | 3 | 🔴 |
-| 3 | 3.3 — PC Bond Mechanics | [phase3-pc-bond-mechanics.md](implementation/phase3-pc-bond-mechanics.md) | 2 | 🔴 |
+| 2 | 2.1 — Game Object CRUD | [phase2-game-object-crud.md](implementation/phase2-game-object-crud.md) | 4 | 🟢 |
+| 2 | 2.2 — System Entities | [phase2-system-entities.md](implementation/phase2-system-entities.md) | 5 | 🟢 |
+| 2 | 2.3 — Bonds & Presence | [phase2-bonds-presence.md](implementation/phase2-bonds-presence.md) | 3 | 🟢 |
+| 3 | 3.1 — Character Sheet Model | [phase3-character-sheet.md](implementation/phase3-character-sheet.md) | 4 | 🟢 |
+| 3 | 3.2 — Traits & Magic Effects | [phase3-traits-effects.md](implementation/phase3-traits-effects.md) | 3 | 🟢 |
+| 3 | 3.3 — PC Bond Mechanics | [phase3-pc-bond-mechanics.md](implementation/phase3-pc-bond-mechanics.md) | 2 | 🟢 |
 | 4 | 4.1 — Event Log | [phase4-event-log.md](implementation/phase4-event-log.md) | 3 | 🔴 |
 | 4 | 4.2 — GM Actions | [phase4-gm-actions.md](implementation/phase4-gm-actions.md) | 3 | 🔴 |
 | 4 | 4.3 — Proposal Workflow | [phase4-proposal-workflow.md](implementation/phase4-proposal-workflow.md) | 5 | 🔴 |

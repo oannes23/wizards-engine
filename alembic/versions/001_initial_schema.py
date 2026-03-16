@@ -177,7 +177,7 @@ def upgrade() -> None:
     op.create_table('users',
     sa.Column('display_name', sa.String(length=50), nullable=False),
     sa.Column('role', sa.String(length=10), nullable=False),
-    sa.Column('login_code', sa.String(length=26), nullable=False),
+    sa.Column('login_code', sa.String(), nullable=False),
     sa.Column('character_id', sa.String(length=26), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('id', sa.String(length=26), nullable=False),

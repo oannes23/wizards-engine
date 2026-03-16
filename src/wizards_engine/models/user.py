@@ -22,7 +22,7 @@ class User(TimestampMixin, Base):
 
     display_name: Mapped[str] = mapped_column(String(50), nullable=False)
     role: Mapped[str] = mapped_column(String(10), nullable=False)  # 'gm' | 'player'
-    login_code: Mapped[str] = mapped_column(String(26), nullable=False, index=True)
+    login_code: Mapped[str] = mapped_column(String, nullable=False, index=True)
     character_id: Mapped[str | None] = mapped_column(
         String(26),
         ForeignKey("characters.id", ondelete="SET NULL"),

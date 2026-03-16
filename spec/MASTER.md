@@ -44,7 +44,7 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Area | Doc | Status | Notes |
 |------|-----|--------|-------|
 | System Overview | [overview.md](architecture/overview.md) | 🟢 | All resolved. Deployment: self-hosted VPS. UI: same process. Pagination: ULID cursor. API conventions: separate doc. |
-| API Conventions | [api-conventions.md](architecture/api-conventions.md) | 🟢 | All resolved. **Updated 2026-03-13**: FastAPI framework. Bare responses, nested error format, snake_case naming, PATCH omit/null semantics, ISO 8601 timestamps, ULID-order sorting, 404 for authz, same-origin CORS. |
+| API Conventions | [api-conventions.md](architecture/api-conventions.md) | 🟢 | All resolved. **Updated 2026-03-13**: FastAPI framework. Bare responses, nested error format, snake_case naming, PATCH omit/null semantics, ISO 8601 timestamps, ULID-order sorting, 404 for authz, same-origin CORS. **Verified 2026-03-16**: Custom HTTPException handler convention documented. |
 | Data Model | [data-model.md](architecture/data-model.md) | 🟢 | All resolved. **Updated 2026-03-14**: events.changes value structure updated: added op tag (field.set/meter.delta/meter.set) and optional clamped flag. |
 | MVP Scope | [mvp-scope.md](architecture/mvp-scope.md) | 🟢 | All resolved. Single MVP, 6-phase build. |
 
@@ -65,7 +65,7 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). |
 | Events | [events.md](domains/events.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added operation type tags (field.set, meter.delta, meter.set) on changes entries. Meter boundary patterns catalog with clamped annotation. Compound consequence documentation. Cross-references to boundary behaviors in other specs. |
 | Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Updated 2026-03-12**: ULID cursor pagination (default 50, max 100). Discriminated union feed items (common fields + type-specific). Private visibility = union of actor + primary target. Story `visibility_level` field for GM override. Full filter set on all endpoints. Own actions included with `is_own` flag. Story entry targets = owners + refs union. Rider events as separate feed items. |
-| Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. |
+| Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. **Verified 2026-03-16**: Login response `type` discriminator and cookie max_age documented. |
 
 ---
 
@@ -153,8 +153,8 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 
 | Phase | Epic | File | Stories | Status |
 |-------|------|------|---------|--------|
-| 1 | 1.1 — Scaffolding & DB | [phase1-scaffolding-db.md](implementation/phase1-scaffolding-db.md) | 4 | 🔴 |
-| 1 | 1.2 — Auth & API Skeleton | [phase1-auth-api-skeleton.md](implementation/phase1-auth-api-skeleton.md) | 6 | 🔴 |
+| 1 | 1.1 — Scaffolding & DB | [phase1-scaffolding-db.md](implementation/phase1-scaffolding-db.md) | 4 | 🟢 |
+| 1 | 1.2 — Auth & API Skeleton | [phase1-auth-api-skeleton.md](implementation/phase1-auth-api-skeleton.md) | 6 | 🟢 |
 | 2 | 2.1 — Game Object CRUD | [phase2-game-object-crud.md](implementation/phase2-game-object-crud.md) | 4 | 🔴 |
 | 2 | 2.2 — System Entities | [phase2-system-entities.md](implementation/phase2-system-entities.md) | 5 | 🔴 |
 | 2 | 2.3 — Bonds & Presence | [phase2-bonds-presence.md](implementation/phase2-bonds-presence.md) | 3 | 🔴 |

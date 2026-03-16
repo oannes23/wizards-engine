@@ -108,7 +108,7 @@ Phase 5 (sequential)
 | Epic | Status | Progress |
 |------|--------|----------|
 | 1.1 — Scaffolding & DB | 🟢 Complete | 4/4 |
-| 1.2 — Auth & API Skeleton | 🔴 Not started | 0/6 |
+| 1.2 — Auth & API Skeleton | 🟢 Complete | 6/6 |
 | 2.1 — Game Object CRUD | 🔴 Not started | 0/4 |
 | 2.2 — System Entities | 🔴 Not started | 0/5 |
 | 2.3 — Bonds & Presence | 🔴 Not started | 0/3 |

@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-13
-**Last verified**: —
+**Last verified**: 2026-03-16
 
 ---
 
@@ -26,6 +26,12 @@ This document defines the conventions for all HTTP API endpoints in Wizards Engi
 
 - **Decision**: Auto-generated OpenAPI docs are always on — `/docs` (Swagger UI), `/redoc` (ReDoc), `/openapi.json` (raw spec).
 - **Rationale**: Useful for development and the small user group. No security concern for a self-hosted single-game app.
+
+### Custom HTTPException Handler
+
+- **Decision**: The app factory registers a custom `HTTPException` handler that detects when `detail` is already a `{"error": {...}}` dict and returns it directly as the response body, bypassing FastAPI's default `{"detail": ...}` wrapper.
+- **Rationale**: FastAPI's default handler wraps `HTTPException.detail` under a `detail` key, which conflicts with the `{"error": {code, message}}` envelope this spec requires. The custom handler lets route code raise `HTTPException` with a pre-shaped error dict — keeping error-raising idiomatic while producing spec-compliant responses.
+- **Implications**: All route code and dependencies must pass `detail={"error": {"code": ..., "message": ..., "details"?: ...}}` to `HTTPException`. Plain-string details fall back to the standard `{"detail": "..."}` shape (used only for unexpected errors). The `responses.py` helper functions (`error_response`, `validation_error_response`) produce `JSONResponse` directly and bypass this handler entirely — they are for routes that need to return error responses without raising.
 
 ---
 

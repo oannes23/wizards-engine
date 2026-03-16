@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-13
-**Last verified**: —
+**Last verified**: 2026-03-16 (users and invites tables verified against Epic 1.2 implementation; remaining tables not yet implemented)
 
 ---
 

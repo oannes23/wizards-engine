@@ -17,11 +17,11 @@ Implement CRUD for the three System Entity types: Clocks, Stories (with owners a
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 2.2.1 — Clock CRUD | 🔴 Not started | — |
-| 2.2.2 — Story CRUD + Owners | 🔴 Not started | — |
-| 2.2.3 — Story Entries | 🔴 Not started | — |
-| 2.2.4 — Session CRUD (Draft Only) | 🔴 Not started | — |
-| 2.2.5 — Session Participants | 🔴 Not started | — |
+| 2.2.1 — Clock CRUD | 🟢 Complete | 2026-03-16 |
+| 2.2.2 — Story CRUD + Owners | 🟢 Complete | 2026-03-16 |
+| 2.2.3 — Story Entries | 🟢 Complete | 2026-03-16 |
+| 2.2.4 — Session CRUD (Draft Only) | 🟢 Complete | 2026-03-16 |
+| 2.2.5 — Session Participants | 🟢 Complete | 2026-03-16 |
 
 ### Story 2.2.1 — Clock CRUD
 
@@ -121,3 +121,25 @@ Implement CRUD for the three System Entity types: Clocks, Stories (with owners a
 - Story visibility filtering is deferred to Epic 4.4
 - Clock progress changes are via GM actions (Phase 4), not PATCH
 - Session CRUD at this phase only handles Draft lifecycle — no Start/End transitions
+
+## Implementation Notes (verified 2026-03-16)
+
+**Story 2.2.1 — Clock CRUD**
+
+The standalone `POST /clocks` route validates that the referenced Game Object exists AND is not soft-deleted when `associated_type`/`associated_id` are provided. The spec states "association fixed at creation" but does not explicitly require the target to be non-deleted. The `POST /groups/{id}/clocks` sugar route also rejects soft-deleted groups with 404.
+
+**Story 2.2.2 — Story CRUD + Owners**
+
+Invalid `parent_id` on `POST /stories` returns 422 (not 404 as the docstring draft suggests). This is consistent with the `POST /locations` pattern for `parent_id` validation. Both treat a missing parent as a field validation error, not a resource-not-found error.
+
+**Story 2.2.5 — Session Participants**
+
+The participant URL path uses `character_id` as the path parameter, not `player_id` as the spec acceptance criteria states. All three participant endpoints follow the pattern:
+
+```
+POST   /sessions/{id}/participants
+DELETE /sessions/{id}/participants/{character_id}
+PATCH  /sessions/{id}/participants/{character_id}
+```
+
+The spec acceptance criteria reference `{player_id}` in the DELETE and PATCH URLs — the implementation correctly uses `{character_id}` throughout, which is consistent with the request body field (`character_id`) and with how participants are identified everywhere else in the system. The spec wording should be treated as an error; `character_id` is the correct identifier.

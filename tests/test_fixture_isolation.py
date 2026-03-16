@@ -242,10 +242,10 @@ def test_seed_data_npc_bonds_point_to_locations(seed_data):
 
 
 def test_seed_data_pc_bond_fields(seed_data):
-    """pc_bond slots have stress=0, stress_degradations=0, is_trauma=False."""
+    """pc_bond slots have stress=5 (full charges), stress_degradations=0, is_trauma=False."""
     for key in ("pc1_bond", "pc2_bond"):
         bond = seed_data[key]
-        assert bond.stress == 0, f"{key}.stress should be 0"
+        assert bond.stress == 5, f"{key}.stress should be 5 (full charges)"
         assert bond.stress_degradations == 0, f"{key}.stress_degradations should be 0"
         assert bond.is_trauma is False, f"{key}.is_trauma should be False"
 

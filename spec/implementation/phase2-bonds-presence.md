@@ -17,9 +17,9 @@ Implement the bond graph service layer (descriptive bonds only — PC bond mecha
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 2.3.1 — Bond-Graph Service (Descriptive Bonds Only) | 🔴 Not started | — |
-| 2.3.2 — Bond Display on Game Object Detail | 🔴 Not started | — |
-| 2.3.3 — Bond-Distance Presence | 🔴 Not started | — |
+| 2.3.1 — Bond-Graph Service (Descriptive Bonds Only) | 🟢 Complete | 2026-03-16 |
+| 2.3.2 — Bond Display on Game Object Detail | 🟢 Complete | 2026-03-16 |
+| 2.3.3 — Bond-Distance Presence | 🟢 Complete | 2026-03-16 |
 
 ### Story 2.3.1 — Bond-Graph Service (Descriptive Bonds Only)
 
@@ -114,3 +114,17 @@ Implement the bond graph service layer (descriptive bonds only — PC bond mecha
 - Bond creation via API (GM actions) comes in Phase 4 — this Epic uses the service layer directly for testing
 - The traversal algorithm is reused for event visibility filtering in Epic 4.1
 - Test fixtures should create a small bond graph to verify traversal
+
+## Implementation Notes (verified 2026-03-16)
+
+**Story 2.3.1 — Bond-Graph Service**
+
+PC bonds (`pc_bond`) are initialized with `stress = 5` (full charges) and `stress_degradations = 0`. The `stress` column stores the current charge count (5 = full, 0 = empty), not a damage/penalty value. This is consistent with CLAUDE.md's note that bond charges and `stress` columns are conceptually inverted from the column name.
+
+A self-bond guard is enforced in `create_bond`: a Game Object cannot create a bond to itself. This constraint is not stated explicitly in the spec acceptance criteria but is a reasonable guard.
+
+Group → Character bonds are explicitly rejected by `_infer_slot_type` as a non-canonical pairing. The spec acceptance criteria table does not list this combination, so the rejection is correct and worth noting.
+
+**Story 2.3.2 — Bond Display on Game Object Detail**
+
+`GET /groups/{id}` and `GET /locations/{id}` return bonds as a flat combined list (active + past concatenated), not grouped into `{active: [...], past: [...]}` as `GET /characters/{id}` does. The character endpoint uses a `BondGroups` schema with two named lists; the group and location endpoints use a single `bonds` list with all bonds merged. This distinction reflects how the spec describes character bond display (explicitly grouped) versus group/location bond display (no grouping specified).

@@ -17,10 +17,10 @@ Implement standard CRUD endpoints for the three Game Object types (Characters, G
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 2.1.1 — NPC Character CRUD | 🔴 Not started | — |
-| 2.1.2 — Group CRUD | 🔴 Not started | — |
-| 2.1.3 — Location CRUD | 🔴 Not started | — |
-| 2.1.4 — Player Roster | 🔴 Not started | — |
+| 2.1.1 — NPC Character CRUD | 🟢 Complete | 2026-03-16 |
+| 2.1.2 — Group CRUD | 🟢 Complete | 2026-03-16 |
+| 2.1.3 — Location CRUD | 🟢 Complete | 2026-03-16 |
+| 2.1.4 — Player Roster | 🟢 Complete | 2026-03-16 |
 
 ### Story 2.1.1 — NPC Character CRUD
 

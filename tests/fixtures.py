@@ -184,10 +184,10 @@ def seed_data(db: Session) -> dict:
         target_id=group.id,
         name="Syndicate Contact",
         description="A reliable back-channel to the inner circle.",
-        stress=0,
+        stress=5,
         stress_degradations=0,
         is_trauma=False,
-        bidirectional=False,
+        bidirectional=True,
     )
     pc2_bond = Slot(
         slot_type="pc_bond",
@@ -197,10 +197,10 @@ def seed_data(db: Session) -> dict:
         target_id=group.id,
         name="Old Debt",
         description="They once pulled me out of a very deep hole.",
-        stress=0,
+        stress=5,
         stress_degradations=0,
         is_trauma=False,
-        bidirectional=False,
+        bidirectional=True,
     )
     npc1_bond = Slot(
         slot_type="npc_bond",

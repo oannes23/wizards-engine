@@ -1,0 +1,138 @@
+"""Service layer for Group CRUD operations.
+
+All database interactions for the Group resource live here.  Route
+handlers call these functions and handle HTTP-level concerns (status codes,
+response shaping) separately.
+
+Functions are stateless — each accepts a SQLAlchemy ``Session`` as its
+first argument.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy.orm import Query, Session
+
+from wizards_engine.models.group import Group
+
+
+def create_group(
+    db: Session,
+    *,
+    name: str,
+    tier: int,
+    description: str | None = None,
+    notes: str | None = None,
+) -> Group:
+    """Create a new Group and persist it.
+
+    Args:
+        db: Active SQLAlchemy session.
+        name: Group name.  Must be non-empty (caller validates).
+        tier: Power/influence level.  Must be >= 0 (caller validates).
+        description: Optional freeform description.
+        notes: Optional GM notes.
+
+    Returns:
+        The newly created and flushed :class:`~wizards_engine.models.group.Group`
+        instance with its auto-generated ``id`` populated.
+    """
+    group = Group(
+        name=name,
+        tier=tier,
+        description=description,
+        notes=notes,
+        is_deleted=False,
+    )
+    db.add(group)
+    db.flush()
+    db.refresh(group)
+    return group
+
+
+def get_group(db: Session, group_id: str) -> Group | None:
+    """Retrieve a single Group by its ULID, including soft-deleted ones.
+
+    Direct lookup by ID always returns the group regardless of the
+    ``is_deleted`` flag.  The route layer surfaces ``is_deleted`` in the
+    response so callers can see the deletion state.
+
+    Args:
+        db: Active SQLAlchemy session.
+        group_id: ULID primary key.
+
+    Returns:
+        The :class:`~wizards_engine.models.group.Group` if found,
+        or ``None`` if no row exists with that ID.
+    """
+    return db.get(Group, group_id)
+
+
+def list_groups_query(
+    db: Session,
+    *,
+    include_deleted: bool = False,
+) -> Query:
+    """Build a SQLAlchemy query for the Groups list with optional filters.
+
+    The returned query has *no* ``ORDER BY`` or ``LIMIT`` applied — the
+    caller (``api.pagination.paginate``) adds those.
+
+    Args:
+        db: Active SQLAlchemy session.
+        include_deleted: When ``True``, include soft-deleted groups.
+            Defaults to ``False`` (exclude deleted).
+
+    Returns:
+        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.group.Group`.
+    """
+    q = db.query(Group)
+
+    if not include_deleted:
+        q = q.filter(Group.is_deleted.is_(False))
+
+    return q
+
+
+def update_group(
+    db: Session,
+    group: Group,
+    updates: dict[str, Any],
+) -> Group:
+    """Apply a partial update to *group* and persist it.
+
+    Only keys present in *updates* are applied.  The caller (route handler)
+    is responsible for building *updates* using ``model_fields_set`` so that
+    omitted PATCH fields are not overwritten.
+
+    Args:
+        db: Active SQLAlchemy session.
+        group: The ORM instance to update.
+        updates: Mapping of field names to new values.  Only ``name``,
+            ``description``, and ``notes`` are permitted per the CRUD/GM
+            action split.  ``tier`` is not accepted here.
+
+    Returns:
+        The updated :class:`~wizards_engine.models.group.Group`
+        instance after flush.
+    """
+    for field, value in updates.items():
+        setattr(group, field, value)
+    db.flush()
+    db.refresh(group)
+    return group
+
+
+def delete_group(db: Session, group: Group) -> None:
+    """Soft-delete *group* by setting ``is_deleted = True``.
+
+    The group row is never physically removed.  References (bonds, slots,
+    etc.) continue to resolve to the deleted record.
+
+    Args:
+        db: Active SQLAlchemy session.
+        group: The ORM instance to soft-delete.
+    """
+    group.is_deleted = True
+    db.flush()

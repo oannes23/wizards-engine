@@ -19,6 +19,7 @@ POST /players/{id}/regenerate-token  — GM only.  Regenerates login code for th
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
@@ -58,7 +59,7 @@ def list_players(
         A flat list of player records.  GM callers receive ``login_url`` per
         entry; non-GM callers do not.
     """
-    users: list[User] = db.query(User).order_by(User.id).all()
+    users: list[User] = db.scalars(select(User).order_by(User.id)).all()
 
     if current_user.role == "gm":
         return [

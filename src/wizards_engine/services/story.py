@@ -98,9 +98,9 @@ def list_stories_query(
     owner_id: str | None = None,
     include_deleted: bool = False,
 ):
-    """Build a SQLAlchemy query for the Stories list with optional filters.
+    """Build a SQLAlchemy select statement for the Stories list with optional filters.
 
-    The returned query has no ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has no ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -112,15 +112,15 @@ def list_stories_query(
         include_deleted: When ``True``, include soft-deleted stories.  Defaults to ``False``.
 
     Returns:
-        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.story.Story`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.story.Story`.
     """
-    q = db.query(Story)
+    stmt = select(Story)
 
     if not include_deleted:
-        q = q.filter(Story.is_deleted.is_(False))
+        stmt = stmt.where(Story.is_deleted.is_(False))
 
     if status is not None:
-        q = q.filter(Story.status == status)
+        stmt = stmt.where(Story.status == status)
 
     if tag is not None:
         # Use SQLite's json_each() to check for exact tag membership.
@@ -131,17 +131,17 @@ def list_stories_query(
             .where(sa_text("json_each.value = :tag_val"))
             .correlate_except()
         )
-        q = q.filter(exists(tag_subq).params(tag_val=tag))
+        stmt = stmt.where(exists(tag_subq).params(tag_val=tag))
 
     if owner_type is not None and owner_id is not None:
-        q = q.join(
+        stmt = stmt.join(
             StoryOwner,
             (StoryOwner.story_id == Story.id)
             & (StoryOwner.owner_type == owner_type)
             & (StoryOwner.owner_id == owner_id),
         )
 
-    return q
+    return stmt
 
 
 def update_story(
@@ -281,12 +281,11 @@ def get_story_entries(db: Session, story_id: str) -> list[StoryEntry]:
     Returns:
         List of :class:`~wizards_engine.models.story.StoryEntry` instances.
     """
-    return (
-        db.query(StoryEntry)
-        .filter(StoryEntry.story_id == story_id, StoryEntry.is_deleted.is_(False))
+    return db.scalars(
+        select(StoryEntry)
+        .where(StoryEntry.story_id == story_id, StoryEntry.is_deleted.is_(False))
         .order_by(StoryEntry.created_at.asc())
-        .all()
-    )
+    ).all()
 
 
 # ---------------------------------------------------------------------------
@@ -304,11 +303,9 @@ def get_active_session_id(db: Session) -> str | None:
         The ULID of the active :class:`~wizards_engine.models.session.Session`,
         or ``None`` if no session is currently active.
     """
-    active = (
-        db.query(GameSession)
-        .filter(GameSession.status == "active")
-        .first()
-    )
+    active = db.scalars(
+        select(GameSession).where(GameSession.status == "active")
+    ).first()
     return active.id if active is not None else None
 
 

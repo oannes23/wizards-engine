@@ -1751,15 +1751,13 @@ def _has_pending_resolve_trauma(db: Session, character_id: str) -> bool:
     Returns:
         ``True`` if a pending ``resolve_trauma`` proposal exists.
     """
-    result = (
-        db.query(Proposal)
-        .filter(
+    result = db.scalars(
+        select(Proposal).where(
             Proposal.character_id == character_id,
             Proposal.action_type == "resolve_trauma",
             Proposal.status == "pending",
         )
-        .first()
-    )
+    ).first()
     return result is not None
 
 

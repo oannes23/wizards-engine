@@ -10,6 +10,7 @@ Provides injectable dependencies that routes can declare as parameters:
 """
 
 from fastapi import Depends, HTTPException, Request
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.auth import COOKIE_NAME
@@ -46,7 +47,7 @@ def get_current_user(
             detail={"error": {"code": "cookie_missing", "message": "No auth cookie present."}},
         )
 
-    user = db.query(User).filter(User.login_code == code).first()
+    user = db.scalars(select(User).where(User.login_code == code)).first()
     if user is None:
         raise HTTPException(
             status_code=401,

@@ -10,6 +10,7 @@ Subsequent calls return 409 Conflict because only one GM may exist.
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.auth import set_auth_cookie
@@ -53,7 +54,7 @@ def setup(
         JSONResponse(409): If a user with ``role = 'gm'`` already exists
             (``already_setup`` error code).
     """
-    existing_gm = db.query(User).filter(User.role == "gm").first()
+    existing_gm = db.scalars(select(User).where(User.role == "gm")).first()
     if existing_gm is not None:
         raise HTTPException(
             status_code=409,

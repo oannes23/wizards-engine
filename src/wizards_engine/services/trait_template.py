@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from wizards_engine.models.slot import TraitTemplate
 
@@ -71,10 +72,10 @@ def list_trait_templates_query(
     *,
     template_type: str | None = None,
     include_deleted: bool = False,
-) -> Query:
-    """Build a SQLAlchemy query for the TraitTemplates list with optional filters.
+):
+    """Build a SQLAlchemy select statement for the TraitTemplates list with optional filters.
 
-    The returned query has *no* ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has *no* ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -84,18 +85,18 @@ def list_trait_templates_query(
             Defaults to ``False`` (exclude deleted).
 
     Returns:
-        A SQLAlchemy ``Query`` targeting
+        A SQLAlchemy ``Select`` statement targeting
         :class:`~wizards_engine.models.slot.TraitTemplate`.
     """
-    q = db.query(TraitTemplate)
+    stmt = select(TraitTemplate)
 
     if not include_deleted:
-        q = q.filter(TraitTemplate.is_deleted.is_(False))
+        stmt = stmt.where(TraitTemplate.is_deleted.is_(False))
 
     if template_type is not None:
-        q = q.filter(TraitTemplate.type == template_type)
+        stmt = stmt.where(TraitTemplate.type == template_type)
 
-    return q
+    return stmt
 
 
 def update_trait_template(

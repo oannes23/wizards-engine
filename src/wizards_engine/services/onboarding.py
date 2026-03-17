@@ -6,6 +6,7 @@ creates a User + full Character in one transaction, and returns the new User.
 
 from __future__ import annotations
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
@@ -79,11 +80,9 @@ def join_game(
             reveal whether the code exists.
     """
     # --- Validate invite: exists and unconsumed ---
-    invite = (
-        db.query(Invite)
-        .filter(Invite.id == code, Invite.is_consumed.is_(False))
-        .first()
-    )
+    invite = db.scalars(
+        select(Invite).where(Invite.id == code, Invite.is_consumed.is_(False))
+    ).first()
     if invite is None:
         raise InviteNotFoundError(code)
 

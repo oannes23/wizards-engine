@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
 from wizards_engine.models.user import User
@@ -82,10 +82,10 @@ def list_characters_query(
     has_player: bool | None = None,
     include_deleted: bool = False,
     name: str | None = None,
-) -> Query:
-    """Build a SQLAlchemy query for the Characters list with optional filters.
+):
+    """Build a SQLAlchemy select statement for the Characters list with optional filters.
 
-    The returned query has *no* ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has *no* ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -99,35 +99,35 @@ def list_characters_query(
         name: Case-insensitive partial match on the character name.
 
     Returns:
-        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.character.Character`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.character.Character`.
     """
-    q = db.query(Character)
+    stmt = select(Character)
 
     if not include_deleted:
-        q = q.filter(Character.is_deleted.is_(False))
+        stmt = stmt.where(Character.is_deleted.is_(False))
 
     if detail_level is not None:
-        q = q.filter(Character.detail_level == detail_level)
+        stmt = stmt.where(Character.detail_level == detail_level)
 
     if has_player is True:
         # Only characters that have a User pointing at them.
-        q = q.filter(
+        stmt = stmt.where(
             Character.id.in_(
-                db.query(User.character_id).filter(User.character_id.is_not(None))
+                select(User.character_id).where(User.character_id.is_not(None))
             )
         )
     elif has_player is False:
         # Only characters with no linked User.
-        q = q.filter(
+        stmt = stmt.where(
             ~Character.id.in_(
-                db.query(User.character_id).filter(User.character_id.is_not(None))
+                select(User.character_id).where(User.character_id.is_not(None))
             )
         )
 
     if name is not None:
-        q = q.filter(func.lower(Character.name).contains(name.lower()))
+        stmt = stmt.where(func.lower(Character.name).contains(name.lower()))
 
-    return q
+    return stmt
 
 
 def update_character(

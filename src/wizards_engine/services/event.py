@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.event import Event, EventTarget
@@ -60,11 +61,9 @@ def _get_active_session_id(db: Session) -> str | None:
         The ULID of the active session, or ``None`` if no active session
         exists.
     """
-    result = (
-        db.query(SessionModel.id)
-        .filter(SessionModel.status == "active")
-        .first()
-    )
+    result = db.execute(
+        select(SessionModel.id).where(SessionModel.status == "active")
+    ).first()
     return result[0] if result else None
 
 

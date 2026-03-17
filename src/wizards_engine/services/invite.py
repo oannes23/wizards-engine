@@ -15,8 +15,7 @@ Business rules enforced here:
 
 from __future__ import annotations
 
-from typing import Any
-
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.user import Invite
@@ -56,8 +55,8 @@ def get_invite(db: Session, invite_id: str) -> Invite | None:
     return db.get(Invite, invite_id)
 
 
-def list_invites_query(db: Session) -> Any:
-    """Build a SQLAlchemy query for the Invites list.
+def list_invites_query(db: Session):
+    """Build a SQLAlchemy select statement for the Invites list.
 
     Returns all invites (consumed and unconsumed).  The caller
     (``api.pagination.paginate``) adds ordering and LIMIT.
@@ -66,9 +65,9 @@ def list_invites_query(db: Session) -> Any:
         db: Active SQLAlchemy session.
 
     Returns:
-        A SQLAlchemy query targeting :class:`~wizards_engine.models.user.Invite`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.user.Invite`.
     """
-    return db.query(Invite)
+    return select(Invite)
 
 
 def delete_invite(db: Session, invite: Invite) -> None:

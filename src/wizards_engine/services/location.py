@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from wizards_engine.models.location import Location
 
@@ -75,10 +76,10 @@ def list_locations_query(
     *,
     parent_id: str | None = None,
     include_deleted: bool = False,
-) -> Query:
-    """Build a SQLAlchemy query for the Locations list with optional filters.
+):
+    """Build a SQLAlchemy select statement for the Locations list with optional filters.
 
-    The returned query has *no* ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has *no* ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -89,17 +90,17 @@ def list_locations_query(
             Defaults to ``False`` (exclude deleted).
 
     Returns:
-        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.location.Location`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.location.Location`.
     """
-    q = db.query(Location)
+    stmt = select(Location)
 
     if not include_deleted:
-        q = q.filter(Location.is_deleted.is_(False))
+        stmt = stmt.where(Location.is_deleted.is_(False))
 
     if parent_id is not None:
-        q = q.filter(Location.parent_id == parent_id)
+        stmt = stmt.where(Location.parent_id == parent_id)
 
-    return q
+    return stmt
 
 
 def update_location(

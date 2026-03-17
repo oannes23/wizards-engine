@@ -16,6 +16,7 @@ leaking whether a code was once a valid invite.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.auth import set_auth_cookie
@@ -60,11 +61,9 @@ def login(
             an unconsumed invite (``code_not_found`` error code).
     """
     # --- 1. Check active users first ---
-    user = (
-        db.query(User)
-        .filter(User.login_code == body.code, User.is_active.is_(True))
-        .first()
-    )
+    user = db.scalars(
+        select(User).where(User.login_code == body.code, User.is_active.is_(True))
+    ).first()
     if user is not None:
         set_auth_cookie(response, user.login_code)
         return LoginUserResponse(
@@ -75,11 +74,9 @@ def login(
         )
 
     # --- 2. Check unconsumed invites ---
-    invite = (
-        db.query(Invite)
-        .filter(Invite.id == body.code, Invite.is_consumed.is_(False))
-        .first()
-    )
+    invite = db.scalars(
+        select(Invite).where(Invite.id == body.code, Invite.is_consumed.is_(False))
+    ).first()
     if invite is not None:
         return LoginInviteResponse()
 

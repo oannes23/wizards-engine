@@ -12,6 +12,7 @@ DELETE /me/starred/{type}/{id} — Authenticated.  Unstar a Game Object.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user
@@ -45,19 +46,25 @@ def _resolve_name(db: Session, object_type: str, object_id: str) -> str | None:
         The object's display name, or ``None`` if not found / deleted.
     """
     if object_type == "character":
-        obj = db.query(Character).filter(
-            Character.id == object_id,
-            Character.is_deleted == False,  # noqa: E712
+        obj = db.scalars(
+            select(Character).where(
+                Character.id == object_id,
+                Character.is_deleted == False,  # noqa: E712
+            )
         ).first()
     elif object_type == "group":
-        obj = db.query(Group).filter(
-            Group.id == object_id,
-            Group.is_deleted == False,  # noqa: E712
+        obj = db.scalars(
+            select(Group).where(
+                Group.id == object_id,
+                Group.is_deleted == False,  # noqa: E712
+            )
         ).first()
     elif object_type == "location":
-        obj = db.query(Location).filter(
-            Location.id == object_id,
-            Location.is_deleted == False,  # noqa: E712
+        obj = db.scalars(
+            select(Location).where(
+                Location.id == object_id,
+                Location.is_deleted == False,  # noqa: E712
+            )
         ).first()
     else:
         return None
@@ -99,11 +106,9 @@ def list_starred(
         A list of ``StarredObjectResponse`` items, one per starred entry.
         Order matches database insertion order.
     """
-    rows = (
-        db.query(StarredObject)
-        .filter(StarredObject.user_id == current_user.id)
-        .all()
-    )
+    rows = db.scalars(
+        select(StarredObject).where(StarredObject.user_id == current_user.id)
+    ).all()
 
     items: list[StarredObjectResponse] = []
     for row in rows:

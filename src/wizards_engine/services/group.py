@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from wizards_engine.models.group import Group
 
@@ -73,10 +74,10 @@ def list_groups_query(
     db: Session,
     *,
     include_deleted: bool = False,
-) -> Query:
-    """Build a SQLAlchemy query for the Groups list with optional filters.
+):
+    """Build a SQLAlchemy select statement for the Groups list with optional filters.
 
-    The returned query has *no* ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has *no* ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -85,14 +86,14 @@ def list_groups_query(
             Defaults to ``False`` (exclude deleted).
 
     Returns:
-        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.group.Group`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.group.Group`.
     """
-    q = db.query(Group)
+    stmt = select(Group)
 
     if not include_deleted:
-        q = q.filter(Group.is_deleted.is_(False))
+        stmt = stmt.where(Group.is_deleted.is_(False))
 
-    return q
+    return stmt
 
 
 def update_group(

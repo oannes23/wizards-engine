@@ -141,15 +141,13 @@ def _has_pending_resolve_trauma(db: Session, character_id: str) -> bool:
         ``True`` if a pending ``resolve_trauma`` proposal exists for
         this character.
     """
-    result = (
-        db.query(Proposal)
-        .filter(
+    result = db.scalars(
+        select(Proposal).where(
             Proposal.character_id == character_id,
             Proposal.action_type == "resolve_trauma",
             Proposal.status == "pending",
         )
-        .first()
-    )
+    ).first()
     return result is not None
 
 
@@ -544,11 +542,9 @@ def _collect_descendant_ids(db: Session, location_id: str) -> set[str]:
     queue: list[str] = [location_id]
     while queue:
         current = queue.pop()
-        children = (
-            db.query(Location.id)
-            .filter(Location.parent_id == current)
-            .all()
-        )
+        children = db.execute(
+            select(Location.id).where(Location.parent_id == current)
+        ).all()
         for (child_id,) in children:
             if child_id not in visited:
                 visited.add(child_id)
@@ -665,15 +661,13 @@ def _has_resolve_clock_proposal(db: Session, clock_id: str) -> bool:
         ``True`` if a pending or approved ``resolve_clock`` proposal
         exists for this clock.
     """
-    result = (
-        db.query(Proposal)
-        .filter(
+    result = db.scalars(
+        select(Proposal).where(
             Proposal.clock_id == clock_id,
             Proposal.action_type == "resolve_clock",
             Proposal.status.in_(["pending", "approved"]),
         )
-        .first()
-    )
+    ).first()
     return result is not None
 
 

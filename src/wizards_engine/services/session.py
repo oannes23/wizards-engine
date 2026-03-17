@@ -27,6 +27,7 @@ from __future__ import annotations
 import datetime as _dt
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
@@ -49,15 +50,14 @@ def _max_ended_time_now(db: Session) -> int | None:
         The maximum ``time_now`` of ended sessions, or ``None`` if no ended
         sessions exist or none have ``time_now`` set.
     """
-    result = (
-        db.query(SessionModel.time_now)
-        .filter(
+    result = db.execute(
+        select(SessionModel.time_now)
+        .where(
             SessionModel.status == "ended",
             SessionModel.time_now.is_not(None),
         )
         .order_by(SessionModel.time_now.desc())
-        .first()
-    )
+    ).first()
     return result[0] if result else None
 
 
@@ -135,7 +135,7 @@ def get_session(db: Session, session_id: str) -> SessionModel | None:
 
 
 def list_sessions_query(db: Session) -> Any:
-    """Build a SQLAlchemy query for the Sessions list.
+    """Build a SQLAlchemy select statement for the Sessions list.
 
     No filters are defined for sessions at this stage — the list returns all
     sessions.  The caller (``api.pagination.paginate``) adds ordering and
@@ -145,9 +145,9 @@ def list_sessions_query(db: Session) -> Any:
         db: Active SQLAlchemy session.
 
     Returns:
-        A SQLAlchemy query targeting :class:`~wizards_engine.models.session.Session`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.session.Session`.
     """
-    return db.query(SessionModel)
+    return select(SessionModel)
 
 
 def update_session(
@@ -292,11 +292,9 @@ def get_active_session(db: Session) -> SessionModel | None:
         The :class:`~wizards_engine.models.session.Session` with
         ``status = "active"``, or ``None`` if no such session exists.
     """
-    return (
-        db.query(SessionModel)
-        .filter(SessionModel.status == "active")
-        .first()
-    )
+    return db.scalars(
+        select(SessionModel).where(SessionModel.status == "active")
+    ).first()
 
 
 def start_session(db: Session, session: SessionModel) -> SessionModel:

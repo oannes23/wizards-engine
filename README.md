@@ -34,9 +34,9 @@ A backend state tracker for a single narrative-heavy, low-crunch tabletop RPG ca
 
 ## Project Status
 
-**Current phase: Specification complete, implementation not started.**
+**Current phase: API complete (Phases 1–5). Phase 6 (Web UI) not yet planned.**
 
-All domain specs are finalized. The implementation is planned as 5 API phases (13 epics, 46 stories) plus a future web UI phase. See [`spec/implementation/README.md`](spec/implementation/README.md) for the full breakdown.
+All 5 API phases are fully implemented — 13 epics, 46 stories, ~1,980 passing tests. See [`spec/implementation/README.md`](spec/implementation/README.md) for the full breakdown.
 
 ## Repository Structure
 
@@ -62,7 +62,7 @@ wizards-engine/
 │   │   ├── feed.md              # Unified feed, story visibility, starring
 │   │   └── auth.md              # Magic link auth, invites, permissions
 │   └── implementation/          # Epic/Story breakdown for building
-├── src/                         # Source code (future)
+├── src/                         # Python source code
 └── .claude/                     # Claude Code project config
 ```
 

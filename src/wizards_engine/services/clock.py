@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
 from wizards_engine.models.clock import Clock
@@ -115,10 +116,10 @@ def list_clocks_query(
     associated_type: str | None = None,
     associated_id: str | None = None,
     include_deleted: bool = False,
-) -> Query:
-    """Build a SQLAlchemy query for the Clocks list with optional filters.
+):
+    """Build a SQLAlchemy select statement for the Clocks list with optional filters.
 
-    The returned query has no ``ORDER BY`` or ``LIMIT`` applied — the
+    The returned statement has no ``ORDER BY`` or ``LIMIT`` applied — the
     caller (``api.pagination.paginate``) adds those.
 
     Args:
@@ -129,20 +130,20 @@ def list_clocks_query(
             Defaults to ``False`` (exclude deleted).
 
     Returns:
-        A SQLAlchemy ``Query`` targeting :class:`~wizards_engine.models.clock.Clock`.
+        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.clock.Clock`.
     """
-    q = db.query(Clock)
+    stmt = select(Clock)
 
     if not include_deleted:
-        q = q.filter(Clock.is_deleted.is_(False))
+        stmt = stmt.where(Clock.is_deleted.is_(False))
 
     if associated_type is not None:
-        q = q.filter(Clock.associated_type == associated_type)
+        stmt = stmt.where(Clock.associated_type == associated_type)
 
     if associated_id is not None:
-        q = q.filter(Clock.associated_id == associated_id)
+        stmt = stmt.where(Clock.associated_id == associated_id)
 
-    return q
+    return stmt
 
 
 def update_clock(

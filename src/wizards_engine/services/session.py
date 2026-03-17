@@ -16,6 +16,10 @@ Business rules enforced here:
 - Character must exist and have ``detail_level = 'full'``.
 - Duplicate participant registration (same character in same session) is rejected.
 - PATCH contribution flag only allowed when session is in ``draft`` status.
+- Only one ``active`` session may exist at a time (enforced in ``start_session``).
+- ``time_now`` must be set before starting a session (required for FT distribution).
+- Late joins: adding a participant to an ``active`` session triggers immediate
+  FT + Plot distribution for that participant only (``distribute_to_participant``).
 """
 
 from __future__ import annotations
@@ -27,6 +31,12 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
 from wizards_engine.models.session import Session as SessionModel, SessionParticipant
+
+# FT cap constant — free_time cannot exceed this value.
+_FT_CAP = 20
+
+# Plot cap constant — plot is clamped to this value at session end.
+_PLOT_CAP = 5
 
 
 def _max_ended_time_now(db: Session) -> int | None:
@@ -270,6 +280,445 @@ def remove_participant(
     """
     db.delete(participant)
     db.flush()
+
+
+def get_active_session(db: Session) -> SessionModel | None:
+    """Return the currently active session, or ``None`` if none exists.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        The :class:`~wizards_engine.models.session.Session` with
+        ``status = "active"``, or ``None`` if no such session exists.
+    """
+    return (
+        db.query(SessionModel)
+        .filter(SessionModel.status == "active")
+        .first()
+    )
+
+
+def start_session(db: Session, session: SessionModel) -> SessionModel:
+    """Transition *session* from ``draft`` to ``active`` and distribute resources.
+
+    This is the full Session Start operation:
+
+    1. Validates ``session.status == "draft"`` — raises ``ValueError`` otherwise.
+    2. Enforces one active session at a time — raises ``ValueError`` if one exists.
+    3. Validates ``session.time_now`` is set — raises ``ValueError`` if ``None``.
+    4. Transitions status to ``"active"``.
+    5. For each participant:
+       - FT distribution: ``ft_gained = session.time_now - character.last_session_time_now``.
+         Added to ``character.free_time``, capped at 20.
+         Updates ``character.last_session_time_now`` to ``session.time_now``.
+       - Plot distribution: +1 (or +2 if ``additional_contribution = True``).
+         Plot may overflow above 5.
+    6. Contribution flags are locked (session status change to ``active``
+       prevents further PATCH updates via the route handler's draft-only check).
+    7. Creates 3 events in the same transaction:
+       - ``session.started`` (global)
+       - ``session.ft_distributed`` (silent)
+       - ``session.plot_distributed`` (silent)
+       All events have ``actor_type = "system"`` and ``session_id = session.id``.
+
+    The caller is responsible for committing the transaction.
+
+    Args:
+        db: Active SQLAlchemy session.
+        session: The ORM instance to start.  Must be in ``draft`` status.
+
+    Returns:
+        The updated :class:`~wizards_engine.models.session.Session` instance
+        after all mutations and event creation.
+
+    Raises:
+        ValueError: If the session is not in ``draft`` status.
+        ValueError: If another session is already ``active``.
+        ValueError: If ``session.time_now`` is not set.
+    """
+    # --- Import here to avoid circular imports (event service imports session model) ---
+    from wizards_engine.services.event import create_event  # noqa: PLC0415
+
+    if session.status != "draft":
+        raise ValueError(
+            f"Session is not in draft status (current status: '{session.status}')."
+        )
+
+    existing_active = get_active_session(db)
+    if existing_active is not None:
+        raise ValueError(
+            f"Another session ('{existing_active.id}') is already active."
+        )
+
+    if session.time_now is None:
+        raise ValueError(
+            "Session must have time_now set before it can be started."
+        )
+
+    # Ensure participants are loaded before we start mutating.
+    participants = session.participants  # accesses the relationship
+
+    # ------------------------------------------------------------------
+    # Capture before-values for all character changes BEFORE any mutation.
+    # ------------------------------------------------------------------
+    ft_before: dict[str, int] = {}
+    last_time_before: dict[str, int] = {}
+    plot_before: dict[str, int] = {}
+
+    for p in participants:
+        char = p.character
+        ft_before[char.id] = char.free_time or 0
+        last_time_before[char.id] = char.last_session_time_now or 0
+        plot_before[char.id] = char.plot or 0
+
+    # ------------------------------------------------------------------
+    # Transition session status.
+    # ------------------------------------------------------------------
+    session.status = "active"
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Distribute FT and Plot for each participant.
+    # ------------------------------------------------------------------
+    ft_after: dict[str, int] = {}
+    last_time_after: dict[str, int] = {}
+    ft_clamped: dict[str, bool] = {}
+    plot_after: dict[str, int] = {}
+
+    for p in participants:
+        char = p.character
+
+        # FT distribution.
+        ft_delta = session.time_now - last_time_before[char.id]
+        new_ft = ft_before[char.id] + ft_delta
+        clamped = new_ft > _FT_CAP
+        new_ft = min(new_ft, _FT_CAP)
+        char.free_time = new_ft
+        char.last_session_time_now = session.time_now
+
+        ft_after[char.id] = new_ft
+        last_time_after[char.id] = session.time_now
+        ft_clamped[char.id] = clamped
+
+        # Plot distribution.
+        plot_delta = 2 if p.additional_contribution else 1
+        new_plot = plot_before[char.id] + plot_delta
+        char.plot = new_plot
+        plot_after[char.id] = new_plot
+
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Build event changes payloads.
+    # ------------------------------------------------------------------
+    started_changes: dict[str, Any] = {
+        f"session.{session.id}.status": {
+            "op": "field.set",
+            "before": "draft",
+            "after": "active",
+        }
+    }
+
+    ft_changes: dict[str, Any] = {}
+    for p in participants:
+        char_id = p.character_id
+        ft_entry: dict[str, Any] = {
+            "op": "meter.delta",
+            "before": ft_before[char_id],
+            "after": ft_after[char_id],
+        }
+        if ft_clamped[char_id]:
+            ft_entry["clamped"] = True
+        ft_changes[f"character.{char_id}.free_time"] = ft_entry
+        ft_changes[f"character.{char_id}.last_session_time_now"] = {
+            "op": "field.set",
+            "before": last_time_before[char_id],
+            "after": last_time_after[char_id],
+        }
+
+    plot_changes: dict[str, Any] = {}
+    for p in participants:
+        char_id = p.character_id
+        plot_changes[f"character.{char_id}.plot"] = {
+            "op": "meter.delta",
+            "before": plot_before[char_id],
+            "after": plot_after[char_id],
+        }
+
+    # ------------------------------------------------------------------
+    # Create 3 events (all tagged to this session explicitly).
+    # ------------------------------------------------------------------
+    create_event(
+        db,
+        type="session.started",
+        actor_type="system",
+        actor_id=None,
+        changes=started_changes,
+        narrative="Session started.",
+        visibility="global",
+        targets=None,
+        session_id=session.id,
+    )
+
+    create_event(
+        db,
+        type="session.ft_distributed",
+        actor_type="system",
+        actor_id=None,
+        changes=ft_changes,
+        visibility="silent",
+        targets=None,
+        session_id=session.id,
+    )
+
+    create_event(
+        db,
+        type="session.plot_distributed",
+        actor_type="system",
+        actor_id=None,
+        changes=plot_changes,
+        visibility="silent",
+        targets=None,
+        session_id=session.id,
+    )
+
+    db.refresh(session)
+    return session
+
+
+def distribute_to_participant(
+    db: Session,
+    session: SessionModel,
+    character: Character,
+    additional_contribution: bool,
+    actor_type: str,
+    actor_id: str | None,
+) -> dict[str, Any]:
+    """Distribute FT and Plot to a single late-joining participant.
+
+    Called when a character is added to an **active** session via
+    ``POST /sessions/{id}/participants``.  Applies the same distribution
+    formula as ``start_session``:
+
+    - FT: ``ft_gained = session.time_now - character.last_session_time_now``.
+      Added to ``character.free_time``, capped at :data:`_FT_CAP`.
+      Updates ``character.last_session_time_now`` to ``session.time_now``.
+    - Plot: +1 (or +2 if ``additional_contribution = True``).  Plot may
+      overflow above 5.
+
+    Creates a single ``session.participant_added`` event (visibility:
+    ``global``) recording the FT, ``last_session_time_now``, and Plot
+    changes.  The character is listed as the primary target.
+
+    The caller is responsible for committing the transaction.
+
+    Args:
+        db: Active SQLAlchemy session.
+        session: The ORM instance of the active session.  Must have
+            ``time_now`` set.
+        character: The character being added as a late participant.
+        additional_contribution: Whether the participant checked the
+            Additional Contribution flag (+2 Plot instead of +1).
+        actor_type: ``"player"`` or ``"gm"`` — identifies who triggered
+            the add.
+        actor_id: FK to ``users.id`` of the user who triggered the add.
+
+    Returns:
+        A dict with keys ``ft_gained``, ``ft_after``, ``ft_clamped``,
+        ``plot_gained``, ``plot_after`` summarising the distribution.
+    """
+    from wizards_engine.services.event import create_event  # noqa: PLC0415
+
+    time_now = session.time_now  # guaranteed non-None for active sessions
+
+    # Capture before-values.
+    ft_before = character.free_time or 0
+    last_time_before = character.last_session_time_now or 0
+    plot_before = character.plot or 0
+
+    # ------------------------------------------------------------------
+    # Compute and apply FT distribution.
+    # ------------------------------------------------------------------
+    ft_delta = time_now - last_time_before
+    new_ft = ft_before + ft_delta
+    clamped = new_ft > _FT_CAP
+    new_ft = min(new_ft, _FT_CAP)
+    character.free_time = new_ft
+    character.last_session_time_now = time_now
+
+    # ------------------------------------------------------------------
+    # Compute and apply Plot distribution.
+    # ------------------------------------------------------------------
+    plot_delta = 2 if additional_contribution else 1
+    new_plot = plot_before + plot_delta
+    character.plot = new_plot
+
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Build event changes payload.
+    # ------------------------------------------------------------------
+    char_id = character.id
+
+    ft_entry: dict[str, Any] = {
+        "op": "meter.delta",
+        "before": ft_before,
+        "after": new_ft,
+    }
+    if clamped:
+        ft_entry["clamped"] = True
+
+    changes: dict[str, Any] = {
+        f"character.{char_id}.free_time": ft_entry,
+        f"character.{char_id}.last_session_time_now": {
+            "op": "field.set",
+            "before": last_time_before,
+            "after": time_now,
+        },
+        f"character.{char_id}.plot": {
+            "op": "meter.delta",
+            "before": plot_before,
+            "after": new_plot,
+        },
+    }
+
+    # ------------------------------------------------------------------
+    # Create the participant_added event.
+    # ------------------------------------------------------------------
+    create_event(
+        db,
+        type="session.participant_added",
+        actor_type=actor_type,
+        actor_id=actor_id,
+        changes=changes,
+        narrative=f"{character.name} joined the session.",
+        visibility="global",
+        targets=[
+            {
+                "target_type": "character",
+                "target_id": char_id,
+                "is_primary": True,
+            }
+        ],
+        session_id=session.id,
+    )
+
+    return {
+        "ft_gained": ft_delta,
+        "ft_after": new_ft,
+        "ft_clamped": clamped,
+        "plot_gained": plot_delta,
+        "plot_after": new_plot,
+    }
+
+
+def end_session(db: Session, session: SessionModel) -> SessionModel:
+    """Transition *session* from ``active`` to ``ended`` and clamp participant Plot.
+
+    This is the full Session End operation:
+
+    1. Validates ``session.status == "active"`` — raises ``ValueError`` otherwise.
+    2. Transitions status to ``"ended"``.
+    3. For each participant, if ``character.plot > 5``, sets it to 5 (excess lost).
+    4. Creates one event:
+       - ``session.ended`` (global), actor_type ``system``, actor_id ``None``.
+         Changes include the session status transition and any Plot clamp changes.
+
+    The caller is responsible for committing the transaction.
+
+    Args:
+        db: Active SQLAlchemy session.
+        session: The ORM instance to end.  Must be in ``active`` status.
+
+    Returns:
+        The updated :class:`~wizards_engine.models.session.Session` instance
+        after all mutations and event creation.
+
+    Raises:
+        ValueError: If the session is not in ``active`` status.
+    """
+    # --- Import here to avoid circular imports (event service imports session model) ---
+    from wizards_engine.services.event import create_event  # noqa: PLC0415
+
+    if session.status != "active":
+        raise ValueError(
+            f"Session is not in active status (current status: '{session.status}')."
+        )
+
+    # Ensure participants are loaded before mutating.
+    participants = session.participants
+
+    # ------------------------------------------------------------------
+    # Capture before-values for Plot BEFORE any mutation.
+    # ------------------------------------------------------------------
+    plot_before: dict[str, int] = {}
+    for p in participants:
+        plot_before[p.character_id] = p.character.plot or 0
+
+    # ------------------------------------------------------------------
+    # Transition session status.
+    # ------------------------------------------------------------------
+    session.status = "ended"
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Clamp Plot to 5 for each participant.
+    # ------------------------------------------------------------------
+    plot_after: dict[str, int] = {}
+    plot_clamped: dict[str, bool] = {}
+
+    for p in participants:
+        char = p.character
+        before = plot_before[p.character_id]
+        if before > _PLOT_CAP:
+            char.plot = _PLOT_CAP
+            plot_after[p.character_id] = _PLOT_CAP
+            plot_clamped[p.character_id] = True
+        else:
+            plot_after[p.character_id] = before
+            plot_clamped[p.character_id] = False
+
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Build the event changes payload.
+    # ------------------------------------------------------------------
+    ended_changes: dict[str, Any] = {
+        f"session.{session.id}.status": {
+            "op": "field.set",
+            "before": "active",
+            "after": "ended",
+        }
+    }
+
+    for p in participants:
+        char_id = p.character_id
+        if plot_clamped[char_id]:
+            ended_changes[f"character.{char_id}.plot"] = {
+                "op": "meter.set",
+                "before": plot_before[char_id],
+                "after": plot_after[char_id],
+                "clamped": True,
+            }
+
+    # ------------------------------------------------------------------
+    # Create 1 event tagged to this session.
+    # ------------------------------------------------------------------
+    create_event(
+        db,
+        type="session.ended",
+        actor_type="system",
+        actor_id=None,
+        changes=ended_changes,
+        narrative="Session ended.",
+        visibility="global",
+        targets=None,
+        session_id=session.id,
+    )
+
+    db.refresh(session)
+    return session
 
 
 def update_participant_contribution(

@@ -17,11 +17,11 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 5.1.1 — Session Start | 🔴 Not started | — |
-| 5.1.2 — Late Joins | 🔴 Not started | — |
-| 5.1.3 — Session End | 🔴 Not started | — |
-| 5.1.4 — Find Time | 🔴 Not started | — |
-| 5.1.5 — Session Timeline | 🔴 Not started | — |
+| 5.1.1 — Session Start | 🟢 Complete | 2026-03-16 |
+| 5.1.2 — Late Joins | 🟢 Complete | 2026-03-16 |
+| 5.1.3 — Session End | 🟢 Complete | 2026-03-16 |
+| 5.1.4 — Find Time | 🟢 Complete | 2026-03-16 |
+| 5.1.5 — Session Timeline | 🟢 Complete | 2026-03-16 |
 
 ### Story 5.1.1 — Session Start
 
@@ -34,8 +34,9 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 
 **Acceptance criteria**:
 - `POST /api/v1/sessions/{id}/start` — GM only.
-- Validates session is in `draft` status. Returns 400 otherwise.
-- Enforces one Active session at a time. Returns 409 if another session is already Active.
+- Validates session is in `draft` status. Returns 400 with `{error: {code: "session_not_draft"}}` otherwise.
+- Enforces one Active session at a time. Returns 409 with `{error: {code: "active_session_exists"}}` if another session is already Active.
+- Validates `time_now` is set on the session. Returns 400 with `{error: {code: "time_now_not_set"}}` if null.
 - Transitions status to `active`
 - For each registered participant:
   - **FT distribution**: `ft_gained = session.time_now - character.last_session_time_now`. Add to character's `free_time`, capped at 20. Update `character.last_session_time_now` to `session.time_now`.
@@ -60,7 +61,8 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 - Same formula: FT via Time Now delta (capped at 20), Plot +1/+2
 - Contribution flag locks immediately on late join
 - Distribution for the late joiner only — does not re-distribute to existing participants
-- Event created for the late join distribution
+- Creates a `session.participant_added` event — visibility: `global`. Changes: character's `free_time` (meter.delta, clamped if applicable), `last_session_time_now` (field.set), and `plot` (meter.delta). Character listed as primary target.
+- Ended sessions reject participant adds with 400 `session_ended`
 
 ### Story 5.1.3 — Session End
 
@@ -73,11 +75,11 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 
 **Acceptance criteria**:
 - `POST /api/v1/sessions/{id}/end` — GM only. No request body.
-- Validates session is in `active` status. Returns 400 otherwise.
+- Validates session is in `active` status. Returns 400 with `{error: {code: "session_not_active"}}` otherwise.
 - Transitions status to `ended`
 - Clamps all participants' Plot to 5 (excess lost)
-- Creates `session.ended` event — visibility: `global`. Changes: session status active→ended, any Plot clamp changes.
-- Ended sessions are read-only: PATCH returns 400, participant changes rejected
+- Creates `session.ended` event — visibility: `global`. Changes: session status active→ended (field.set), plus any Plot clamp changes (meter.set, clamped: true) for participants who were over 5.
+- Ended sessions are read-only: PATCH returns 400 `session_ended`, participant adds/removes return 400 `session_ended`
 
 ### Story 5.1.4 — Find Time
 
@@ -89,12 +91,13 @@ Implement session lifecycle transitions (Start, End), resource distribution (FT 
 
 **Acceptance criteria**:
 - `POST /api/v1/characters/{id}/find-time` — player direct action. Empty request body.
-- Player must own the character
+- Player must own the character; GM may call on behalf of any character.
+- Character must have `detail_level = 'full'`. Returns 422 with `{error: {code: "not_a_pc"}}` otherwise.
 - Validates Plot >= 3. Returns 409 with `{error: {code: "insufficient_plot"}}` if not.
 - Validates FT < 20. Returns 409 with `{error: {code: "free_time_at_cap"}}` if at cap.
 - Converts: -3 Plot, +1 FT
-- Creates `player.find_time` event — visibility: `private`. Changes: plot and free_time deltas.
-- Returns 200 with updated character meters
+- Creates `player.find_time` event — visibility: `private`. Changes: plot and free_time deltas. Targets: the character (primary).
+- Returns 200 with updated character meters (`id`, `plot`, `free_time`)
 
 ### Story 5.1.5 — Session Timeline
 

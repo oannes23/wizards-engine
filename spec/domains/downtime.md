@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-10
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [actions](actions.md), [game-objects](game-objects.md), [character-core](character-core.md)
 **Depended on by**: None
 
@@ -286,7 +286,8 @@ Sessions have a participant list tracking who played:
 - `PATCH /api/v1/sessions/{id}` — update session details (GM, Draft or Active only; Ended is read-only)
 - `DELETE /api/v1/sessions/{id}` — delete a session (GM, Draft only)
 - `POST /api/v1/sessions/{id}/start` — start session (GM): distributes FT + Plot (overflow allowed) to participants, locks contribution flags. Rejects if another session is Active.
-- `POST /api/v1/sessions/{id}/end` — end session (GM): no payload. Transitions to Ended + clamps all participants' Plot to 5. Clock adjustments happen separately during Active.
+- `POST /api/v1/sessions/{id}/end` — end session (GM): no payload. Transitions to Ended + clamps all participants' Plot to 5. Clock adjustments happen separately during Active. Returns 400 with `{error: {code: "session_not_active"}}` if session is not Active.
+- `GET /api/v1/sessions/{id}/timeline` — authenticated. Returns a paginated, visibility-filtered list of events tagged with the session (`session_id` match). `silent` events are excluded for all callers including the GM (silent events are only accessible via the dedicated silent feed endpoint). ULID cursor pagination via `?after=<ulid>&limit=N`.
 
 ### Session Participants
 - `POST /api/v1/sessions/{id}/participants` — register for session. Body: `{character_id, additional_contribution?: false}`. Player or GM. Server validates character ownership (unless GM).
@@ -294,7 +295,7 @@ Sessions have a participant list tracking who played:
 - `PATCH /api/v1/sessions/{id}/participants/{player_id}` — update contribution flag (Draft only; locked after distribution).
 
 ### Direct Player Actions
-- `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player, no approval). Empty request body. Validates Plot >= 3 and FT < 20.
+- `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player or GM, no approval). Empty request body. Validates Plot >= 3 and FT < 20. Only full (PC-level) characters may use this action — returns 422 `not_a_pc` otherwise.
 
 ### Downtime Proposals
 All downtime actions are submitted as proposals via `POST /api/v1/proposals` (see [actions](actions.md)).
@@ -326,4 +327,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-15 (clarified clock +1 default as UX suggestion, not automated system behavior)_
+_Last updated: 2026-03-16 (verified against Stories 5.1.1–5.1.5 implementation: GM may call find-time on behalf of any character; find-time validates detail_level = full with 422 not_a_pc; session start error codes session_not_draft, active_session_exists, time_now_not_set documented; session end error code session_not_active documented; session.participant_added event (late join distribution) uses visibility global with character as primary target, changes include free_time, last_session_time_now, and plot; ended session guard on participant add/remove uses error code session_ended. Story 5.1.5: added GET /sessions/{id}/timeline to API Endpoints; silent events excluded for all callers including the GM.)_

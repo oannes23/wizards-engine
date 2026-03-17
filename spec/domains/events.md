@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-12
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [game-objects](game-objects.md), [bonds](bonds.md) (bond graph), [feed](feed.md) (visibility model)
 **Depended on by**: [actions](actions.md), [downtime](downtime.md)
 
@@ -191,6 +191,7 @@ Event visibility uses the **unified 7-level visibility model** defined in [feed.
 | Type pattern | Default visibility | Rationale |
 |-------------|-------------------|-----------|
 | `session.started`, `session.ended` | `global` | All players see session lifecycle |
+| `session.participant_added` | `global` | Late-join distribution is visible to all |
 | `session.ft_distributed` | `silent` | Batch FT calculation is bookkeeping |
 | `session.plot_distributed` | `silent` | Batch Plot awards are bookkeeping |
 | `clock.resolve_generated` | `silent` | Auto-proposal creation is system plumbing |
@@ -469,7 +470,7 @@ Boundary behaviors are hardcoded Python functions, not a configurable trigger en
   - Filters: `?type=`, `?target_type=`, `?target_id=`, `?session_id=`, `?since=`, `?until=`, `?actor_type=`, `?proposal_id=`
   - Type prefix filtering: `?type=character.*` returns all character events
   - Results filtered by unified visibility for the requesting player. GM sees all (except `silent` — use silent feed).
-- `GET /api/v1/events/{id}` — single event detail (visibility check applied)
+- `GET /api/v1/events/{id}` — single event detail (visibility check applied). `silent` events return 404 for all callers including the GM — they are only accessible via the silent feed endpoint.
 - `PATCH /api/v1/events/{id}/visibility` — GM-only: change an event's visibility level
 
 Read-only for events themselves — never created directly via API. Visibility is the only mutable field (GM-only).
@@ -498,4 +499,4 @@ _None — all questions resolved during 2026-03-12 interrogation._
 
 ---
 
-_Last updated: 2026-03-15 (trauma auto-proposal pattern: stress hit event records clamped stress only; resolve_trauma proposal auto-generated on boundary; Trauma mutations (bond retirement, trauma bond creation, stress reset) happen on resolve_trauma approval. Added resolve_trauma to Event Sources and Event Types. Added bond charges terminology note. Updated Silent Event Defaults decision to include character.resolve_trauma_generated.)_
+_Last updated: 2026-03-16 (verified against Phase 4 implementation: clarified that GET /events/{id} returns 404 for silent events for all callers including the GM — silent events are only accessible via the dedicated silent feed endpoint. Updated 2026-03-16: added session.participant_added default visibility (global) — verified against Story 5.1.2 implementation.)_

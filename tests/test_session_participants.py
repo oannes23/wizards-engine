@@ -415,10 +415,10 @@ class TestRemoveParticipant:
 
         assert response.status_code == 204
 
-    def test_gm_removes_participant_from_ended_session(
+    def test_gm_cannot_remove_participant_from_ended_session(
         self, client: TestClient, seed_data: dict, db: DBSession
     ):
-        """GM can remove a participant from an ended session (no constraint from story)."""
+        """GM cannot remove a participant from an ended session — read-only."""
         session = _make_session(db, status="ended")
         _make_participant(db, session.id, seed_data["pc1"].id)
 
@@ -427,7 +427,8 @@ class TestRemoveParticipant:
             f"/api/v1/sessions/{session.id}/participants/{seed_data['pc1'].id}"
         )
 
-        assert response.status_code == 204
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "session_ended"
 
 
 # ---------------------------------------------------------------------------

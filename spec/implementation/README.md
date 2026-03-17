@@ -115,8 +115,8 @@ Phase 5 (sequential)
 | 3.1 — Character Sheet Model | 🟢 Complete | 4/4 |
 | 3.2 — Traits & Magic Effects | 🟢 Complete | 3/3 |
 | 3.3 — PC Bond Mechanics | 🟢 Complete | 2/2 |
-| 4.1 — Event Log | 🔴 Not started | 0/3 |
-| 4.2 — GM Actions | 🔴 Not started | 0/3 |
-| 4.3 — Proposal Workflow | 🔴 Not started | 0/5 |
-| 4.4 — Feed System | 🔴 Not started | 0/4 |
-| 5.1 — Session Lifecycle | 🔴 Not started | 0/5 |
+| 4.1 — Event Log | 🟢 Complete | 3/3 |
+| 4.2 — GM Actions | 🟢 Complete | 3/3 |
+| 4.3 — Proposal Workflow | 🟢 Complete | 5/5 |
+| 4.4 — Feed System | 🟢 Complete | 4/4 |
+| 5.1 — Session Lifecycle | 🟢 Complete | 5/5 |

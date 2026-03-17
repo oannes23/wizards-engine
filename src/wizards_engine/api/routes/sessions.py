@@ -11,20 +11,26 @@ GET    /sessions                                   — Authenticated.  List all 
 GET    /sessions/{id}                              — Authenticated.  Session detail with participants.
 PATCH  /sessions/{id}                              — GM only.  Update allowed fields (draft/active only).
 DELETE /sessions/{id}                              — GM only.  Hard delete (draft only).
+POST   /sessions/{id}/start                        — GM only.  Start a draft session (transitions to active).
+POST   /sessions/{id}/end                          — GM only.  End an active session (transitions to ended).
+GET    /sessions/{id}/timeline                     — Authenticated.  Events for a session, visibility-filtered.
 POST   /sessions/{id}/participants                 — Player or GM.  Register a participant.
 DELETE /sessions/{id}/participants/{character_id}  — Player self-remove or GM.  Remove a participant.
 PATCH  /sessions/{id}/participants/{character_id}  — Player or GM.  Update contribution flag (draft only).
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
 from wizards_engine.db import get_db
+from wizards_engine.models.event import Event
 from wizards_engine.models.session import Session as SessionModel
 from wizards_engine.models.user import User
 from wizards_engine.schemas.common import PaginatedResponse
+from wizards_engine.schemas.event import EventResponse
 from wizards_engine.schemas.session import (
     AddParticipantRequest,
     CreateSessionRequest,
@@ -35,6 +41,7 @@ from wizards_engine.schemas.session import (
     UpdateSessionRequest,
 )
 from wizards_engine.services import session as session_svc
+from wizards_engine.services.visibility import filter_events_for_user
 
 router = APIRouter()
 
@@ -309,6 +316,232 @@ def delete_session(
     session_svc.delete_session(db, session)
 
 
+@router.post(
+    "/sessions/{session_id}/start",
+    response_model=SessionResponse,
+    status_code=200,
+    summary="Start a session",
+    description=(
+        "GM only.  Transitions a ``draft`` session to ``active``, distributes "
+        "Free Time and Plot to all registered participants, and creates 3 events: "
+        "``session.started`` (global), ``session.ft_distributed`` (silent), and "
+        "``session.plot_distributed`` (silent).  "
+        "Returns 400 if the session is not in ``draft`` status or if ``time_now`` is not set.  "
+        "Returns 409 if another session is already ``active``."
+    ),
+)
+def start_session(
+    session_id: str,
+    _gm: User = Depends(require_gm),
+    db: Session = Depends(get_db),
+) -> SessionResponse:
+    """Start a draft session, distributing FT and Plot to all participants.
+
+    Args:
+        session_id: ULID of the session to start.
+        _gm: The authenticated GM (injected; ensures GM-only access).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``SessionResponse`` for the now-active session (200).
+
+    Raises:
+        HTTPException(404): If no session exists with ``session_id``.
+        HTTPException(400): If the session is not in ``draft`` status.
+        HTTPException(400): If the session has no ``time_now`` set.
+        HTTPException(409): If another session is already active.
+    """
+    session = session_svc.get_session(db, session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": f"Session '{session_id}' not found.",
+                }
+            },
+        )
+
+    if session.status != "draft":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "session_not_draft",
+                    "message": (
+                        f"Only draft sessions can be started. "
+                        f"This session has status '{session.status}'."
+                    ),
+                }
+            },
+        )
+
+    existing_active = session_svc.get_active_session(db)
+    if existing_active is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": {
+                    "code": "active_session_exists",
+                    "message": (
+                        f"Another session ('{existing_active.id}') is already active. "
+                        "Only one active session is allowed at a time."
+                    ),
+                }
+            },
+        )
+
+    if session.time_now is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "time_now_not_set",
+                    "message": (
+                        "Session must have time_now set before it can be started. "
+                        "Set time_now via PATCH /sessions/{id} first."
+                    ),
+                }
+            },
+        )
+
+    session = session_svc.start_session(db, session)
+    return SessionResponse.model_validate(session)
+
+
+@router.post(
+    "/sessions/{session_id}/end",
+    response_model=SessionResponse,
+    status_code=200,
+    summary="End a session",
+    description=(
+        "GM only.  No request body.  Transitions an ``active`` session to ``ended``, "
+        "clamps all participants' Plot to 5 (excess lost), and creates a "
+        "``session.ended`` event (global).  "
+        "Returns 400 if the session is not in ``active`` status.  "
+        "Ended sessions are read-only."
+    ),
+)
+def end_session(
+    session_id: str,
+    _gm: User = Depends(require_gm),
+    db: Session = Depends(get_db),
+) -> SessionResponse:
+    """End an active session, clamping all participants' Plot to 5.
+
+    Args:
+        session_id: ULID of the session to end.
+        _gm: The authenticated GM (injected; ensures GM-only access).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``SessionResponse`` for the now-ended session (200).
+
+    Raises:
+        HTTPException(404): If no session exists with ``session_id``.
+        HTTPException(400): If the session is not in ``active`` status.
+    """
+    session = session_svc.get_session(db, session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": f"Session '{session_id}' not found.",
+                }
+            },
+        )
+
+    if session.status != "active":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "session_not_active",
+                    "message": (
+                        f"Only active sessions can be ended. "
+                        f"This session has status '{session.status}'."
+                    ),
+                }
+            },
+        )
+
+    session = session_svc.end_session(db, session)
+    return SessionResponse.model_validate(session)
+
+
+# ---------------------------------------------------------------------------
+# GET /sessions/{id}/timeline — events timeline for a session
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/sessions/{session_id}/timeline",
+    response_model=PaginatedResponse[EventResponse],
+    status_code=200,
+    summary="Session event timeline",
+    description=(
+        "Returns a paginated, visibility-filtered list of events tagged with "
+        "the given session.  ``silent`` events are excluded (same rule as the "
+        "main events feed).  ULID cursor pagination via ``?after=<ulid>&limit=N``."
+    ),
+)
+def get_session_timeline(
+    session_id: str,
+    after: str | None = None,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PaginatedResponse[EventResponse]:
+    """Return a paginated, visibility-filtered list of events for a session.
+
+    Equivalent to ``GET /events?session_id=<id>`` but requires the session to
+    exist and returns 404 if not.  ``silent`` events are excluded from results
+    regardless of caller role (they are only accessible via the silent feed).
+
+    Args:
+        session_id: ULID of the session whose events to return.
+        after: ULID cursor for pagination (return items older than this ID).
+        limit: Page size (default 50, max 100).
+        current_user: Authenticated user (any role).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``PaginatedResponse`` wrapping a list of ``EventResponse`` objects.
+
+    Raises:
+        HTTPException(404): If no session exists with ``session_id``.
+    """
+    session = session_svc.get_session(db, session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": f"Session '{session_id}' not found.",
+                }
+            },
+        )
+
+    q = select(Event).where(
+        Event.session_id == session_id,
+        Event.visibility != "silent",
+    )
+
+    page = paginate(db, q, model=Event, after=after, limit=limit)
+
+    visible_items = filter_events_for_user(db, current_user, list(page.items))
+
+    return PaginatedResponse[EventResponse](
+        items=[EventResponse.model_validate(e) for e in visible_items],
+        next_cursor=page.next_cursor,
+        has_more=page.has_more,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Session participant endpoints
 # ---------------------------------------------------------------------------
@@ -362,6 +595,17 @@ def add_participant(
                 "error": {
                     "code": "not_found",
                     "message": f"Session '{session_id}' not found.",
+                }
+            },
+        )
+
+    if session.status == "ended":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "session_ended",
+                    "message": "Ended sessions are read-only. Participants cannot be added.",
                 }
             },
         )
@@ -426,6 +670,23 @@ def add_participant(
         character_id=body.character_id,
         additional_contribution=body.additional_contribution,
     )
+
+    # Late-join distribution: if the session is already active and has a
+    # time_now value set, immediately distribute FT and Plot to the newly
+    # registered participant.  Active sessions always have time_now set when
+    # created via the normal lifecycle (start_session enforces this), but we
+    # guard defensively in case of direct DB manipulation in tests.
+    if session.status == "active" and session.time_now is not None:
+        actor_type = "gm" if current_user.role == "gm" else "player"
+        session_svc.distribute_to_participant(
+            db,
+            session=session,
+            character=character,
+            additional_contribution=body.additional_contribution,
+            actor_type=actor_type,
+            actor_id=current_user.id,
+        )
+
     return ParticipantResponse.model_validate(participant)
 
 
@@ -469,6 +730,17 @@ def remove_participant(
                 "error": {
                     "code": "not_found",
                     "message": f"Session '{session_id}' not found.",
+                }
+            },
+        )
+
+    if session.status == "ended":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "session_ended",
+                    "message": "Ended sessions are read-only. Participants cannot be removed.",
                 }
             },
         )

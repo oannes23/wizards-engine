@@ -61,10 +61,10 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Traits | [traits.md](domains/traits.md) | 🟢 | All resolved. **Updated 2026-03-13**: Trait template CRUD endpoints (standard REST, GM-only). Auto-catalog on new_trait approval. Template propagation (name/desc only, type immutable, soft-delete orphans). **Verified 2026-03-16**: Aligned with Phase 3 implementation. Note: `DELETE /trait-templates/{id}` is idempotent in code (re-deleting returns 204 silently); spec says 204 but does not specify idempotency — code is stricter (better). |
 | Bonds | [bonds.md](domains/bonds.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added cross-reference to events.md Meter Boundary Patterns for bond stress boundary behavior. **Verified 2026-03-16**: Aligned with Phase 3 implementation. `apply_bond_strain` resets charges to new effective max after degradation (not to 0). `reverse_degradation` does not auto-restore charges — separate `restore_bond_charges` call required. `retire_effect` is idempotent (no guard on already-inactive). |
 | Magic System | [magic-system.md](domains/magic-system.md) | 🟢 | All resolved. **Updated 2026-03-13**: Effect use body ({narrative?: string}). charge_magic approval outcome (charges_added/power_boost in gm_overrides). **Verified 2026-03-16**: Aligned with Phase 3 implementation. `retire_effect` service function is idempotent (retires without checking current is_active state). |
-| Actions | [actions.md](domains/actions.md) | 🟢 | All resolved. Unified action system. GM actions reuse domain event types. Integrity-only validation. Clean CRUD/GM split. Proposal withdrawal (hard delete). ULID pagination. |
-| Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). |
-| Events | [events.md](domains/events.md) | 🟢 | All resolved. **Updated 2026-03-14**: Added operation type tags (field.set, meter.delta, meter.set) on changes entries. Meter boundary patterns catalog with clamped annotation. Compound consequence documentation. Cross-references to boundary behaviors in other specs. |
-| Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Updated 2026-03-12**: ULID cursor pagination (default 50, max 100). Discriminated union feed items (common fields + type-specific). Private visibility = union of actor + primary target. Story `visibility_level` field for GM override. Full filter set on all endpoints. Own actions included with `is_own` flag. Story entry targets = owners + refs union. Rider events as separate feed items. |
+| Actions | [actions.md](domains/actions.md) | 🟢 | All resolved. **Verified 2026-03-16**: Corrected `calculated_effect` schemas to match implementation (field names, structure). GM Action Validation updated — code clamps meters to documented ranges rather than allowing arbitrary values. |
+| Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). **Verified 2026-03-16**: GM may call find-time on behalf of any character. find-time validates detail_level = full (422 not_a_pc). Session start error codes documented. Session end error code (session_not_active) and late-join event details (session.participant_added: global, character as primary target, changes include free_time/last_session_time_now/plot) documented against Stories 5.1.2–5.1.3. |
+| Events | [events.md](domains/events.md) | 🟢 | All resolved. **Verified 2026-03-16**: Clarified `GET /events/{id}` returns 404 for silent events for all callers including GM. session.participant_added default visibility (global) added against Story 5.1.2. |
+| Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Verified 2026-03-16**: GM silent feed excludes story entries. POST /me/starred idempotency (200 if already starred, 201 on new star) and DELETE /me/starred idempotency documented. |
 | Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. **Verified 2026-03-16**: Login response `type` discriminator and cookie max_age documented. |
 
 ---
@@ -161,11 +161,11 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 3 | 3.1 — Character Sheet Model | [phase3-character-sheet.md](implementation/phase3-character-sheet.md) | 4 | 🟢 |
 | 3 | 3.2 — Traits & Magic Effects | [phase3-traits-effects.md](implementation/phase3-traits-effects.md) | 3 | 🟢 |
 | 3 | 3.3 — PC Bond Mechanics | [phase3-pc-bond-mechanics.md](implementation/phase3-pc-bond-mechanics.md) | 2 | 🟢 |
-| 4 | 4.1 — Event Log | [phase4-event-log.md](implementation/phase4-event-log.md) | 3 | 🔴 |
-| 4 | 4.2 — GM Actions | [phase4-gm-actions.md](implementation/phase4-gm-actions.md) | 3 | 🔴 |
-| 4 | 4.3 — Proposal Workflow | [phase4-proposal-workflow.md](implementation/phase4-proposal-workflow.md) | 5 | 🔴 |
-| 4 | 4.4 — Feed System | [phase4-feed-system.md](implementation/phase4-feed-system.md) | 4 | 🔴 |
-| 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🔴 |
+| 4 | 4.1 — Event Log | [phase4-event-log.md](implementation/phase4-event-log.md) | 3 | 🟢 |
+| 4 | 4.2 — GM Actions | [phase4-gm-actions.md](implementation/phase4-gm-actions.md) | 3 | 🟢 |
+| 4 | 4.3 — Proposal Workflow | [phase4-proposal-workflow.md](implementation/phase4-proposal-workflow.md) | 5 | 🟢 |
+| 4 | 4.4 — Feed System | [phase4-feed-system.md](implementation/phase4-feed-system.md) | 4 | 🟢 |
+| 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🟢 |
 
 ---
 

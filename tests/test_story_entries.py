@@ -100,9 +100,11 @@ class TestCreateEntry:
         assert "updated_at" in body
 
     def test_player_creates_entry(self, client: TestClient, seed_data: dict):
-        """Any authenticated player can create an entry; author_id is their user ID."""
+        """Any authenticated player can create an entry when they can see the story."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make the story globally visible so player1 can see and write to it.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         response = client.post(
@@ -119,9 +121,10 @@ class TestCreateEntry:
         self, client: TestClient, seed_data: dict
     ):
         """author_id is always set from the current user; request body cannot override it."""
-        auth_as(client, seed_data["player1"])
-        auth_as(client, seed_data["gm"])  # log in as gm
+        auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make the story globally visible so player1 can write to it.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         response = client.post(
@@ -279,6 +282,8 @@ class TestUpdateEntry:
         """GM can update the text of any entry; updated_by is set to GM id."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so player1 can create an entry.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         # Player creates entry.
         auth_as(client, seed_data["player1"])
@@ -302,6 +307,8 @@ class TestUpdateEntry:
         """Player can update the text of their own entry; returns 200."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so player1 can create and edit an entry.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         entry = _create_entry(client, story_id, text="My first draft.")
@@ -323,6 +330,8 @@ class TestUpdateEntry:
         """Player receives 403 when attempting to edit another player's entry."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so both players can see and write to this story.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         entry = _create_entry(client, story_id, text="Player 1 entry.")
@@ -439,6 +448,8 @@ class TestDeleteEntry:
         """GM can soft-delete any entry; returns 204."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so player1 can create an entry.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         entry = _create_entry(client, story_id, text="Player entry.")
@@ -454,6 +465,8 @@ class TestDeleteEntry:
         """Player can soft-delete their own entry; returns 204."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so player1 can create and delete their own entry.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         entry = _create_entry(client, story_id, text="My entry.")
@@ -469,6 +482,8 @@ class TestDeleteEntry:
         """Player receives 403 when attempting to delete another player's entry."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so both players can see and write to this story.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         entry = _create_entry(client, story_id, text="Player 1 entry.")
@@ -613,6 +628,8 @@ class TestStoryDetailEntries:
         """Entries from GM and multiple players all appear in detail."""
         auth_as(client, seed_data["gm"])
         story_id = _create_story(client)
+        # Make globally visible so all players can contribute entries.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         gm_entry = _create_entry(client, story_id, text="GM observation.")
 

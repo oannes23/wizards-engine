@@ -389,10 +389,18 @@ class TestListStories:
         assert response.status_code == 401
 
     def test_player_can_list_stories(self, client: TestClient, seed_data: dict):
-        """Non-GM players can also list stories."""
+        """Non-GM players can list stories; stories they can see appear in the list."""
+        auth_as(client, seed_data["gm"])
+        # Create a global story so player1 can see at least one item.
+        resp = client.post("/api/v1/stories", json={"name": "Global Story"})
+        story_id = resp.json()["id"]
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
+
         auth_as(client, seed_data["player1"])
         response = client.get("/api/v1/stories")
         assert response.status_code == 200
+        ids = [s["id"] for s in response.json()["items"]]
+        assert story_id in ids
 
 
 # ---------------------------------------------------------------------------
@@ -473,10 +481,12 @@ class TestGetStory:
         assert response.status_code == 401
 
     def test_player_can_get_story_detail(self, client: TestClient, seed_data: dict):
-        """Non-GM players can retrieve story detail."""
+        """Non-GM players can retrieve story detail when they have visibility."""
         auth_as(client, seed_data["gm"])
-        story_resp = client.post("/api/v1/stories", json={"name": "Public Story"})
+        story_resp = client.post("/api/v1/stories", json={"name": "Global Story"})
         story_id = story_resp.json()["id"]
+        # Set global visibility so all players can see this story.
+        client.patch(f"/api/v1/stories/{story_id}", json={"visibility_level": "global"})
 
         auth_as(client, seed_data["player1"])
         response = client.get(f"/api/v1/stories/{story_id}")

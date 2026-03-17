@@ -17,9 +17,9 @@ Implement the event creation service, the events API (read-only with filtering),
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 4.1.1 — Event Creation Service | 🔴 Not started | — |
-| 4.1.2 — Events API | 🔴 Not started | — |
-| 4.1.3 — Bond-Distance Visibility Filtering | 🔴 Not started | — |
+| 4.1.1 — Event Creation Service | 🟢 Complete | 2026-03-16 |
+| 4.1.2 — Events API | 🟢 Complete | 2026-03-16 |
+| 4.1.3 — Bond-Distance Visibility Filtering | 🟢 Complete | 2026-03-16 |
 
 ### Story 4.1.1 — Event Creation Service
 

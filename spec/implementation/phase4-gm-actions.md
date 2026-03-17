@@ -17,9 +17,9 @@ Implement the `POST /api/v1/gm/actions` endpoint — the GM's direct action syst
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 4.2.1 — GM Actions Endpoint + Character Actions | 🔴 Not started | — |
-| 4.2.2 — GM Bond/Trait/Effect Actions | 🔴 Not started | — |
-| 4.2.3 — GM World Object Actions | 🔴 Not started | — |
+| 4.2.1 — GM Actions Endpoint + Character Actions | 🟢 Complete | 2026-03-16 |
+| 4.2.2 — GM Bond/Trait/Effect Actions | 🟢 Complete | 2026-03-16 |
+| 4.2.3 — GM World Object Actions | 🟢 Complete | 2026-03-16 |
 
 ### Story 4.2.1 — GM Actions Endpoint + Character Actions
 

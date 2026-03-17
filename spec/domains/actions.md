@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-10
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [character-core](character-core.md), [traits](traits.md), [bonds](bonds.md), [magic-system](magic-system.md), [game-objects](game-objects.md), [events](events.md)
 **Depended on by**: [downtime](downtime.md), [events](events.md)
 
@@ -124,38 +124,52 @@ The `calculated_effect` field is a **typed structure per action type**, includin
 ```
 use_skill: {
   dice_pool: int,           // Skill level + modifier count
-  modifiers: [{id, type, label}],  // Which traits/bonds selected
+  skill: str,               // The skill name
+  skill_level: int,         // The character's level in that skill
+  modifiers: [{id, type, name, bonus: 1}],  // Which traits/bonds selected
+  plot_spend: int,
   costs: {
-    trait_charges: [{trait_id, charge_cost: 1}],  // Per invoked trait
+    trait_charges: [{trait_id, cost: 1}],  // Per invoked trait
     plot: int               // Plot points consumed
   }
 }
 
 use_magic: {
+  suggested_stat: str,      // Magic stat the player suggested
+  stat_level: int,          // Character's level in that stat
   dice_pool: int,           // Magic Stat + sacrifice dice + modifier count
-  sacrifice_gnosis_total: int,  // Total Gnosis equivalent (after tiered conversion)
-  modifiers: [{id, type, label}],
+  sacrifice_dice: int,      // Dice from sacrifice (after tiered conversion)
+  total_gnosis_equivalent: int,  // Total Gnosis equivalent from all sacrifices
+  sacrifice_details: [...], // Per-entry sacrifice breakdown with gnosis_equivalent
+  modifiers: [{id, type, name, bonus: 1}],
   costs: {
-    trait_charges: [{trait_id, charge_cost: 1}],
-    gnosis: int,            // Gnosis from sacrifice
+    gnosis: int,            // Gnosis directly spent as sacrifice
     stress: int,            // Stress from sacrifice (if any)
     free_time: int,         // FT from sacrifice (if any)
-    sacrificed_traits: [{trait_id}],  // Traits/bonds sacrificed (→ Past)
+    bond_sacrifices: [{bond_id, name}],    // Bonds sacrificed (→ Past)
+    trait_sacrifices: [{trait_id, name}],  // Traits sacrificed (→ Past)
+    trait_charges: [{trait_id, cost: 1}],  // Per invoked trait modifier
     plot: int
   }
 }
 
 charge_magic: {
-  // Same shape as use_magic
+  // Same shape as use_magic, plus:
+  suggested_stat: str,
+  stat_level: int,
   dice_pool: int,
-  sacrifice_gnosis_total: int,
-  modifiers: [{id, type, label}],
+  sacrifice_dice: int,
+  total_gnosis_equivalent: int,
+  sacrifice_details: [...],
+  modifiers: [{id, type, name, bonus: 1}],
+  target_effect: {id, name, effect_type, power_level, charges_current, charges_max},
   costs: {
-    trait_charges: [{trait_id, charge_cost: 1}],
     gnosis: int,
     stress: int,
     free_time: int,
-    sacrificed_traits: [{trait_id}],
+    bond_sacrifices: [{bond_id, name}],
+    trait_sacrifices: [{trait_id, name}],
+    trait_charges: [{trait_id, cost: 1}],
     plot: int
   }
 }
@@ -166,25 +180,23 @@ charge_magic: {
 ```
 regain_gnosis: {
   gnosis_gained: int,       // 3 + lowest Magic Stat + modifiers
-  modifiers: [{id, type, label}],
   costs: {
     free_time: 1,
-    trait_charges: [{trait_id, charge_cost: 1}]
+    trait_charges: [{trait_id, cost: 1}]
   }
 }
 
 rest: {
   stress_healed: int,       // 3 + modifiers
-  modifiers: [{id, type, label}],
   costs: {
     free_time: 1,
-    trait_charges: [{trait_id, charge_cost: 1}]
+    trait_charges: [{trait_id, cost: 1}]
   }
 }
 
 recharge_trait: {
-  target_trait_id: string,
-  charges_restored_to: 5,
+  trait_id: string,
+  charges_restored: 5,
   costs: { free_time: 1 }
 }
 
@@ -431,9 +443,9 @@ Each action type has its own validation rules and `changes` payload shape (defin
 
 ### GM Action Validation
 
-- **Decision**: Integrity-only validation. The system validates data types, valid references (FKs exist), and structural correctness. No game-logic constraints — the GM can set Stress to 15 or Gnosis to -3 if they choose.
-- **Rationale**: The GM is the final authority. Range enforcement adds friction without value for a trusted single-user system. The GM knows what they're doing.
-- **Implications**: No range checking, no game-rule enforcement. Pydantic validates structure; application code validates FK references. Invalid data types are rejected (e.g., string where int expected).
+- **Decision**: The system validates FK references and structural correctness. Meter fields are **clamped** to their documented ranges (not rejected) — values outside range are silently clamped and the change entry is annotated with `"clamped": true`. Skills are clamped to 0–3, Magic Stat levels to 0–5, Magic Stat XP to 0–4. Stress is clamped to `0–9` (the hard upper bound; the effective stress max `9 - trauma_count` is enforced as the Trauma trigger, not a hard cap). Gnosis 0–23, Free Time 0–20. Plot has no practical upper bound (large sentinel).
+- **Rationale**: Clamping is more forgiving than rejection — a GM typo doesn't abort the operation. The `clamped` annotation preserves observability. The GM is the final authority so enforcement is lenient.
+- **Implications**: Pydantic validates structure; application code validates FK references and applies clamping. Out-of-range values are accepted and silently corrected. The `changes` field records the clamped `after` value with `"clamped": true` so consumers can see when clamping occurred.
 
 ### GM Action Event Types
 
@@ -741,4 +753,4 @@ All resolved.
 
 ---
 
-_Last updated: 2026-03-15 (added resolve_trauma system proposal type — auto-generated when Stress hits max, parallels resolve_clock pattern; updated action type count to 12; updated System Proposals decision block)_
+_Last updated: 2026-03-16 (verified against Phase 4 implementation: corrected calculated_effect schemas to match actual field names produced by proposal service — use_magic/charge_magic use `total_gnosis_equivalent`, `sacrifice_dice`, `sacrifice_details`, `bond_sacrifices`, `trait_sacrifices`, `name` (not `label`), `cost: 1` (not `charge_cost: 1`); charge_magic adds `target_effect` key; recharge_trait uses `trait_id`/`charges_restored` (not `target_trait_id`/`charges_restored_to`); regain_gnosis/rest omit `modifiers` list from calculated_effect. Updated GM Action Validation decision: code clamps meters to documented ranges rather than allowing arbitrary values.)_

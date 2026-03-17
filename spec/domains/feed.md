@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-12
-**Last verified**: —
+**Last verified**: 2026-03-16
 **Depends on**: [game-objects](game-objects.md), [bonds](bonds.md), [events](events.md)
 **Depended on by**: [auth](auth.md)
 
@@ -214,13 +214,13 @@ Same as the complete feed, but filtered to only Game Objects the player has star
 
 `GET /api/v1/me/feed/silent` (GM only)
 
-Returns all `silent`-level Events and Story entries. The GM's audit log for bookkeeping changes. Uses the same pagination and filtering as all other feed endpoints.
+Returns all `silent`-level Events. Story entries are excluded (they do not have a `silent` visibility level). The GM's audit log for bookkeeping changes. Uses the same pagination and filtering as all other feed endpoints.
 
 ### Starring API
 
 - `GET /api/v1/me/starred` — list starred Game Objects
-- `POST /api/v1/me/starred` — star a Game Object `{type, id}`
-- `DELETE /api/v1/me/starred/{type}/{id}` — unstar
+- `POST /api/v1/me/starred` — star a Game Object `{type, id}`. Returns 201 on success. Returns 200 if the object is already starred (idempotent). Returns 404 if the Game Object does not exist or is soft-deleted.
+- `DELETE /api/v1/me/starred/{type}/{id}` — unstar. Returns 204 whether or not the object was starred (idempotent).
 
 Starring is stored in the `starred_objects` table (typed Game Object refs per user).
 
@@ -372,4 +372,4 @@ _None — all questions resolved during 2026-03-12 interrogation._
 
 ---
 
-_Last updated: 2026-03-12 (interrogation — resolved all open questions: ULID cursor pagination, discriminated union feed items, private visibility union rule, story visibility_level field, full filter set, own actions flagged, story entry targets as owner+refs union, rider events as separate items)_
+_Last updated: 2026-03-16 (verified against Phase 4 implementation: GM silent feed excludes story entries (they have no silent visibility level); POST /me/starred is idempotent — returns 200 if already starred, 201 on new star, 404 if object not found; DELETE /me/starred/{type}/{id} returns 204 whether or not the object was starred.)_

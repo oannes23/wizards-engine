@@ -17,11 +17,11 @@ Implement the player proposal system: submit, calculate effects, GM approve/reje
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 4.3.1 — Proposal CRUD + Submission | 🔴 Not started | — |
-| 4.3.2 — Skill Action Calculations | 🔴 Not started | — |
-| 4.3.3 — GM Approval + Rejection | 🔴 Not started | — |
-| 4.3.4 — Downtime Action Types | 🔴 Not started | — |
-| 4.3.5 — Magic Actions + Sacrifice | 🔴 Not started | — |
+| 4.3.1 — Proposal CRUD + Submission | 🟢 Complete | 2026-03-16 |
+| 4.3.2 — Skill Action Calculations | 🟢 Complete | 2026-03-16 |
+| 4.3.3 — GM Approval + Rejection | 🟢 Complete | 2026-03-16 |
+| 4.3.4 — Downtime Action Types | 🟢 Complete | 2026-03-16 |
+| 4.3.5 — Magic Actions + Sacrifice | 🟢 Complete | 2026-03-16 |
 
 ### Story 4.3.1 — Proposal CRUD + Submission
 

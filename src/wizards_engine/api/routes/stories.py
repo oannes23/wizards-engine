@@ -36,6 +36,7 @@ from wizards_engine.schemas.story import (
     UpdateStoryRequest,
 )
 from wizards_engine.services import story as story_svc
+from wizards_engine.services.visibility import can_user_see_story, filter_stories_for_user
 
 router = APIRouter()
 
@@ -270,8 +271,11 @@ def list_stories(
 
     page = paginate(db, q, model=Story, after=after, limit=limit)
 
+    # Apply visibility filtering for non-GM users.
+    visible_items = filter_stories_for_user(db, _current_user, page.items)
+
     return PaginatedResponse[StoryResponse](
-        items=[StoryResponse.model_validate(s) for s in page.items],
+        items=[StoryResponse.model_validate(s) for s in visible_items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
     )
@@ -296,24 +300,27 @@ def list_stories(
 )
 def get_story(
     story_id: str,
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> StoryDetailResponse:
     """Return a single story by ID with owners and entries.
 
     Args:
         story_id: ULID of the story to retrieve.
-        _current_user: Authenticated user (any role).
+        current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
         ``StoryDetailResponse`` for the requested story.
 
     Raises:
-        HTTPException(404): If no story exists with ``story_id``.
+        HTTPException(404): If no story exists with ``story_id``, or if the
+            authenticated player does not have visibility of this story.
     """
     story = story_svc.get_story(db, story_id)
     if story is None:
+        raise _story_not_found(story_id)
+    if not can_user_see_story(db, current_user, story):
         raise _story_not_found(story_id)
     return _build_detail_response(db, story)
 
@@ -594,6 +601,8 @@ def create_entry(
     """
     story = story_svc.get_story(db, story_id)
     if story is None:
+        raise _story_not_found(story_id)
+    if not can_user_see_story(db, current_user, story):
         raise _story_not_found(story_id)
 
     session_id = story_svc.get_active_session_id(db)

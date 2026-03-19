@@ -17,11 +17,11 @@ Build the GM-specific tooling: aggregated dashboard (pending proposals, PC summa
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.5.1 — GM Dashboard | 🔴 Not started | — |
-| 6.5.2 — Session Management + Session Timeline | 🔴 Not started | — |
-| 6.5.3 — Player Roster + Invite Management | 🔴 Not started | — |
-| 6.5.4 — GM Direct Actions Form | 🔴 Not started | — |
-| 6.5.5 — Trait Template Catalog + Clock Management | 🔴 Not started | — |
+| 6.5.1 — GM Dashboard | 🟢 Complete | 2026-03-19 |
+| 6.5.2 — Session Management + Session Timeline | 🟢 Complete | 2026-03-19 |
+| 6.5.3 — Player Roster + Invite Management | 🟢 Complete | 2026-03-19 |
+| 6.5.4 — GM Direct Actions Form | 🟢 Complete | 2026-03-19 |
+| 6.5.5 — Trait Template Catalog + Clock Management | 🟢 Complete | 2026-03-19 |
 
 ### Story 6.5.1 — GM Dashboard
 

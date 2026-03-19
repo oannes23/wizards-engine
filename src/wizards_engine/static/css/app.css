@@ -3003,3 +3003,338 @@ main.container {
   margin-top: 0.75rem;
   text-align: center;
 }
+}
+
+/* ---------------------------------------------------------------------------
+   GM Players & Invites view (gm-players-*)
+   --------------------------------------------------------------------------- */
+
+.gm-players {
+  padding-top: 0.5rem;
+}
+
+.gm-players__subtitle {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+}
+
+/* Tab bar */
+.gm-players__tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  border-bottom: 1px solid var(--pico-muted-border-color, #444);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.gm-players__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.gm-players__tab {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px; /* overlap container border */
+}
+
+.gm-players__tab:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.gm-players__tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+  font-weight: 600;
+}
+
+/* Panel */
+.gm-players__panel {
+  min-height: 4rem;
+}
+
+/* Empty state */
+.gm-players__empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.95rem;
+}
+
+/* Scrollable table wrapper */
+.gm-players__table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gm-players__table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.gm-players__table th,
+.gm-players__table td {
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--pico-muted-border-color, #2a2a3e);
+}
+
+.gm-players__table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pico-muted-color, #aaa);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gm-players__row:last-child td {
+  border-bottom: none;
+}
+
+/* Name column */
+.gm-players__display-name {
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+}
+
+/* Role badge */
+.gm-players__role-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.gm-players__role-badge--gm {
+  background: var(--we-plot-amber, #f39c12);
+  color: #1a1a1a;
+}
+
+.gm-players__role-badge--player {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #ccc);
+}
+
+/* Status badge */
+.gm-players__status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.gm-players__status--active {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+.gm-players__status--inactive {
+  background: var(--pico-muted-border-color, #444);
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Character link */
+.gm-players__char-link {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.gm-players__char-link:hover {
+  text-decoration: underline;
+}
+
+.gm-players__no-char {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Copy login link button (inline, looks like a small chip) */
+.gm-players__copy-btn {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  min-height: 28px;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.gm-players__copy-btn:hover,
+.gm-players__copy-btn:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+/* Regenerate token button */
+.gm-players__regen-btn {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  min-height: 28px;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.gm-players__regen-btn:hover:not([disabled]),
+.gm-players__regen-btn:focus-visible:not([disabled]) {
+  border-color: var(--we-plot-amber, #f39c12);
+  color: var(--we-plot-amber, #f39c12);
+  outline: none;
+}
+
+.gm-players__regen-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Invites section */
+.gm-players__invites-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.gm-players__invites-hint {
+  font-size: 0.875rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.gm-players__create-invite-btn {
+  font-size: 0.9rem;
+  min-height: 36px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gm-players__create-invite-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gm-players__invites-empty {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+/* Invite list */
+.gm-players__invite-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gm-players__invite-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.gm-players__invite-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The invite URL button — full URL as button text, acts as copy trigger */
+.gm-players__invite-copy-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--pico-primary, #7c6aff);
+  font-size: 0.8rem;
+  font-family: monospace;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 28px;
+  line-height: 28px;
+  border-radius: 0.2rem;
+  transition: color 0.15s;
+}
+
+.gm-players__invite-copy-btn:hover,
+.gm-players__invite-copy-btn:focus-visible {
+  color: var(--pico-contrast, #fff);
+  outline: none;
+  text-decoration: underline;
+}
+
+.gm-players__invite-actions {
+  flex-shrink: 0;
+}
+
+/* Delete invite button */
+.gm-players__invite-delete-btn {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  min-height: 28px;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.gm-players__invite-delete-btn:hover:not([disabled]),
+.gm-players__invite-delete-btn:focus-visible:not([disabled]) {
+  border-color: var(--we-stress-red, #c0392b);
+  color: var(--we-stress-red, #c0392b);
+  outline: none;
+}
+
+.gm-players__invite-delete-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

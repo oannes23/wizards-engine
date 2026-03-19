@@ -54,20 +54,20 @@ var router = (function () {
     "/world":        function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("World")();   } },
     "/session":      _placeholder("Session"),
     "/profile":      _placeholder("Profile"),
-    "/gm":           function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Dashboard")(); } },
+    "/gm":           function () { if (typeof views !== "undefined" && views.gmDashboard) { views.gmDashboard(); } else { _placeholder("GM Dashboard")(); } },
     "/gm/queue":     function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Queue")();     } },
-    "/gm/sessions":      _placeholder("GM Sessions"),
-    "/gm/sessions/new":  _placeholder("New Session"),
+    "/gm/sessions":      function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions();  } else { _placeholder("GM Sessions")(); } },
+    "/gm/sessions/new":  function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions({ mode: "new" });  } else { _placeholder("New Session")(); } },
     "/gm/world":     function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("GM World")();   } },
     "/gm/feed":            function () { if (typeof views !== "undefined" && views.gmFeed)        { views.gmFeed();        } else { _placeholder("GM Feed")(); } },
     "/gm/feed/silent":     function () { if (typeof views !== "undefined" && views.gmFeedSilent)  { views.gmFeedSilent();  } else { _placeholder("GM Silent Feed")(); } },
     "/gm/more":            _placeholder("GM More"),
     "/gm/character":       function () { if (typeof views !== "undefined" && views.character)  { views.character();  } else { _placeholder("GM Character Sheet")(); } },
-    "/gm/actions":         _placeholder("GM Direct Actions"),
-    "/gm/players":         _placeholder("Player Roster"),
-    "/gm/invites":         _placeholder("Invite Management"),
-    "/gm/trait-templates": _placeholder("Trait Template Catalog"),
-    "/gm/clocks":          _placeholder("Clock Management"),
+    "/gm/actions":         function () { if (typeof views !== "undefined" && views.gmActions)    { views.gmActions();    } else { _placeholder("GM Direct Actions")(); } },
+    "/gm/players":         function () { if (typeof views !== "undefined" && views.gmPlayers)   { views.gmPlayers();   } else { _placeholder("Player Roster")(); } },
+    "/gm/invites":         function () { if (typeof views !== "undefined" && views.gmPlayers)   { views.gmPlayers({ tab: "invites" });   } else { _placeholder("Invite Management")(); } },
+    "/gm/trait-templates": function () { if (typeof views !== "undefined" && views.gmTemplates) { views.gmTemplates(); } else { _placeholder("Trait Template Catalog")(); } },
+    "/gm/clocks":          function () { if (typeof views !== "undefined" && views.gmClocks)    { views.gmClocks();    } else { _placeholder("Clock Management")(); } },
     "/character/edit":     function () { if (typeof views !== "undefined" && views.characterEdit) { views.characterEdit(); } else { _placeholder("Edit Character")(); } },
     "/feed/starred":       function () { if (typeof views !== "undefined" && views.feedStarred)  { views.feedStarred();  } else { _placeholder("Starred Feed")(); } },
   };
@@ -85,6 +85,30 @@ var router = (function () {
    * the :id segment into params.id.
    */
   var paramRoutes = [
+    {
+      pattern: "/gm/sessions/:id/timeline",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.sessionDetail) {
+          views.sessionDetail(params.id, { tab: "timeline" });
+        } else { _placeholder("Session Timeline")(); }
+      },
+    },
+    {
+      pattern: "/gm/sessions/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.sessionDetail) {
+          views.sessionDetail(params.id, { edit: true });
+        } else { _placeholder("Edit Session")(); }
+      },
+    },
+    {
+      pattern: "/gm/sessions/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.sessionDetail) {
+          views.sessionDetail(params.id);
+        } else { _placeholder("Session Detail")(); }
+      },
+    },
     {
       // More specific: /proposals/:id/edit must come before /proposals/:id
       pattern: "/proposals/:id/edit",

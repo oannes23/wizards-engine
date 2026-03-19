@@ -471,7 +471,7 @@ window.views.gmQueue = (function () {
   function _onHashChange() {
     var hash = window.location.hash;
     var path = hash ? hash.slice(1) : "/";
-    if (path !== "/gm" && path !== "/gm/queue") {
+    if (path !== "/gm/queue") {
       _teardown();
       window.removeEventListener("hashchange", _onHashChange);
     }

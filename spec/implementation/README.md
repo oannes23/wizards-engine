@@ -174,8 +174,8 @@ Phase 6 (3 parallel tracks, then merge)
 | 5.1 — Session Lifecycle | 🟢 Complete | 5/5 |
 | 5.5 — Pre-UI API Additions | 🟢 Complete | 6/6 |
 | 6.1 — SPA Foundation & Auth | 🟢 Complete | 5/5 |
-| 6.2 — Player Character & Direct Actions | 🔴 Not started | 0/4 |
-| 6.3 — Proposal System | 🔴 Not started | 0/5 |
-| 6.4 — World Browser & Feed | 🔴 Not started | 0/4 |
+| 6.2 — Player Character & Direct Actions | 🟢 Complete | 4/4 |
+| 6.3 — Proposal System | 🟢 Complete | 5/5 |
+| 6.4 — World Browser & Feed | 🟢 Complete | 4/4 |
 | 6.5 — GM Tools & Session Management | 🔴 Not started | 0/5 |
 | 6.6 — Polish & Integration | 🔴 Not started | 0/3 |

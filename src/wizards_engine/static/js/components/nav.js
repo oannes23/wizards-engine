@@ -25,9 +25,29 @@
  *   Nav is hidden when:
  *   - $store.app.user is null (not authenticated)
  *   - Current route is /login, /setup, or /join
+ *
+ * Notification badges:
+ *   window.navBadges = { proposals: 0, queue: 0 }
+ *   Views update these counts on each poll cycle, then dispatch a
+ *   'nav:refresh' CustomEvent to trigger a re-render.
+ *   - proposals: count of newly-approved/rejected proposals (player)
+ *   - queue:     count of pending proposals awaiting GM review
  */
 
 window.components = window.components || {};
+
+// ---------------------------------------------------------------------------
+// Notification badge registry
+// ---------------------------------------------------------------------------
+
+/**
+ * Global badge counts. Views update these and dispatch 'nav:refresh' to
+ * trigger a re-render of the nav.
+ *
+ *   proposals — count of newly-approved/rejected proposals since last viewed
+ *   queue     — count of pending proposals awaiting GM review
+ */
+window.navBadges = window.navBadges || { proposals: 0, queue: 0 };
 
 window.components.nav = (function () {
   // ---------------------------------------------------------------------------
@@ -99,18 +119,51 @@ window.components.nav = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build a single <a> tab element.
+   * Derive a badge count for a tab from window.navBadges.
+   * Maps tab labels to their corresponding navBadges key.
+   * Returns 0 if the tab has no badge or the count is 0.
+   * @param {object} tab
+   * @returns {number}
+   */
+  function _badgeCount(tab) {
+    var badges = window.navBadges;
+    if (!badges) return 0;
+    if (tab.label === "Proposals") return badges.proposals || 0;
+    if (tab.label === "Queue") return badges.queue || 0;
+    return 0;
+  }
+
+  /**
+   * Build a single <a> tab element, with optional notification badge.
    */
   function _buildTab(tab, currentPath) {
     var a = document.createElement("a");
     a.href = tab.hash;
     a.className = "nav-tab";
-    a.textContent = tab.label;
     a.setAttribute("aria-label", tab.label);
 
     if (_isActive(tab, currentPath)) {
       a.classList.add("nav-tab--active");
       a.setAttribute("aria-current", "page");
+    }
+
+    // Build the tab content: label text + optional badge
+    var count = _badgeCount(tab);
+    if (count > 0) {
+      // Use a wrapper span so badge is positioned relative to the label
+      var labelSpan = document.createElement("span");
+      labelSpan.className = "nav-tab__label";
+      labelSpan.textContent = tab.label;
+
+      var badgeEl = document.createElement("span");
+      badgeEl.className = "nav-badge";
+      badgeEl.textContent = String(count > 99 ? "99+" : count);
+      badgeEl.setAttribute("aria-label", count + " notification" + (count === 1 ? "" : "s"));
+
+      a.appendChild(labelSpan);
+      a.appendChild(badgeEl);
+    } else {
+      a.textContent = tab.label;
     }
 
     return a;

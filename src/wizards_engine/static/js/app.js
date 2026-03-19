@@ -6,11 +6,12 @@
  * Responsibilities:
  *   1. Call store.app.init() to check auth status via GET /api/v1/me
  *   2. Start the hash router
- *   3. Wire up the api:error event to the toast/banner element
+ *   3. Wire up the api:error event to the error toast/banner element
+ *   4. Wire up the api:success event to the success toast element
  */
 
 // ---------------------------------------------------------------------------
-// Toast / error banner wiring
+// Error toast wiring
 // ---------------------------------------------------------------------------
 // Runs immediately (not inside alpine:init) so it is active before any API
 // call fires — including the /me check triggered from the store.
@@ -38,6 +39,30 @@
   toastClose.addEventListener("click", function () {
     clearTimeout(hideTimer);
     toast.hidden = true;
+  });
+})();
+
+// ---------------------------------------------------------------------------
+// Success toast wiring
+// ---------------------------------------------------------------------------
+(function () {
+  var toast = document.getElementById("api-success-toast");
+  var toastMsg = document.getElementById("api-success-toast-message");
+
+  if (!toast || !toastMsg) return;
+
+  var hideTimer = null;
+
+  document.addEventListener("api:success", function (event) {
+    var message = (event.detail && event.detail.message) || "Done.";
+    toastMsg.textContent = message;
+    toast.hidden = false;
+
+    // Auto-hide after 3 seconds
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () {
+      toast.hidden = true;
+    }, 3000);
   });
 })();
 

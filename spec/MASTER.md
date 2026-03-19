@@ -169,9 +169,9 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🟢 |
 | 5.5 | 5.5 — Pre-UI API Additions | [phase55-api-additions.md](implementation/phase55-api-additions.md) | 6 | 🟢 |
 | 6 | 6.1 — SPA Foundation & Auth | [phase6-spa-foundation.md](implementation/phase6-spa-foundation.md) | 5 | 🟢 |
-| 6 | 6.2 — Player Character & Direct Actions | [phase6-player-character.md](implementation/phase6-player-character.md) | 4 | 🔴 |
-| 6 | 6.3 — Proposal System | [phase6-proposal-system.md](implementation/phase6-proposal-system.md) | 5 | 🔴 |
-| 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🔴 |
+| 6 | 6.2 — Player Character & Direct Actions | [phase6-player-character.md](implementation/phase6-player-character.md) | 4 | 🟢 |
+| 6 | 6.3 — Proposal System | [phase6-proposal-system.md](implementation/phase6-proposal-system.md) | 5 | 🟢 |
+| 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🟢 |
 | 6 | 6.5 — GM Tools & Session Management | [phase6-gm-tools.md](implementation/phase6-gm-tools.md) | 5 | 🔴 |
 | 6 | 6.6 — Polish & Integration | [phase6-polish.md](implementation/phase6-polish.md) | 3 | 🔴 |
 
@@ -706,4 +706,4 @@ See [glossary.md](glossary.md) for canonical definitions of all terms.
 ---
 
 ## Last Updated
-_2026-03-18 — Epic 6.1 (SPA Foundation & Auth) complete: all 5 stories done. Phase 6 Web UI implementation has begun. web-ui.md verified against implementation with notes on static file path, hash router pattern-matching, Alpine store isGm method, polling resume behavior, and sessionStorage invite code handoff. Previous: Epic 5.5 (Pre-UI API Additions) complete: all 6 stories done._
+_2026-03-19 — Epics 6.2, 6.3, and 6.4 complete (all 13 stories done). Implementation notes added to each epic spec covering: feed pagination uses `after` not `before` cursor; PC character detail in world browser renders inline summary rather than reusing character.js; story owners and entry authors display truncated ULIDs (name resolution deferred); notification badges update only while the associated view is mounted; sacrifice-builder.js is a standalone component but proposal-submit.js inlines the logic; bond charges displayed via physical `stress` field. web-ui.md updated with feed pagination decision block, sacrifice builder decision block, world browser PC detail decision block, and notification badge scope note. Previous: Epic 6.1 (SPA Foundation & Auth) complete._

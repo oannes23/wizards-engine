@@ -17,11 +17,11 @@ Build the complete proposal submission and review UI: the 3-step submission flow
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.3.1 — Proposal Submission — Complete 3-Step Flow for `use_skill` | 🔴 Not started | — |
-| 6.3.2 — GM Review Queue | 🔴 Not started | — |
-| 6.3.3 — Proposal Submission — Non-Magic Types | 🔴 Not started | — |
-| 6.3.4 — Proposal Submission — Magic Types | 🔴 Not started | — |
-| 6.3.5 — My Proposals List + Detail + Revise + Notification Badges | 🔴 Not started | — |
+| 6.3.1 — Proposal Submission — Complete 3-Step Flow for `use_skill` | 🟢 Complete | 2026-03-19 |
+| 6.3.2 — GM Review Queue | 🟢 Complete | 2026-03-19 |
+| 6.3.3 — Proposal Submission — Non-Magic Types | 🟢 Complete | 2026-03-18 |
+| 6.3.4 — Proposal Submission — Magic Types | 🟢 Complete | 2026-03-19 |
+| 6.3.5 — My Proposals List + Detail + Revise + Notification Badges | 🟢 Complete | 2026-03-19 |
 
 ### Story 6.3.1 — Proposal Submission — Complete 3-Step Flow for `use_skill`
 
@@ -117,6 +117,10 @@ Build the complete proposal submission and review UI: the 3-step submission flow
 6. Review step shows magic stat, total sacrifice value, sacrifice breakdown, narrative
 7. Submit calls `POST /api/v1/proposals` with sacrifice list in selections
 
+**Implementation note**: `sacrifice-builder.js` exists as a standalone component (`window.components.sacrificeBuilder`) with `makeData()` and `buildHtml()` methods. However, `proposal-submit.js` inlines the sacrifice builder logic directly into its own Alpine data object rather than composing the component. The `sacrifice-builder.js` component is present for potential reuse but is not called by `proposal-submit.js`. The logic (sacrifice list, `addSacrifice()`, `removeSacrifice()`, `totalGnosisEquiv()`, `_toApiSacrificeList()`) is duplicated inline in `proposal-submit.js`. Both implementations are functionally equivalent.
+
+**Implementation note**: The narrative field label in the `use_magic` Step 2 form reads "Narrative (optional)" consistent with session action rules. The review step labels the narrative field "Intention" for `use_magic` and `charge_magic` — a minor UX clarification not specified in the acceptance criteria.
+
 ### Story 6.3.5 — My Proposals List + Detail + Revise + Notification Badges
 
 **Files to create**:
@@ -138,6 +142,10 @@ Build the complete proposal submission and review UI: the 3-step submission flow
 7. **GM notification badge**: Queue tab shows count of pending proposals
 8. Badges update on each poll cycle
 9. Viewing the proposals list clears the player badge count
+
+**Implementation note**: Notification badges update only while the associated view is mounted. The `proposals-list.js` view updates the `window.navBadges.proposals` counter via its `_pollCallback`, and `gm-queue.js` updates `window.navBadges.queue` via its own poll callback. Once a view is torn down (`_teardown()`), its poll is unregistered and badge updates stop until the view is remounted. Badges are not updated globally in the background — they reflect the last-known count from when the view was last active.
+
+**Implementation note**: Story owners and entry authors in `story-detail.js` display truncated ULIDs (first 8 characters) rather than resolved names. The API returns `{type, id}` for owners and `author_id` for entries; there is no name field available without a separate users lookup. Resolving display names is deferred.
 
 ---
 

@@ -17,10 +17,10 @@ Build the world browser: navigation and game object card listings for characters
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.4.1 — World Browser Navigation + Game Object Cards | 🔴 Not started | — |
-| 6.4.2 — Character / Group / Location Detail Views | 🔴 Not started | — |
-| 6.4.3 — Story Views + Entry Submission | 🔴 Not started | — |
-| 6.4.4 — Feed Views (Personal, Starred, Per-Object) | 🔴 Not started | — |
+| 6.4.1 — World Browser Navigation + Game Object Cards | 🟢 Complete | 2026-03-19 |
+| 6.4.2 — Character / Group / Location Detail Views | 🟢 Complete | 2026-03-19 |
+| 6.4.3 — Story Views + Entry Submission | 🟢 Complete | 2026-03-19 |
+| 6.4.4 — Feed Views (Personal, Starred, Per-Object) | 🟢 Complete | 2026-03-19 |
 
 ### Story 6.4.1 — World Browser Navigation + Game Object Cards
 
@@ -55,6 +55,8 @@ Build the world browser: navigation and game object card listings for characters
 5. Clocks displayed using ClockProgress component
 6. Back button returns to world browser list
 
+**Implementation note**: PC character detail in the world browser renders an inline read-only summary (meters, active traits, active bonds, "View Full Sheet" link) rather than reusing the character.js view directly. The previous approach of hijacking `character.js` was removed due to a race condition with async fetches and `setTimeout(0)` restore timing. The inline summary (`_buildPcSummary`) provides the same resource meters and key data without the full tabbed interface. Acceptance criterion 1 is partially met — the PC view is read-only and shows the same data but is not the identical component from 6.2.2.
+
 ### Story 6.4.3 — Story Views + Entry Submission
 
 **Files to create**:
@@ -73,6 +75,8 @@ Build the world browser: navigation and game object card listings for characters
 7. GM sees "Edit" button on all entries
 8. Edit form: inline text area replacement, save/cancel buttons, calls `PATCH /api/v1/stories/{id}/entries/{entry_id}`
 
+**Implementation note**: Story owners display a type badge and the first 8 characters of the owner's ULID rather than a resolved name (e.g., "character 01HX3N2F…"). Entry authors also display truncated ULIDs as short author labels. Full name resolution would require a separate lookup against `/api/v1/characters` or the users table. This is deferred. Story cards in the world browser list use the `summary` field (falling back to `description`) for the preview snippet.
+
 ### Story 6.4.4 — Feed Views (Personal, Starred, Per-Object)
 
 **Files to create**:
@@ -90,11 +94,13 @@ Build the world browser: navigation and game object card listings for characters
 6. Visibility-filtered server-side — no client-side filtering needed
 7. Empty feed shows "No events yet" message
 
+**Implementation note**: Feed pagination uses the `after` cursor parameter, not `before` as specified in criterion 4. The FeedList component (`feed-list.js`) appends `&after={cursor}` to the request URL using `data.next_cursor` from the previous response. This applies to all feed views (personal, starred, per-object, and the character sheet feed tab). The spec's `before` reference was a carry-over from an earlier design and does not match the implemented API conventions.
+
 ---
 
 ## Notes
 
 - Reuses shared components from 6.2.1 (GameObjectCard, FeedItem, ClockProgress, MeterBar)
 - All views are read-only except story entry submission and editing
-- Feed pagination uses ULID cursor (pass last item's ID as `before` parameter)
+- Feed pagination uses ULID cursor (pass last item's ID as `after` parameter — see implementation note on 6.4.4)
 - World browser is available to both players and GM

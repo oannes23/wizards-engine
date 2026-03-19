@@ -6,6 +6,12 @@
  * Route table maps hash paths to view loader functions.
  * Unknown routes fall through to the default redirect based on role.
  *
+ * Parameterized routes:
+ *   After checking static routes, the router checks paramRoutes — an ordered
+ *   list of pattern/handler pairs. Patterns use :param syntax which is
+ *   converted to a regex for matching. More specific patterns must come first.
+ *   Example: "/proposals/:id/edit" must be listed before "/proposals/:id".
+ *
  * Public API (via window.router):
  *   router.navigate(hash) — programmatic navigation, e.g. router.navigate('#/gm')
  *   router.start()        — begin listening for hashchange events + render current hash
@@ -41,29 +47,188 @@ var router = (function () {
     "/login":        function () { if (typeof views !== "undefined" && views.login)  { views.login();  } else { _placeholder("Login")();  } },
     "/setup":        function () { if (typeof views !== "undefined" && views.setup)  { views.setup();  } else { _placeholder("Setup")();  } },
     "/join":         function () { if (typeof views !== "undefined" && views.join)   { views.join();   } else { _placeholder("Join")();   } },
-    "/":             _placeholder("Dashboard"),
-    "/character":    _placeholder("Character Sheet"),
-    "/proposals":    _placeholder("Proposals"),
-    "/world":        _placeholder("World"),
+    "/":             function () { if (typeof views !== "undefined" && views.feed)          { views.feed();          } else { _placeholder("Dashboard")(); } },
+    "/character":    function () { if (typeof views !== "undefined" && views.character)  { views.character();  } else { _placeholder("Character Sheet")(); } },
+    "/proposals":    function () { if (typeof views !== "undefined" && views.proposalsList) { views.proposalsList(); } else { _placeholder("Proposals")(); } },
+    "/proposals/new": function () { if (typeof views !== "undefined" && views.proposalSubmit) { views.proposalSubmit(); } else { _placeholder("New Proposal")(); } },
+    "/world":        function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("World")();   } },
     "/session":      _placeholder("Session"),
     "/profile":      _placeholder("Profile"),
-    "/gm":           _placeholder("GM Dashboard"),
-    "/gm/queue":     _placeholder("GM Queue"),
+    "/gm":           function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Dashboard")(); } },
+    "/gm/queue":     function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Queue")();     } },
     "/gm/sessions":      _placeholder("GM Sessions"),
     "/gm/sessions/new":  _placeholder("New Session"),
-    "/gm/world":     _placeholder("GM World"),
-    "/gm/feed":            _placeholder("GM Feed"),
-    "/gm/feed/silent":     _placeholder("GM Silent Feed"),
+    "/gm/world":     function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("GM World")();   } },
+    "/gm/feed":            function () { if (typeof views !== "undefined" && views.gmFeed)        { views.gmFeed();        } else { _placeholder("GM Feed")(); } },
+    "/gm/feed/silent":     function () { if (typeof views !== "undefined" && views.gmFeedSilent)  { views.gmFeedSilent();  } else { _placeholder("GM Silent Feed")(); } },
     "/gm/more":            _placeholder("GM More"),
-    "/gm/character":       _placeholder("GM Character Sheet"),
+    "/gm/character":       function () { if (typeof views !== "undefined" && views.character)  { views.character();  } else { _placeholder("GM Character Sheet")(); } },
     "/gm/actions":         _placeholder("GM Direct Actions"),
     "/gm/players":         _placeholder("Player Roster"),
     "/gm/invites":         _placeholder("Invite Management"),
     "/gm/trait-templates": _placeholder("Trait Template Catalog"),
     "/gm/clocks":          _placeholder("Clock Management"),
-    "/character/edit":     _placeholder("Edit Character"),
-    "/feed/starred":       _placeholder("Starred Feed"),
+    "/character/edit":     function () { if (typeof views !== "undefined" && views.characterEdit) { views.characterEdit(); } else { _placeholder("Edit Character")(); } },
+    "/feed/starred":       function () { if (typeof views !== "undefined" && views.feedStarred)  { views.feedStarred();  } else { _placeholder("Starred Feed")(); } },
   };
+
+  // ---------------------------------------------------------------------------
+  // Parameterized routes
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Parameterized route table.
+   * Order matters — more specific patterns must come before less specific ones.
+   * Each entry: { pattern: "/segment/:param/...", handler: function(params) {...} }
+   *
+   * A pattern like "/proposals/:id/edit" converts to a regex that extracts
+   * the :id segment into params.id.
+   */
+  var paramRoutes = [
+    {
+      // More specific: /proposals/:id/edit must come before /proposals/:id
+      pattern: "/proposals/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.proposalDetail) {
+          views.proposalDetail(params.id, { edit: true });
+        } else {
+          _placeholder("Edit Proposal")();
+        }
+      },
+    },
+    {
+      pattern: "/proposals/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.proposalDetail) {
+          views.proposalDetail(params.id);
+        } else {
+          _placeholder("Proposal Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/world/characters/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("characters", params.id);
+        } else {
+          _placeholder("Character Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/world/groups/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("groups", params.id);
+        } else {
+          _placeholder("Group Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/world/locations/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("locations", params.id);
+        } else {
+          _placeholder("Location Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/world/stories/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.storyDetail) {
+          views.storyDetail(params.id);
+        } else {
+          _placeholder("Story Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/gm/world/characters/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("characters", params.id);
+        } else {
+          _placeholder("Character Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/gm/world/groups/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("groups", params.id);
+        } else {
+          _placeholder("Group Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/gm/world/locations/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.worldDetail) {
+          views.worldDetail("locations", params.id);
+        } else {
+          _placeholder("Location Detail")();
+        }
+      },
+    },
+    {
+      pattern: "/gm/world/stories/:id",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.storyDetail) {
+          views.storyDetail(params.id);
+        } else {
+          _placeholder("Story Detail")();
+        }
+      },
+    },
+  ];
+
+  /**
+   * Compile a pattern string into a regex and an ordered list of param names.
+   * "/proposals/:id/edit" → { regex: /^\/proposals\/([^/]+)\/edit$/, params: ["id"] }
+   * @param {string} pattern
+   * @returns {{ regex: RegExp, params: string[] }}
+   */
+  function _compilePattern(pattern) {
+    var paramNames = [];
+    var regexStr = pattern.replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, function (_, name) {
+      paramNames.push(name);
+      return "([^/]+)";
+    });
+    return {
+      regex: new RegExp("^" + regexStr + "$"),
+      params: paramNames,
+    };
+  }
+
+  /**
+   * Try to match a path against the parameterized route table.
+   * Returns the handler bound with extracted params, or null if no match.
+   * @param {string} path
+   * @returns {function|null}
+   */
+  function _matchParamRoute(path) {
+    for (var i = 0; i < paramRoutes.length; i++) {
+      var route = paramRoutes[i];
+      var compiled = _compilePattern(route.pattern);
+      var match = compiled.regex.exec(path);
+      if (match) {
+        var params = {};
+        for (var j = 0; j < compiled.params.length; j++) {
+          params[compiled.params[j]] = decodeURIComponent(match[j + 1]);
+        }
+        var handler = route.handler;
+        var capturedParams = params;
+        return function () { handler(capturedParams); };
+      }
+    }
+    return null;
+  }
 
   // ---------------------------------------------------------------------------
   // Routing logic
@@ -98,16 +263,25 @@ var router = (function () {
 
   /**
    * Resolve and execute the loader for a given path.
+   * Checks static routes first, then parameterized routes.
    * Falls back to the default route for unknown paths.
    */
   function _dispatch(path) {
+    // 1. Check static routes (exact match, fastest path)
     var loader = routes[path];
     if (loader) {
       loader();
       return;
     }
 
-    // Unknown route — redirect to role-appropriate default
+    // 2. Check parameterized routes (pattern match)
+    var paramLoader = _matchParamRoute(path);
+    if (paramLoader) {
+      paramLoader();
+      return;
+    }
+
+    // 3. Unknown route — redirect to role-appropriate default
     var dest = _defaultHash();
     // Avoid an infinite redirect loop if the default itself is unknown
     var destPath = dest.slice(1) || "/";

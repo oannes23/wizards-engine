@@ -163,3 +163,2843 @@ main.container {
   line-height: 1;
   flex-shrink: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   MeterBar component
+   --------------------------------------------------------------------------- */
+
+.meter-bar {
+  margin-bottom: 0.5rem;
+}
+
+.meter-bar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.meter-bar__label {
+  font-weight: 500;
+  color: var(--pico-contrast, #fff);
+}
+
+.meter-bar__value {
+  color: var(--pico-muted-color, #aaa);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The track is a container; fill is sized by inline gradient style */
+.meter-bar__track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pico-muted-border-color, #444);
+}
+
+.meter-bar__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   ChargeDots component
+   --------------------------------------------------------------------------- */
+
+.charge-dots {
+  display: inline-flex;
+  gap: 0.15rem;
+  line-height: 1;
+}
+
+.charge-dots__dot {
+  font-size: 1rem;
+  cursor: default;
+  user-select: none;
+}
+
+/* Trait variant — filled uses primary accent */
+.charge-dots__dot--trait.charge-dots__dot--filled {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.charge-dots__dot--trait.charge-dots__dot--empty {
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Bond variant — filled uses a distinct warm accent */
+.charge-dots__dot--bond.charge-dots__dot--filled {
+  color: var(--we-plot-amber, #f39c12);
+}
+
+.charge-dots__dot--bond.charge-dots__dot--empty {
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Unavailable dots (degraded bonds) — visually struck-out */
+.charge-dots__dot--unavailable {
+  color: var(--pico-muted-color, #555);
+  opacity: 0.4;
+}
+
+/* ---------------------------------------------------------------------------
+   ClockProgress component
+   --------------------------------------------------------------------------- */
+
+.clock-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-progress--compact {
+  flex-wrap: wrap;
+}
+
+.clock-progress--detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.clock-progress__segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  font-size: 1rem;
+}
+
+.clock-progress__dot {
+  font-size: 1rem;
+  user-select: none;
+}
+
+.clock-progress__dot--filled,
+.clock-progress__segment--filled {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.clock-progress__count {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+  white-space: nowrap;
+}
+
+.clock-progress__detail-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clock-progress__badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.clock-progress__badge--complete {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   GameObjectCard component
+   --------------------------------------------------------------------------- */
+
+.game-object-card {
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  transition: background 0.1s, box-shadow 0.1s;
+}
+
+.game-object-card:hover,
+.game-object-card:focus-visible {
+  background: var(--pico-card-background-color, #1e1e2e);
+  box-shadow: 0 0 0 2px var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.game-object-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.game-object-card__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+}
+
+.game-object-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.game-object-card__badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* PC badge — green accent */
+.game-object-card__badge--pc {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+/* NPC badge — muted */
+.game-object-card__badge--npc {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Tier badge — amber */
+.game-object-card__badge--tier {
+  background: var(--we-plot-amber, #f39c12);
+  color: #fff;
+}
+
+.game-object-card__meta {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.game-object-card__snippet {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ---------------------------------------------------------------------------
+   FeedItem component
+   --------------------------------------------------------------------------- */
+
+.feed-item {
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--pico-muted-border-color, #444);
+  margin-bottom: 0.75rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+/* Player actions — default (primary accent) */
+.feed-item--player {
+  border-left-color: var(--pico-primary, #7c6aff);
+}
+
+/* GM actions — secondary warm accent */
+.feed-item--gm {
+  border-left-color: var(--we-plot-amber, #f39c12);
+}
+
+/* System-generated entries — muted */
+.feed-item--system {
+  border-left-color: var(--pico-muted-border-color, #555);
+  opacity: 0.8;
+}
+
+/* Story entries — gnosis blue */
+.feed-item--story-entry {
+  border-left-color: var(--we-gnosis-blue, #2980b9);
+}
+
+/* Own items — subtle tint to distinguish the current user's actions */
+.feed-item--own {
+  background: rgba(124, 106, 255, 0.05);
+}
+
+.feed-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.feed-item__actor {
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+}
+
+.feed-item__action {
+  color: var(--pico-muted-color, #aaa);
+}
+
+.feed-item__story-name {
+  color: var(--we-gnosis-blue, #2980b9);
+  font-style: italic;
+}
+
+.feed-item__time {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #aaa);
+  white-space: nowrap;
+}
+
+.feed-item__targets {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.25rem;
+}
+
+.feed-item__narrative,
+.feed-item__entry {
+  font-size: 0.9rem;
+  color: var(--pico-color, #eee);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   StepIndicator component
+   --------------------------------------------------------------------------- */
+
+.step-indicator {
+  margin-bottom: 1.5rem;
+}
+
+.step-indicator__list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+.step-indicator__step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.step-indicator__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+
+.step-indicator__bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--pico-muted-border-color, #444);
+  color: var(--pico-muted-color, #aaa);
+  border: 2px solid var(--pico-muted-border-color, #444);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.step-indicator__step--active .step-indicator__bubble {
+  background: var(--pico-primary, #7c6aff);
+  border-color: var(--pico-primary, #7c6aff);
+  color: #fff;
+}
+
+.step-indicator__step--done .step-indicator__bubble {
+  background: var(--pico-muted-border-color, #555);
+  border-color: var(--pico-muted-border-color, #555);
+  color: var(--pico-primary, #7c6aff);
+}
+
+.step-indicator__label {
+  font-size: 0.65rem;
+  color: var(--pico-muted-color, #aaa);
+  white-space: nowrap;
+}
+
+.step-indicator__step--active .step-indicator__label {
+  color: var(--pico-primary, #7c6aff);
+  font-weight: 600;
+}
+
+.step-indicator__connector {
+  flex: 1;
+  height: 2px;
+  background: var(--pico-muted-border-color, #444);
+  margin: 0 0.25rem;
+  margin-bottom: 1.1rem; /* vertically align with bubble centres */
+}
+
+/* ---------------------------------------------------------------------------
+   Proposal Submission view
+   --------------------------------------------------------------------------- */
+
+.proposal-heading {
+  margin-bottom: 1rem;
+}
+
+.proposal-group {
+  margin-bottom: 1.5rem;
+}
+
+.proposal-group__heading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.25rem;
+}
+
+.proposal-group__note {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.proposal-action-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Shared card-style for both enabled and disabled action items */
+.proposal-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  text-align: left;
+  gap: 0.15rem;
+}
+
+.proposal-action--enabled {
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  color: var(--pico-contrast, #fff);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.proposal-action--enabled:hover,
+.proposal-action--enabled:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  box-shadow: 0 0 0 2px var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.proposal-action--disabled {
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  color: var(--pico-muted-color, #666);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.proposal-action__label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.proposal-action__desc {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposal-action--disabled .proposal-action__desc {
+  color: var(--pico-muted-color, #666);
+}
+
+.proposal-action__soon {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #555);
+  margin-top: 0.1rem;
+}
+
+/* Modifier pickers fieldset */
+.proposal-modifiers {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.375rem;
+}
+
+.proposal-modifiers legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+  color: var(--pico-contrast, #fff);
+}
+
+/* Loading state */
+.proposal-loading {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+/* Preview summary */
+.proposal-summary {
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.proposal-summary dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pico-muted-color, #aaa);
+  margin-top: 0.75rem;
+}
+
+.proposal-summary dt:first-of-type {
+  margin-top: 0;
+}
+
+.proposal-summary dd {
+  font-size: 0.95rem;
+  color: var(--pico-contrast, #fff);
+  margin-left: 0;
+  margin-bottom: 0;
+}
+
+.proposal-summary__narrative {
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+/* Dice pool line */
+.proposal-dice-pool {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--pico-muted-border-color, #333);
+  border-radius: 0.25rem;
+}
+
+.proposal-dice-pool strong {
+  color: var(--pico-contrast, #fff);
+  margin-right: 0.35rem;
+}
+
+/* Action button row */
+.proposal-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Primary CTA */
+.proposal-btn-primary {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+/* Secondary / back button */
+.proposal-btn-secondary {
+  min-height: 44px;
+  font-size: 0.9rem;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  padding: 0 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.proposal-btn-secondary:hover,
+.proposal-btn-secondary:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+}
+
+/* Error text (shared with existing inline error pattern) */
+.error-text {
+  color: var(--we-stress-red, #c0392b);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Nav badge (pending count indicator on nav tabs)
+   --------------------------------------------------------------------------- */
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   Proposal status badges (used in proposals-list + proposal-detail)
+   --------------------------------------------------------------------------- */
+
+.proposal-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.proposal-status-badge--pending  { background: var(--we-plot-amber, #f39c12); color: #000; }
+.proposal-status-badge--approved { background: var(--we-ft-green, #27ae60);   color: #fff; }
+.proposal-status-badge--rejected { background: var(--we-stress-red, #c0392b); color: #fff; }
+
+/* ---------------------------------------------------------------------------
+   Proposals List view (#/proposals)
+   --------------------------------------------------------------------------- */
+
+.proposals-list {
+  padding-top: 0.5rem;
+}
+
+.proposals-list__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.proposals-list__subtitle {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+}
+
+.proposals-list__new-btn {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+}
+
+.proposals-list__empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposals-group {
+  margin-bottom: 1.5rem;
+}
+
+.proposals-group__heading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+}
+
+.proposals-group__count {
+  font-weight: 400;
+}
+
+.proposals-group__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Individual proposal summary cards */
+.proposal-list-card {
+  display: block;
+  padding: 0.65rem 0.85rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: box-shadow 0.1s, border-color 0.1s;
+}
+
+.proposal-list-card:hover,
+.proposal-list-card:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  box-shadow: 0 0 0 2px var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.proposal-list-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.proposal-list-card__action-type {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  flex: 1;
+}
+
+.proposal-list-card__body {
+  margin-bottom: 0.25rem;
+}
+
+.proposal-list-card__narrative {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.proposal-list-card__narrative--empty {
+  font-style: italic;
+}
+
+.proposal-list-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.proposal-list-card__time {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #888);
+}
+
+/* ---------------------------------------------------------------------------
+   Proposal Detail / Edit view (#/proposals/:id)
+   --------------------------------------------------------------------------- */
+
+.proposal-detail,
+.proposal-edit {
+  padding-top: 0.5rem;
+}
+
+.proposal-detail__back,
+.proposal-edit__back {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.proposal-detail__narrative {
+  font-size: 0.95rem;
+  color: var(--pico-color, #eee);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.proposal-detail__narrative--empty {
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposal-detail__section {
+  margin-bottom: 1.25rem;
+}
+
+.proposal-detail__selections {
+  margin: 0 0 1rem 0;
+  overflow-x: auto;
+}
+
+.proposal-detail__selections table {
+  font-size: 0.85rem;
+}
+
+.proposal-detail__effect {
+  margin-bottom: 1rem;
+}
+
+.proposal-detail__effect summary {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+}
+
+.proposal-detail__effect figure {
+  margin: 0.5rem 0 0 0;
+  overflow-x: auto;
+}
+
+.proposal-detail__effect table {
+  font-size: 0.8rem;
+}
+
+.proposal-detail__rejection-note,
+.proposal-edit__rejection-note {
+  background: color-mix(in srgb, var(--pico-card-background-color, #1e1e2e) 90%, var(--we-stress-red, #c0392b) 10%);
+  border-left: 3px solid var(--we-stress-red, #c0392b);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.proposal-detail__gm-notes {
+  background: color-mix(in srgb, var(--pico-card-background-color, #1e1e2e) 90%, var(--we-ft-green, #27ae60) 10%);
+  border-left: 3px solid var(--we-ft-green, #27ae60);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.proposal-detail__timestamps {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposal-detail__timestamps dt {
+  font-weight: 600;
+}
+
+.proposal-detail__actions,
+.proposal-edit__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.proposal-detail__edit-btn,
+.proposal-detail__revise-btn {
+  min-height: 44px;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.25rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Sacrifice Builder component (sacrifice-builder.js, proposal-submit.js)
+   --------------------------------------------------------------------------- */
+
+.sacrifice-builder {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.375rem;
+}
+
+.sacrifice-builder legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+  color: var(--pico-contrast, #fff);
+}
+
+.sacrifice-total {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.75rem;
+}
+
+.sacrifice-total strong {
+  color: var(--pico-contrast, #fff);
+}
+
+.sacrifice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sacrifice-entry {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.sacrifice-entry__type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #ccc);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.2rem;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.sacrifice-entry__remove {
+  margin-left: auto;
+  font-size: 0.78rem;
+  min-height: 28px;
+  padding: 0.15rem 0.5rem;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.sacrifice-entry__remove:hover,
+.sacrifice-entry__remove:focus-visible {
+  border-color: var(--we-stress-red, #c0392b);
+  color: var(--we-stress-red, #c0392b);
+}
+
+.sacrifice-list__empty {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.sacrifice-add {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sacrifice-add label {
+  font-size: 0.85rem;
+  flex: 1 1 auto;
+}
+
+.sacrifice-add__btn {
+  min-height: 36px;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.sacrifice-other-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sacrifice-stress-warn {
+  color: var(--we-plot-amber, #f39c12);
+  font-size: 0.78rem;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Proposal Submit view — additional classes
+   --------------------------------------------------------------------------- */
+
+.proposal-step {
+  /* Container for each step — no extra layout needed; Pico handles spacing */
+}
+
+.proposal-formula {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  background: var(--pico-muted-border-color, #333);
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.proposal-empty-note,
+.proposal-empty-hint {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  margin: 0.25rem 0 0.5rem 0;
+}
+
+.proposal-propose-new {
+  margin-top: 0.5rem;
+}
+
+.proposal-cost-note {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-top: 0.25rem;
+}
+
+.proposal-summary__sacrifice-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* ---------------------------------------------------------------------------
+   GM Queue view
+   --------------------------------------------------------------------------- */
+
+.gm-queue {
+  padding-top: 0.5rem;
+}
+
+.gm-queue__subtitle {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+}
+
+.gm-queue__empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.95rem;
+}
+
+.gm-queue__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Success toast — dispatched by gm-queue view on approve/reject */
+#api-success-toast {
+  position: fixed;
+  bottom: calc(60px + 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-size: 0.9rem;
+}
+
+#api-success-toast[hidden] {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  #api-success-toast {
+    bottom: 1rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Proposal Card component
+   --------------------------------------------------------------------------- */
+
+.proposal-card {
+  padding: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+/* System proposals — distinct background tint */
+.proposal-card--system {
+  border-left: 3px solid var(--we-plot-amber, #f39c12);
+  background: color-mix(in srgb, var(--pico-card-background-color, #1e1e2e) 90%, var(--we-plot-amber, #f39c12) 10%);
+}
+
+/* Clickable header row */
+.proposal-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.proposal-card__header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.proposal-card__header:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: -2px;
+}
+
+.proposal-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.proposal-card__character {
+  font-size: 0.95rem;
+  color: var(--pico-contrast, #fff);
+}
+
+.proposal-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.proposal-card__badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* System origin badge */
+.proposal-card__badge--system {
+  background: var(--we-plot-amber, #f39c12);
+  color: #1a1a1a;
+}
+
+/* Action type badge */
+.proposal-card__badge--action {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #ccc);
+}
+
+.proposal-card__preview {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.proposal-card__narrative-preview {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.proposal-card__narrative-preview--empty {
+  font-style: italic;
+}
+
+.proposal-card__time {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #888);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Expanded content area */
+.proposal-card__expanded {
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+}
+
+.proposal-card__narrative {
+  font-size: 0.9rem;
+  color: var(--pico-color, #eee);
+  white-space: pre-wrap;
+  margin-bottom: 0.75rem;
+}
+
+.proposal-card__narrative--empty {
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposal-card__special-details {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.5rem;
+}
+
+.proposal-card__special-details p {
+  margin: 0.25rem 0;
+}
+
+.proposal-card__stress-state {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.proposal-card__effect {
+  margin-bottom: 0.75rem;
+}
+
+.proposal-card__effect summary {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+}
+
+.proposal-card__effect figure {
+  margin: 0.5rem 0 0 0;
+  overflow-x: auto;
+}
+
+.proposal-card__effect table {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.proposal-card__gm-narrative-label {
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Advanced options collapsible */
+.proposal-card__advanced {
+  margin-bottom: 0.75rem;
+}
+
+.proposal-card__advanced summary {
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.proposal-card__advanced-fields {
+  padding-top: 0.5rem;
+}
+
+.proposal-card__advanced-fields label {
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.proposal-card__advanced-fields input[type="number"],
+.proposal-card__advanced-fields input[type="text"],
+.proposal-card__advanced-fields textarea {
+  margin-top: 0.25rem;
+}
+
+/* Reject section */
+.proposal-card__reject-section {
+  margin-bottom: 0.75rem;
+}
+
+.proposal-card__reject-toggle {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+}
+
+.proposal-card__reject-section label {
+  font-size: 0.85rem;
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.proposal-card__reject-btn {
+  margin-top: 0.25rem;
+}
+
+/* Primary approve button — full-width, prominent */
+.proposal-card__approve-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  min-height: 44px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Inflight state — dimmed approve button */
+.proposal-card__approve-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Character Sheet view
+   --------------------------------------------------------------------------- */
+
+.cs-root {
+  padding-top: 0.5rem;
+}
+
+/* --- Tier 1: Header -------------------------------------------------------- */
+
+.cs-header {
+  margin-bottom: 1rem;
+}
+
+.cs-header__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.cs-header__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+}
+
+.cs-edit-btn {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cs-edit-btn:hover,
+.cs-edit-btn:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+.cs-header__desc {
+  font-size: 0.875rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.75rem 0;
+}
+
+.cs-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.cs-find-time-row {
+  margin-top: 0.5rem;
+}
+
+.cs-find-time-btn {
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+/* --- Tier 2: Tabs ---------------------------------------------------------- */
+
+.cs-tabs {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--pico-muted-border-color, #333);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0;
+}
+
+.cs-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cs-tab {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.85rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px; /* overlap the .cs-tabs border-bottom */
+}
+
+.cs-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.cs-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+  font-weight: 600;
+}
+
+.cs-tab-panel {
+  min-height: 6rem;
+}
+
+/* --- Common content helpers ----------------------------------------------- */
+
+.cs-empty {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.cs-loading {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+.cs-group-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+}
+
+.cs-action-btn {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.65rem;
+  min-height: 36px;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  background: none;
+  color: var(--pico-primary, #7c6aff);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cs-action-btn:hover,
+.cs-action-btn:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+.cs-action-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cs-action-btn--secondary {
+  border-color: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.cs-action-btn--secondary:hover,
+.cs-action-btn--secondary:focus-visible {
+  border-color: var(--we-stress-red, #c0392b);
+  color: var(--we-stress-red, #c0392b);
+  background: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Narrative Modal component
+   --------------------------------------------------------------------------- */
+
+.nm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.nm-dialog {
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.25rem 1rem 1.25rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  /* Reset <dialog> browser defaults */
+  margin: 0;
+  position: relative;
+}
+
+.nm-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+  margin: 0 0 0.85rem 0;
+}
+
+.nm-label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.35rem;
+}
+
+.nm-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 90px;
+  font-size: 0.9rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.nm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.nm-btn {
+  min-height: 40px;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.9rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.nm-btn--cancel {
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.nm-btn--cancel:hover,
+.nm-btn--cancel:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+}
+
+.nm-btn--submit {
+  background: var(--pico-primary, #7c6aff);
+  border: 1px solid var(--pico-primary, #7c6aff);
+  color: #fff;
+  font-weight: 600;
+}
+
+.nm-btn--submit:hover:not([disabled]),
+.nm-btn--submit:focus-visible:not([disabled]) {
+  filter: brightness(1.1);
+}
+
+.nm-btn--submit[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Traits tab ------------------------------------------------------------ */
+
+.cs-trait-group {
+  margin-bottom: 1.25rem;
+}
+
+.cs-trait-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cs-trait-item {
+  padding: 0.65rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+}
+
+.cs-trait-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.cs-trait-item__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+}
+
+.cs-trait-item__desc {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.35rem 0;
+}
+
+.cs-trait-item__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+/* --- Bonds tab ------------------------------------------------------------- */
+
+.cs-bond-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cs-bond-item {
+  padding: 0.65rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-left: 3px solid var(--we-plot-amber, #f39c12);
+  border-radius: 0.375rem;
+}
+
+/* Trauma bonds — distinct reddish border and subtle tint */
+.cs-bond-item--trauma {
+  border-left-color: var(--we-stress-red, #c0392b);
+  background: color-mix(in srgb, var(--pico-card-background-color, #1e1e2e) 92%, var(--we-stress-red, #c0392b) 8%);
+}
+
+.cs-bond-item__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.cs-bond-item__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  flex: 1 1 auto;
+}
+
+.cs-trauma-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.cs-bond-item__desc {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.35rem 0;
+}
+
+.cs-bond-item__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+/* --- Effects tab ----------------------------------------------------------- */
+
+.cs-effect-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cs-effect-item {
+  padding: 0.65rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+}
+
+.cs-effect-item__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.cs-effect-item__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+}
+
+.cs-effect-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.cs-effect-badge--charged {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+}
+
+.cs-effect-badge--permanent {
+  background: var(--we-gnosis-blue, #2980b9);
+  color: #fff;
+}
+
+.cs-effect-badge--instant {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.cs-effect-power {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.cs-effect-item__desc {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.35rem 0;
+}
+
+.cs-effect-item__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+/* --- Skills tab ------------------------------------------------------------ */
+
+.cs-skill-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cs-skill-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--pico-muted-border-color, #2a2a3e);
+  font-size: 0.95rem;
+}
+
+.cs-skill-item:last-child {
+  border-bottom: none;
+}
+
+.cs-skill-item__name {
+  color: var(--pico-color, #eee);
+  font-weight: 500;
+}
+
+.cs-skill-item__level {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pico-primary, #7c6aff);
+  min-width: 1.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Feed tab -------------------------------------------------------------- */
+
+.cs-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cs-feed-more {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+/* --- Tier 3: Collapsibles -------------------------------------------------- */
+
+.cs-tier3 {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cs-expandable {
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.cs-expandable__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.cs-expandable__title::-webkit-details-marker {
+  display: none;
+}
+
+.cs-expandable__title::before {
+  content: "\25B8"; /* right-pointing triangle */
+  display: inline-block;
+  margin-right: 0.5rem;
+  transition: transform 0.15s;
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.75rem;
+}
+
+.cs-expandable[open] .cs-expandable__title::before {
+  transform: rotate(90deg);
+}
+
+.cs-expandable__body {
+  padding: 0.65rem 0.85rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+}
+
+/* Magic stats list */
+.cs-magic-stat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cs-magic-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--pico-muted-border-color, #2a2a3e);
+  font-size: 0.9rem;
+}
+
+.cs-magic-stat-item:last-child {
+  border-bottom: none;
+}
+
+.cs-magic-stat-item__name {
+  flex: 1;
+  color: var(--pico-color, #eee);
+  font-weight: 500;
+}
+
+.cs-magic-stat-item__level {
+  color: var(--pico-primary, #7c6aff);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-magic-stat-item__xp {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Past/Retired section */
+.cs-past-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0.75rem 0 0.35rem 0;
+}
+
+.cs-past-heading:first-child {
+  margin-top: 0;
+}
+
+.cs-past-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cs-past-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.cs-past-item__name {
+  flex: 1;
+}
+
+.cs-past-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.2rem;
+  background: var(--pico-muted-border-color, #444);
+  color: var(--pico-muted-color, #aaa);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Session count */
+.cs-session-count {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   World Browser view (#/world, #/gm/world)
+   --------------------------------------------------------------------------- */
+
+.world-heading {
+  margin-bottom: 0.75rem;
+}
+
+/* Tab bar */
+.world-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0;
+  border-bottom: 1px solid var(--pico-muted-border-color, #444);
+  margin-bottom: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.world-tabs::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.world-tab {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px; /* overlap the container border */
+}
+
+.world-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.world-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+}
+
+/* Search input */
+.world-search {
+  margin-bottom: 0.75rem;
+}
+
+.world-search__input {
+  width: 100%;
+}
+
+/* Loading / error states */
+.world-loading {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.world-error {
+  color: var(--we-stress-red, #c0392b);
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Empty state */
+.world-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.95rem;
+}
+
+/* Card list container */
+.world-card-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Story card */
+.world-story-card {
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--pico-border-radius, 0.375rem);
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  transition: background 0.1s, box-shadow 0.1s;
+}
+
+.world-story-card:hover,
+.world-story-card:focus-visible {
+  box-shadow: 0 0 0 2px var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.world-story-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.world-story-card__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  flex: 1 1 auto;
+}
+
+.world-story-card__status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.world-story-card__status--active {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+.world-story-card__status--completed {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.world-story-card__status--abandoned {
+  background: var(--pico-muted-border-color, #444);
+  color: var(--pico-muted-color, #888);
+  opacity: 0.7;
+}
+
+.world-story-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.world-story-card__tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: rgba(124, 106, 255, 0.15);
+  color: var(--pico-primary, #7c6aff);
+  border: 1px solid rgba(124, 106, 255, 0.3);
+}
+
+.world-story-card__summary {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ---------------------------------------------------------------------------
+   Story Detail view (#/world/stories/:id, #/gm/world/stories/:id)
+   --------------------------------------------------------------------------- */
+
+.story-detail {
+  padding-top: 0.5rem;
+}
+
+.story-detail__back {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.story-detail__loading {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+.story-detail__hgroup {
+  margin-bottom: 0.75rem;
+}
+
+.story-detail__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+}
+
+.story-detail__summary {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.75rem 0;
+  white-space: pre-wrap;
+}
+
+.story-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.story-detail__section {
+  margin-bottom: 1.25rem;
+}
+
+.story-detail__section-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+}
+
+.story-detail__empty-state {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Owners list */
+.story-detail__owner-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.story-detail__owner {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+}
+
+.story-detail__owner-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.story-detail__owner-badge--character {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+.story-detail__owner-badge--group {
+  background: var(--we-gnosis-blue, #2980b9);
+  color: #fff;
+}
+
+.story-detail__owner-badge--location {
+  background: var(--we-plot-amber, #f39c12);
+  color: #fff;
+}
+
+.story-detail__owner-id {
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+/* Entry list */
+.story-detail__entry-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.story-detail__entry {
+  padding: 0.65rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-left: 3px solid var(--we-gnosis-blue, #2980b9);
+  border-radius: 0.375rem;
+}
+
+.story-detail__entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.story-detail__entry-author {
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  font-family: monospace;
+}
+
+.story-detail__entry-time {
+  color: var(--pico-muted-color, #aaa);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.story-detail__entry-edited {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.story-detail__entry-edit-btn {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  min-height: 28px;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  margin-left: 0.35rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.story-detail__entry-edit-btn:hover,
+.story-detail__entry-edit-btn:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.story-detail__entry-text {
+  font-size: 0.9rem;
+  color: var(--pico-color, #eee);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Inline edit form */
+.story-detail__inline-edit-form {
+  margin: 0;
+}
+
+.story-detail__inline-edit-textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Add Entry form */
+.story-detail__add-entry {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+}
+
+.story-detail__form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.story-detail__form-actions--inline {
+  margin-top: 0.35rem;
+}
+
+.story-detail__save-btn,
+.story-detail__cancel-btn {
+  min-height: 36px;
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Character Edit view (ce-*)
+   --------------------------------------------------------------------------- */
+
+.ce-root {
+  padding-top: 0.5rem;
+}
+
+.ce-form {
+  margin-top: 0.75rem;
+}
+
+.ce-field-error {
+  display: block;
+  color: var(--we-stress-red, #c0392b);
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+}
+
+.ce-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.ce-cancel-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ce-cancel-link:hover,
+.ce-cancel-link:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+   World Detail view (wd-*)
+   --------------------------------------------------------------------------- */
+
+.wd-root {
+  padding-top: 0.5rem;
+}
+
+/* Back button row */
+.wd-back-row {
+  margin-bottom: 0.75rem;
+}
+
+.wd-back-btn {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.wd-back-btn:hover,
+.wd-back-btn:focus-visible {
+  color: var(--pico-primary, #7c6aff);
+}
+
+/* Loading / error states */
+.wd-loading {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.wd-error {
+  color: var(--we-stress-red, #c0392b);
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Empty state */
+.wd-empty {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+/* NPC summary */
+.wd-npc {
+  padding: 0;
+}
+
+.wd-npc__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.wd-npc__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+}
+
+.wd-npc__desc {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.75rem 0;
+  white-space: pre-wrap;
+}
+
+/* NPC attributes definition list */
+.wd-npc-attrs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.wd-npc-attrs__key {
+  font-weight: 600;
+  color: var(--pico-muted-color, #aaa);
+  text-transform: capitalize;
+}
+
+.wd-npc-attrs__val {
+  color: var(--pico-color, #eee);
+  margin: 0;
+}
+
+/* Generic badge (used as wd-badge) */
+.wd-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.wd-badge--pc {
+  background: var(--we-ft-green, #27ae60);
+  color: #fff;
+}
+
+.wd-badge--npc {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.wd-badge--tier {
+  background: var(--we-plot-amber, #f39c12);
+  color: #fff;
+}
+
+/* Section containers */
+.wd-section {
+  margin-bottom: 1.25rem;
+}
+
+.wd-section__heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+}
+
+/* Detail wrapper (groups and locations) */
+.wd-detail {
+  padding: 0;
+}
+
+.wd-detail__header {
+  margin-bottom: 0.75rem;
+}
+
+.wd-detail__name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+}
+
+.wd-detail__desc {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.75rem 0;
+  white-space: pre-wrap;
+}
+
+.wd-detail__parent {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Parent link */
+.wd-parent-link {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+}
+
+.wd-parent-link:hover {
+  text-decoration: underline;
+}
+
+.wd-parent-link--unknown {
+  font-style: italic;
+  cursor: default;
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Trait list */
+.wd-trait-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wd-trait-item {
+  padding: 0.5rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+}
+
+.wd-trait-item__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pico-contrast, #fff);
+  display: block;
+}
+
+.wd-trait-item__desc {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0.2rem 0 0 0;
+}
+
+/* Bond list */
+.wd-bond-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wd-bond-item {
+  padding: 0.5rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-left: 3px solid var(--we-plot-amber, #f39c12);
+  border-radius: 0.375rem;
+}
+
+.wd-bond-item--trauma {
+  border-left-color: var(--we-stress-red, #c0392b);
+}
+
+.wd-bond-item__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.15rem;
+}
+
+.wd-bond-item__link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  flex: 1 1 auto;
+}
+
+.wd-bond-item__link:hover {
+  text-decoration: underline;
+}
+
+.wd-bond-item__desc {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0;
+}
+
+/* Trauma badge in world-detail context */
+.wd-trauma-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Bond slot type badge */
+.wd-bond-slot-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #ccc);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Clock list */
+.wd-clock-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wd-clock-item {
+  padding: 0.5rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+}
+
+.wd-clock-item__header {
+  margin-bottom: 0.25rem;
+}
+
+.wd-clock-item__name {
+  font-size: 0.95rem;
+  color: var(--pico-contrast, #fff);
+}
+
+.wd-clock-item__progress {
+  margin-bottom: 0.15rem;
+}
+
+.wd-clock-item__notes {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Member cards (group members) and child cards (sub-locations) */
+.wd-member-cards,
+.wd-child-cards {
+  display: flex;
+  flex-direction: column;
+}
+
+/* PC summary card rendered inline from world-detail */
+.wd-pc-summary {
+  padding: 0;
+}
+
+.wd-pc-summary__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wd-pc-summary__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--pico-contrast, #fff);
+}
+
+.wd-pc-summary__view-link {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wd-pc-summary__view-link:hover,
+.wd-pc-summary__view-link:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+.wd-pc-summary__desc {
+  font-size: 0.875rem;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.75rem 0;
+}
+
+.wd-pc-summary__meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.wd-pc-summary__section {
+  margin-bottom: 1rem;
+}
+
+.wd-pc-summary__section-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Feed views (feed-*)
+   --------------------------------------------------------------------------- */
+
+.feed-view {
+  padding-top: 0.5rem;
+}
+
+.feed-view__heading {
+  margin-bottom: 0.75rem;
+}
+
+.feed-view__container {
+  min-height: 4rem;
+}
+
+/* Feed tab bar */
+.feed-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0;
+  border-bottom: 1px solid var(--pico-muted-border-color, #444);
+  margin-bottom: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.feed-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.feed-tab {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.feed-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+}
+
+.feed-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+  font-weight: 600;
+}
+
+/* FeedList states */
+.feed-list__loading {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.feed-list__empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.95rem;
+}
+
+.feed-list__items {
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-list__more {
+  margin-top: 0.75rem;
+  text-align: center;
+}

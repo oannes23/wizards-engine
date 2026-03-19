@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-18
-**Last verified**: 2026-03-18 (Epic 6.1 — SPA Foundation & Auth)
+**Last verified**: 2026-03-19 (Epics 6.2, 6.3, 6.4 — Player Character, Proposal System, World Browser)
 **Depends on**: [auth](auth.md), [actions](actions.md), [feed](feed.md), [character-core](character-core.md), [game-objects](game-objects.md), [downtime](downtime.md), [events](events.md)
 **Depended on by**: None (terminal consumer)
 
@@ -449,6 +449,11 @@ Activities done while other players take their turns or between sessions:
 - Contributing to Stories
 - Reviewing proposal status
 
+### Feed Pagination
+
+- **Decision**: Feed pagination uses the `after` cursor parameter. The `next_cursor` field in the FeedResponse envelope is passed as `after={cursor}` on the next request to retrieve older items.
+- **Implementation note**: Earlier spec drafts mentioned `before` as the cursor parameter. The implemented API and all UI clients (feed-list.js, character.js feed tab) use `after`. The `before` references in story acceptance criteria (Epic 6.4.4) have been corrected.
+
 ### Polling Strategy
 
 No WebSocket connections. The UI polls the API at sensible intervals:
@@ -469,6 +474,8 @@ No push notifications for MVP. Instead, visual indicators on navigation tabs:
 - **Proposals tab (player)**: Badge count of proposals with status changes since last viewed (approved/rejected)
 - **Queue tab (GM)**: Badge count of pending proposals
 - Updated on each poll cycle
+
+- **Implementation note**: Badges are updated only while the associated view is mounted. `proposals-list.js` updates `window.navBadges.proposals` on each poll; `gm-queue.js` updates `window.navBadges.queue`. When a view is torn down (unmounted), its poll stops and badge counts freeze at their last-known value. There is no background badge refresh independent of the active view.
 
 ---
 
@@ -608,6 +615,12 @@ Static files are co-located inside the Python package at `src/wizards_engine/sta
 - **Rationale**: On a phone screen, a single form with all fields is overwhelming. Stepped flow provides progressive disclosure and reduces errors. The preview step gives the player confidence before committing.
 - **Implications**: Navigation between steps uses hash route segments. Back navigation preserves form state (Alpine `x-data` on a shared store).
 
+### World Browser — PC Character Detail
+
+- **Decision**: PC character detail in the world browser renders a read-only inline summary (meters, active traits, active bonds, "View Full Sheet" link) rather than mounting the full character sheet component.
+- **Rationale**: Reusing character.js directly caused a race condition — the view was patching `store.character_id` and the `#view` element id before `setTimeout(0)` restore could fire, conflicting with async fetches already in flight. An inline summary avoids the shared state conflict.
+- **Implications**: The world browser PC view is intentionally not a full interactive character sheet. Players who want the full sheet tap "View Full Sheet" (or "View My Sheet" for their own character).
+
 ### GM Queue is Inline-Expand (Not Navigate)
 
 - **Decision**: Tapping a proposal in the GM queue expands it inline. The GM does not navigate to a separate page.
@@ -643,6 +656,12 @@ Static files are co-located inside the Python package at `src/wizards_engine/sta
 - **Decision**: When the browser tab becomes visible again after being hidden, polling fires an immediate fetch before restarting interval timers.
 - **Rationale**: If the tab was hidden for a full polling interval, data could be up to 2x the interval stale before the next scheduled poll. An immediate fetch on resume keeps data fresh.
 - **Implications**: Resume logic calls each registered poll's callback once synchronously (or immediately async) before re-establishing the interval. Poll errors on resume are handled the same way as scheduled poll errors — logged to console, not fatal.
+
+### Sacrifice Builder — Component vs Inline
+
+- **Decision**: `sacrifice-builder.js` exists as a standalone reusable component (`window.components.sacrificeBuilder`) but `proposal-submit.js` inlines the sacrifice builder logic directly into its own Alpine data object.
+- **Rationale**: Alpine reactivity requires all reactive properties to live in a single `x-data` scope. Composing a separate component's data into the parent scope requires manual property merging; inlining avoids the indirection.
+- **Implications**: `sacrifice-builder.js` is available for future reuse (e.g., a standalone magic action form) but is not currently called by `proposal-submit.js`. Both implementations are functionally equivalent. If the sacrifice builder is needed elsewhere, prefer the component.
 
 ### Auth Views — sessionStorage for Invite Code Handoff
 

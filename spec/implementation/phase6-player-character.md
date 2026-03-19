@@ -17,10 +17,10 @@ Build the player character sheet view with shared UI components, full character 
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.2.1 — Shared UI Components | 🔴 Not started | — |
-| 6.2.2 — Character Sheet — Meters + Tier 2 Tabs | 🔴 Not started | — |
-| 6.2.3 — Direct Player Actions | 🔴 Not started | — |
-| 6.2.4 — Character Edit | 🔴 Not started | — |
+| 6.2.1 — Shared UI Components | 🟢 Complete | 2026-03-19 |
+| 6.2.2 — Character Sheet — Meters + Tier 2 Tabs | 🟢 Complete | 2026-03-19 |
+| 6.2.3 — Direct Player Actions | 🟢 Complete | 2026-03-19 |
+| 6.2.4 — Character Edit | 🟢 Complete | 2026-03-19 |
 
 ### Story 6.2.1 — Shared UI Components
 
@@ -72,6 +72,10 @@ Build the player character sheet view with shared UI components, full character 
 13. Character sheet polls every 60s (using polling infrastructure from 6.1.5)
 14. Renders correctly at 390px mobile viewport
 
+**Implementation note**: Feed pagination uses `after` cursor parameter (not `before`). The character feed endpoint is called as `GET /api/v1/characters/{id}/feed?limit=20&after={cursor}`. The `_feedNextCursor` is populated from `data.next_cursor` in the response. This is consistent with how all other feed views paginate (see feed-list.js).
+
+**Implementation note**: Bond charges are displayed via the physical `stress` field from the API response (`b.stress` for current charges, `b.stress_degradations` for degradation count). The `effectiveMax` displayed to users is computed client-side as `5 - stress_degradations`. This matches the documented physical/conceptual naming gap in [bonds.md](../domains/bonds.md) and [CLAUDE.md](../../.claude/CLAUDE.md).
+
 ### Story 6.2.3 — Direct Player Actions
 
 **Files to modify**:
@@ -92,6 +96,10 @@ Build the player character sheet view with shared UI components, full character 
 7. Error states: insufficient FT, trait already full, bond already maintained — shown as inline error message
 8. All actions optimistically update the UI, roll back on error
 9. All buttons disabled during in-flight requests (prevent double-tap)
+
+**Implementation note**: Use Effect opens the narrative modal with `required: false` (optional narrative), consistent with the spec. The API endpoint for use effect is `POST /characters/{id}/effects/{effectId}/use` and for retire effect is `POST /characters/{id}/effects/{effectId}/retire` — both use sub-resource paths rather than the flat pattern shown in the acceptance criteria above.
+
+**Implementation note**: Error states (criterion 7) are handled via the api.js error toast system, not inline error messages on the character sheet. The toast is dispatched by api.js on any non-2xx response; the character sheet rolls back optimistic state but does not display a per-action inline error. This is a minor deviation from the spec — acceptable for MVP given the toast provides the same information.
 
 ### Story 6.2.4 — Character Edit
 

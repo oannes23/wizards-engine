@@ -320,7 +320,7 @@ window.views.sessionDetail = (function () {
           '<input type="date" id="sd-date" name="date" value="' + _esc(dateValue) + '">' +
         '</label>' +
         '<label for="sd-time-now">Time Now (hours)<br>' +
-          '<input type="number" id="sd-time-now" name="time_now" min="0" max="999" step="1" value="' + _esc(_session.time_now != null ? String(_session.time_now) : "") + '">' +
+          '<input type="number" id="sd-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + _esc(_session.time_now != null ? String(_session.time_now) : "") + '">' +
         '</label>' +
         '<label for="sd-notes">Notes<br>' +
           '<textarea id="sd-notes" name="notes" rows="3">' + _esc(_session.notes || "") + '</textarea>' +

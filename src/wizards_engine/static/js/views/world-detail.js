@@ -33,6 +33,16 @@ window.views = window.views || {};
 
 window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
+  // Module-level starred set
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Set of "type/id" keys for objects the current user has starred.
+   * Populated on each render() call (lazy, non-blocking).
+   */
+  var _starredSet = {};
+
+  // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
 
@@ -498,9 +508,16 @@ window.views.worldDetail = (function () {
     } else {
       html += '<div class="wd-member-cards">';
       for (var m = 0; m < members.length; m++) {
+        var memberData = {};
+        for (var mk in members[m]) {
+          if (Object.prototype.hasOwnProperty.call(members[m], mk)) {
+            memberData[mk] = members[m][mk];
+          }
+        }
+        memberData.starred = !!_starredSet["character/" + members[m].id];
         html += window.components.gameObjectCard.render({
           type: "character",
-          data: members[m],
+          data: memberData,
         });
       }
       html += '</div>';
@@ -556,10 +573,13 @@ window.views.worldDetail = (function () {
             _buildBackButton() +
             _buildGroupDetail(group, clocks) +
           '</div>';
-        // Wire member card clicks
+        // Wire member card clicks and star toggles
         var memberCards = el.querySelector(".wd-member-cards");
         if (memberCards) {
           window.components.gameObjectCard.bindClicks(memberCards);
+          window.components.gameObjectCard.bindStarClicks(memberCards, function (ct, cid, starred) {
+            _handleStarInContainer(memberCards, ct, cid, starred);
+          });
         }
       })
       .catch(function (err) {
@@ -624,9 +644,16 @@ window.views.worldDetail = (function () {
     } else {
       html += '<div class="wd-child-cards">';
       for (var c = 0; c < children.length; c++) {
+        var childData = {};
+        for (var ck in children[c]) {
+          if (Object.prototype.hasOwnProperty.call(children[c], ck)) {
+            childData[ck] = children[c][ck];
+          }
+        }
+        childData.starred = !!_starredSet["location/" + children[c].id];
         html += window.components.gameObjectCard.render({
           type: "location",
-          data: children[c],
+          data: childData,
         });
       }
       html += '</div>';
@@ -728,10 +755,13 @@ window.views.worldDetail = (function () {
             _buildLocationDetail(location, parent, children, clocks) +
           '</div>';
 
-        // Wire child location card clicks
+        // Wire child location card clicks and star toggles
         var childCards = el.querySelector(".wd-child-cards");
         if (childCards) {
           window.components.gameObjectCard.bindClicks(childCards);
+          window.components.gameObjectCard.bindStarClicks(childCards, function (ct, cid, starred) {
+            _handleStarInContainer(childCards, ct, cid, starred);
+          });
         }
       })
       .catch(function (err) {
@@ -743,6 +773,85 @@ window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
   // Entry point
   // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Star / unstar helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Fetch the current user's starred objects and populate _starredSet.
+   * Non-blocking — does not re-render on completion.
+   */
+  function _fetchStarred() {
+    api
+      .get("/api/v1/me/starred")
+      .then(function (data) {
+        var items = Array.isArray(data) ? data : [];
+        var set = {};
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          if (item.type && item.id) {
+            set[item.type + "/" + item.id] = true;
+          }
+        }
+        _starredSet = set;
+      })
+      .catch(function () {
+        _starredSet = {};
+      });
+  }
+
+  /**
+   * Handle a star/unstar button click on a game object card in a container.
+   * Applies optimistic UI immediately, then calls the API. Reverts on failure.
+   *
+   * @param {HTMLElement} container — container holding the clicked card
+   * @param {string} cardType  — "character" | "group" | "location"
+   * @param {string} cardId    — object ULID
+   * @param {boolean} currentlyStarred
+   */
+  function _handleStarInContainer(container, cardType, cardId, currentlyStarred) {
+    var key = cardType + "/" + cardId;
+    var btn = container.querySelector(
+      '[data-card-star][data-card-type="' + cardType + '"][data-card-id="' + cardId + '"]'
+    );
+
+    if (currentlyStarred) {
+      if (btn) {
+        btn.textContent = "\u2606"; // ☆
+        btn.setAttribute("data-card-starred", "false");
+        btn.setAttribute("aria-pressed", "false");
+      }
+      delete _starredSet[key];
+      api
+        .del("/api/v1/me/starred/" + encodeURIComponent(cardType) + "/" + encodeURIComponent(cardId))
+        .catch(function () {
+          _starredSet[key] = true;
+          if (btn) {
+            btn.textContent = "\u2605"; // ★
+            btn.setAttribute("data-card-starred", "true");
+            btn.setAttribute("aria-pressed", "true");
+          }
+        });
+    } else {
+      if (btn) {
+        btn.textContent = "\u2605"; // ★
+        btn.setAttribute("data-card-starred", "true");
+        btn.setAttribute("aria-pressed", "true");
+      }
+      _starredSet[key] = true;
+      api
+        .post("/api/v1/me/starred", { type: cardType, id: cardId })
+        .catch(function () {
+          delete _starredSet[key];
+          if (btn) {
+            btn.textContent = "\u2606"; // ☆
+            btn.setAttribute("data-card-starred", "false");
+            btn.setAttribute("aria-pressed", "false");
+          }
+        });
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Mounted flag — async-safety on navigation away
@@ -789,8 +898,13 @@ window.views.worldDetail = (function () {
 
     // Reset mounted flag and attach hashchange teardown for this navigation.
     _mounted = true;
+    _starredSet = {};
     window.removeEventListener("hashchange", _onHashChange);
     window.addEventListener("hashchange", _onHashChange);
+
+    // Pre-fetch starred objects so cards can render with the correct star state.
+    // Non-blocking — the detail fetch proceeds immediately in parallel.
+    _fetchStarred();
 
     switch (type) {
       case "characters":

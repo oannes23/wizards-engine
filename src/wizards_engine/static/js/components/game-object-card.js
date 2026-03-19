@@ -6,6 +6,8 @@
  * Props:
  *   type    (string)   — "character" | "group" | "location"
  *   data    (object)   — game object data from the API
+ *                        data.starred (boolean, optional) — whether the object
+ *                        is currently starred by the viewer
  *   onClick (function, optional) — click handler; if omitted, navigates to
  *                        the detail route for this object type
  *
@@ -19,8 +21,11 @@
  *   components.gameObjectCard.render({ type: 'character', data: characterObj })
  *
  * Returns an HTML string. Click handlers are wired separately via
- * data attributes — call components.gameObjectCard.bindClicks(container, onClick)
- * after inserting the HTML.
+ * data attributes:
+ *   - Call components.gameObjectCard.bindClicks(container, onClick)
+ *     after inserting the HTML to wire navigation clicks.
+ *   - Call components.gameObjectCard.bindStarClicks(container, onStar)
+ *     to wire star/unstar button clicks. onStar receives (type, id, currentlyStarred).
  */
 
 window.components = window.components || {};
@@ -160,9 +165,14 @@ window.components.gameObjectCard = (function () {
      * The <article> element carries a data-card-id and data-card-type attribute
      * so that bindClicks() can wire click handlers after insertion.
      *
+     * If props.data.starred is truthy, the star button renders as filled (★),
+     * otherwise as empty (☆). The star button has data-card-starred="true|false"
+     * so that bindStarClicks can determine current state.
+     *
      * @param {object} props
      * @param {string} props.type — "character" | "group" | "location"
      * @param {object} props.data
+     * @param {boolean} [props.data.starred] — whether currently starred
      * @param {function} [props.onClick] — handled via bindClicks after insertion
      * @returns {string}
      */
@@ -176,6 +186,23 @@ window.components.gameObjectCard = (function () {
       var headerHtml = _header(type, data);
       var hash = _defaultHash(type, id);
 
+      var isStarred = data.starred ? true : false;
+      var starIcon = isStarred ? "\u2605" : "\u2606"; // ★ or ☆
+      var starLabel = isStarred
+        ? "Unstar " + name
+        : "Star " + name;
+      var starBtn =
+        '<button class="game-object-card__star-btn"' +
+            ' data-card-star="true"' +
+            ' data-card-id="' + _esc(id) + '"' +
+            ' data-card-type="' + _esc(type) + '"' +
+            ' data-card-starred="' + (isStarred ? "true" : "false") + '"' +
+            ' aria-label="' + _esc(starLabel) + '"' +
+            ' aria-pressed="' + (isStarred ? "true" : "false") + '"' +
+            ' title="' + _esc(starLabel) + '">' +
+          starIcon +
+        '</button>';
+
       return (
         '<article class="game-object-card game-object-card--' + _esc(type) + '"' +
                 ' data-card-id="' + _esc(id) + '"' +
@@ -186,7 +213,10 @@ window.components.gameObjectCard = (function () {
                 ' aria-label="' + _esc(name) + '">' +
           '<header class="game-object-card__header">' +
             '<strong class="game-object-card__name">' + _esc(name) + '</strong>' +
-            (headerHtml ? '<div class="game-object-card__badges">' + headerHtml + '</div>' : '') +
+            '<div class="game-object-card__header-actions">' +
+              (headerHtml ? '<div class="game-object-card__badges">' + headerHtml + '</div>' : '') +
+              starBtn +
+            '</div>' +
           '</header>' +
           (snippet
             ? '<p class="game-object-card__snippet">' + _esc(snippet) + '</p>'
@@ -199,8 +229,11 @@ window.components.gameObjectCard = (function () {
      * Wire click (and keyboard Enter/Space) handlers for all .game-object-card
      * elements within a container. Call after inserting rendered HTML.
      *
+     * The star button clicks are excluded from navigation — they stop propagation
+     * to prevent triggering the card's navigate handler.
+     *
      * @param {HTMLElement} container — the parent element containing the cards
-     * @param {function} [onClick] — optional override; called with (type, id, data).
+     * @param {function} [onClick] — optional override; called with (type, id).
      *   If omitted, navigates to the card's data-card-hash.
      */
     bindClicks: function (container, onClick) {
@@ -208,7 +241,12 @@ window.components.gameObjectCard = (function () {
       var cards = container.querySelectorAll(".game-object-card");
       for (var i = 0; i < cards.length; i++) {
         (function (card) {
-          function _activate() {
+          function _activate(evt) {
+            // Do not navigate when the star button was clicked.
+            if (evt && evt.target && evt.target.closest &&
+                evt.target.closest("[data-card-star]")) {
+              return;
+            }
             var type = card.getAttribute("data-card-type");
             var id   = card.getAttribute("data-card-id");
             var hash = card.getAttribute("data-card-hash");
@@ -225,10 +263,42 @@ window.components.gameObjectCard = (function () {
           card.addEventListener("keydown", function (evt) {
             if (evt.key === "Enter" || evt.key === " ") {
               evt.preventDefault();
-              _activate();
+              _activate(evt);
             }
           });
         })(cards[i]);
+      }
+    },
+
+    /**
+     * Wire star/unstar click handlers for all .game-object-card__star-btn
+     * elements within a container. Call after inserting rendered HTML and
+     * after bindClicks().
+     *
+     * The star button stops click propagation so the card navigation is not
+     * triggered when starring.
+     *
+     * @param {HTMLElement} container — parent element containing the cards
+     * @param {function} onStar — callback(type, id, currentlyStarred)
+     *   type            — "character" | "group" | "location"
+     *   id              — object ULID
+     *   currentlyStarred — true if the button currently shows ★ (will unstar)
+     */
+    bindStarClicks: function (container, onStar) {
+      if (!container || typeof onStar !== "function") return;
+      var starBtns = container.querySelectorAll("[data-card-star]");
+      for (var i = 0; i < starBtns.length; i++) {
+        (function (btn) {
+          btn.addEventListener("click", function (evt) {
+            evt.stopPropagation();
+            var type = btn.getAttribute("data-card-type");
+            var id   = btn.getAttribute("data-card-id");
+            var currentlyStarred = btn.getAttribute("data-card-starred") === "true";
+            if (type && id) {
+              onStar(type, id, currentlyStarred);
+            }
+          });
+        })(starBtns[i]);
       }
     },
   };

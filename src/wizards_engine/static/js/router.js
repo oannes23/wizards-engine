@@ -53,7 +53,7 @@ var router = (function () {
     "/proposals/new": function () { if (typeof views !== "undefined" && views.proposalSubmit) { views.proposalSubmit(); } else { _placeholder("New Proposal")(); } },
     "/world":        function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("World")();   } },
     "/session":      _placeholder("Session"),
-    "/profile":      _placeholder("Profile"),
+    "/profile":      function () { if (typeof views !== "undefined" && views.profile) { views.profile(); } else { _placeholder("Profile")(); } },
     "/gm":           function () { if (typeof views !== "undefined" && views.gmDashboard) { views.gmDashboard(); } else { _placeholder("GM Dashboard")(); } },
     "/gm/queue":     function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Queue")();     } },
     "/gm/sessions":      function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions();  } else { _placeholder("GM Sessions")(); } },

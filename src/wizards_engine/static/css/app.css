@@ -389,6 +389,40 @@ main.container {
   -webkit-box-orient: vertical;
 }
 
+/* Star toggle on game object cards */
+.game-object-card__header-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.game-object-card__star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pico-muted-color, #666);
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.game-object-card__star-btn:hover,
+.game-object-card__star-btn:focus-visible {
+  color: var(--pico-primary, #e6a817);
+  outline: none;
+}
+
+.game-object-card__star-btn[data-card-starred="true"] {
+  color: var(--we-plot-amber, #e6a817);
+}
+
 /* ---------------------------------------------------------------------------
    FeedItem component
    --------------------------------------------------------------------------- */
@@ -3337,4 +3371,176 @@ main.container {
 .gm-players__invite-delete-btn[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile Optimizations — Story 6.6.2
+   Touch targets, overflow prevention, modal sizing, meter readability.
+   Applied at <= 480px (small phones). Some rules cascade up from base styles.
+   --------------------------------------------------------------------------- */
+
+/* --- 1. Touch targets: buttons that have sub-44px defaults on mobile ------- */
+
+@media (max-width: 480px) {
+  /* "New Proposal" button in proposals list header */
+  .proposals-list__new-btn {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+  }
+
+  /* "Add" button in sacrifice builder */
+  .sacrifice-add__btn {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Remove button in sacrifice entries */
+  .sacrifice-entry__remove {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Character sheet action buttons (recharge, use, etc.) */
+  .cs-action-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+  }
+
+  /* Edit / CS header button */
+  .cs-edit-btn {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* GM queue reject toggle (looks like a link) */
+  .proposal-card__reject-toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Narrative modal buttons */
+  .nm-btn {
+    min-height: 44px;
+    padding: 0.6rem 1.25rem;
+  }
+
+  /* --- 2. Bottom nav — ensure content padding clears the bar -------------- */
+  /* The base style already sets padding-bottom: 60px on main.container.
+     On narrow phones, the nav bar may wrap; add a bit more breathing room. */
+  main.container {
+    padding-bottom: 68px;
+  }
+
+  /* --- 3. Modal full-width on mobile --------------------------------------- */
+  /* nm-overlay already has padding: 1rem. Set dialog to stretch full width
+     within that padding box, with no max-width constraint on small screens. */
+  .nm-overlay {
+    align-items: flex-end; /* sheet-style — anchored to bottom on mobile */
+    padding: 0;
+  }
+
+  .nm-dialog {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 0.75rem 0.75rem 0 0;
+    padding: 1.25rem 1rem 1.5rem 1rem;
+    /* Ensure dialog doesn't get clipped at top of very short screens */
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* --- 4. Meter bar readability on mobile --------------------------------- */
+  /* Increase track height slightly for easier reading on small screens */
+  .meter-bar__track {
+    height: 10px;
+    border-radius: 5px;
+  }
+
+  .meter-bar__fill {
+    border-radius: 5px;
+  }
+
+  .meter-bar__header {
+    font-size: 0.875rem; /* up from 0.8rem */
+  }
+
+  /* --- 5. Proposal submission — prevent horizontal scroll ----------------- */
+  /* Forms and step content must never overflow the viewport */
+  #proposal-submit-root,
+  .proposal-step,
+  .proposal-summary,
+  .proposal-actions {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Sacrifice builder entries wrap cleanly on small screens */
+  .sacrifice-entry {
+    flex-wrap: wrap;
+  }
+
+  .sacrifice-add {
+    flex-wrap: wrap;
+  }
+
+  .sacrifice-add label {
+    flex: 1 1 100%; /* take full row so select + button stack */
+  }
+
+  /* Step indicator bubbles stay within viewport */
+  .step-indicator__list {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .step-indicator__label {
+    font-size: 0.6rem;
+  }
+
+  /* --- 6. GM queue cards — no horizontal scroll, text wrapping ------------ */
+  .proposal-card__effect figure,
+  .proposal-detail__effect figure,
+  .proposal-detail__selections {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure expanded card content wraps rather than overflows */
+  .proposal-card__expanded {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .proposal-card__narrative {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Advanced override fields on GM queue card */
+  .proposal-card__advanced-fields {
+    overflow-x: hidden;
+  }
+
+  /* --- 7. General overflow guard for all views ---------------------------- */
+  /* Prevent any view from creating horizontal scroll */
+  #view {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  /* Tables inside detail views scroll within their container */
+  .proposal-card__effect table,
+  .proposal-detail__effect table,
+  .proposal-detail__selections table {
+    min-width: auto;
+    word-break: break-word;
+  }
+
+  /* Star button — already meets 44px min-height; increase font size slightly */
+  .game-object-card__star-btn {
+    font-size: 1.4rem;
+  }
 }

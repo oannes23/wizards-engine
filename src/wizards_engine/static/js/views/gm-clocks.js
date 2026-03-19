@@ -383,7 +383,7 @@ window.views.gmClocks = (function () {
           '<label>' +
             'Segments' +
             '<input type="number" id="clk-create-segments" name="segments"' +
-                   ' value="5" min="1" max="24" />' +
+                   ' value="5" min="1" max="24" inputmode="numeric" />' +
           '</label>' +
           '<label>' +
             'Association Type' +

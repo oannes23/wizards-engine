@@ -172,8 +172,8 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 6 | 6.2 — Player Character & Direct Actions | [phase6-player-character.md](implementation/phase6-player-character.md) | 4 | 🟢 |
 | 6 | 6.3 — Proposal System | [phase6-proposal-system.md](implementation/phase6-proposal-system.md) | 5 | 🟢 |
 | 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🟢 |
-| 6 | 6.5 — GM Tools & Session Management | [phase6-gm-tools.md](implementation/phase6-gm-tools.md) | 5 | 🔴 |
-| 6 | 6.6 — Polish & Integration | [phase6-polish.md](implementation/phase6-polish.md) | 3 | 🔴 |
+| 6 | 6.5 — GM Tools & Session Management | [phase6-gm-tools.md](implementation/phase6-gm-tools.md) | 5 | 🟢 |
+| 6 | 6.6 — Polish & Integration | [phase6-polish.md](implementation/phase6-polish.md) | 3 | 🟢 |
 
 ---
 
@@ -203,6 +203,29 @@ game-objects (primitive)        events (primitive)        auth (primitive)
 ---
 
 ## Recent Changes
+
+### 2026-03-19: Epic 6.6 Complete — All Epics Done
+
+- **Epic 6.6 status**: 🟡 In progress → 🟢 Complete. Final epic. All 20 epics are now complete.
+- **Story 6.6.3 — Table-Flow Acceptance Testing** marked 🟢 Complete (2026-03-19).
+  - All 9 acceptance criteria verified passing.
+  - Bug fix: removed `window.confirm()` from the Find Time action to meet the "1 tap → immediate" criterion (< 3 seconds).
+  - No regressions from Epics 6.1–6.5 detected.
+- **implementation/README.md**: Epic 6.6 updated to 🟢 Complete, 3/3.
+- **web-ui.md**: Added decision block "Find Time — No Confirmation Gate" documenting the `window.confirm()` removal. Last verified updated to cover Epic 6.6 (all 3 stories).
+
+### 2026-03-19: Epic 6.6 Stories 6.6.1 and 6.6.2 Complete
+
+- **Epic 6.5 status corrected**: Updated MASTER.md from 🔴 to 🟢 (was missed when Epic 6.5 completed).
+- **Epic 6.6 status updated**: 🔴 → 🟡 In progress (2 of 3 stories done).
+- **phase6-polish.md**: Story 6.6.1 marked 🟢 Complete (2026-03-19).
+- **implementation/README.md**: Epic 6.6 progress updated to 2/3.
+- **web-ui.md updated** with implementation decisions from Stories 6.6.1 and 6.6.2:
+  - GameObjectCard component definition (§F) updated to document the star/unstar toggle button, `bindStarClicks()` wiring pattern, and `data-card-starred` attribute.
+  - New decision block: Mobile Breakpoint — explains why 480px (not 360px) is used for mobile overrides.
+  - New decision block: Number Inputs — documents `inputmode="numeric"` applied to 23 inputs.
+  - New decision block: Refresh Login Link — documents `window.confirm` confirmation before destructive link regeneration.
+  - "Last verified" updated to cover Epics 6.6.1 and 6.6.2.
 
 ### 2026-03-18: Web UI UX Specification Complete
 
@@ -706,4 +729,4 @@ See [glossary.md](glossary.md) for canonical definitions of all terms.
 ---
 
 ## Last Updated
-_2026-03-19 — Epics 6.2, 6.3, and 6.4 complete (all 13 stories done). Implementation notes added to each epic spec covering: feed pagination uses `after` not `before` cursor; PC character detail in world browser renders inline summary rather than reusing character.js; story owners and entry authors display truncated ULIDs (name resolution deferred); notification badges update only while the associated view is mounted; sacrifice-builder.js is a standalone component but proposal-submit.js inlines the logic; bond charges displayed via physical `stress` field. web-ui.md updated with feed pagination decision block, sacrifice builder decision block, world browser PC detail decision block, and notification badge scope note. Previous: Epic 6.1 (SPA Foundation & Auth) complete._
+_2026-03-19 — Epic 6.6 complete (Story 6.6.3 — Table-Flow Acceptance Testing). All 20 epics and 78 stories are now complete. web-ui.md updated with Find Time no-confirmation-gate decision. Previous: Stories 6.6.1 (Profile, Starring, GM Silent Feed) and 6.6.2 (Mobile Optimizations) complete._

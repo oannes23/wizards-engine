@@ -90,6 +90,10 @@ window.views.world = (function () {
       loading: false,  // true while the active tab's fetch is in flight
       error:   null,   // error message for the active tab, or null
 
+      // ---- Starred state ---------------------------------------------------
+      // Set of "type/id" keys for objects the current user has starred.
+      _starredSet: {},
+
       // ---- Computed helpers ------------------------------------------------
 
       /**
@@ -191,10 +195,31 @@ window.views.world = (function () {
 
       /**
        * Called by Alpine when this x-data component initialises.
-       * Starts the initial Characters tab fetch.
+       * Fetches the user's starred objects, then starts the initial Characters
+       * tab fetch.
        */
       init: function () {
-        this._fetchIfNeeded("characters");
+        var self = this;
+        api
+          .get("/api/v1/me/starred")
+          .then(function (data) {
+            var items = Array.isArray(data) ? data : [];
+            var set = {};
+            for (var i = 0; i < items.length; i++) {
+              var item = items[i];
+              if (item.type && item.id) {
+                set[item.type + "/" + item.id] = true;
+              }
+            }
+            self._starredSet = set;
+          })
+          .catch(function () {
+            // Starred list is non-critical — proceed without it.
+            self._starredSet = {};
+          })
+          .finally(function () {
+            self._fetchIfNeeded("characters");
+          });
       },
     };
   }
@@ -246,13 +271,91 @@ window.views.world = (function () {
     } else {
       // GameObjectCard component handles character / group / location
       var type = tab.slice(0, -1); // "characters" → "character", etc.
+      var starredSet = data._starredSet || {};
       for (var j = 0; j < items.length; j++) {
+        var item = items[j];
+        var itemData = {};
+        // Copy item fields into a new object so we can inject the starred flag
+        for (var k in item) {
+          if (Object.prototype.hasOwnProperty.call(item, k)) {
+            itemData[k] = item[k];
+          }
+        }
+        itemData.starred = !!starredSet[type + "/" + item.id];
         html.push(
-          window.components.gameObjectCard.render({ type: type, data: items[j] })
+          window.components.gameObjectCard.render({ type: type, data: itemData })
         );
       }
       container.innerHTML = html.join("");
       window.components.gameObjectCard.bindClicks(container);
+      window.components.gameObjectCard.bindStarClicks(container, function (cardType, cardId, currentlyStarred) {
+        _handleStar(data, container, cardType, cardId, currentlyStarred);
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Star / unstar handler
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Handle a star button click on a game object card.
+   * Applies optimistic UI immediately, then calls the API. Reverts on failure.
+   *
+   * @param {object} data      — Alpine data object (for _starredSet)
+   * @param {HTMLElement} container — card-list container
+   * @param {string} cardType  — "character" | "group" | "location"
+   * @param {string} cardId    — object ULID
+   * @param {boolean} currentlyStarred — true if the button was showing ★
+   */
+  function _handleStar(data, container, cardType, cardId, currentlyStarred) {
+    var key = cardType + "/" + cardId;
+
+    // Optimistic UI: toggle the button immediately.
+    var btn = container.querySelector(
+      '[data-card-star][data-card-type="' + cardType + '"][data-card-id="' + cardId + '"]'
+    );
+
+    if (currentlyStarred) {
+      // Unstar
+      if (btn) {
+        btn.textContent = "\u2606"; // ☆
+        btn.setAttribute("data-card-starred", "false");
+        btn.setAttribute("aria-pressed", "false");
+      }
+      delete data._starredSet[key];
+
+      api
+        .del("/api/v1/me/starred/" + encodeURIComponent(cardType) + "/" + encodeURIComponent(cardId))
+        .catch(function () {
+          // Revert on failure
+          data._starredSet[key] = true;
+          if (btn) {
+            btn.textContent = "\u2605"; // ★
+            btn.setAttribute("data-card-starred", "true");
+            btn.setAttribute("aria-pressed", "true");
+          }
+        });
+    } else {
+      // Star
+      if (btn) {
+        btn.textContent = "\u2605"; // ★
+        btn.setAttribute("data-card-starred", "true");
+        btn.setAttribute("aria-pressed", "true");
+      }
+      data._starredSet[key] = true;
+
+      api
+        .post("/api/v1/me/starred", { type: cardType, id: cardId })
+        .catch(function () {
+          // Revert on failure
+          delete data._starredSet[key];
+          if (btn) {
+            btn.textContent = "\u2606"; // ☆
+            btn.setAttribute("data-card-starred", "false");
+            btn.setAttribute("aria-pressed", "false");
+          }
+        });
     }
   }
 

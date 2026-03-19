@@ -215,6 +215,18 @@ window.components.nav = (function () {
       nav.appendChild(charLink);
     }
 
+    // Profile link — accessible to both players and GM
+    var profileLink = document.createElement("a");
+    profileLink.href = "#/profile";
+    profileLink.className = "nav-tab nav-tab--secondary";
+    profileLink.textContent = "Profile";
+    profileLink.setAttribute("aria-label", "Profile");
+    if (currentPath === "/profile") {
+      profileLink.classList.add("nav-tab--active");
+      profileLink.setAttribute("aria-current", "page");
+    }
+    nav.appendChild(profileLink);
+
     return nav;
   }
 

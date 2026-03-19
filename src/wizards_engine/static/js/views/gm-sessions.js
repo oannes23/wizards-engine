@@ -273,7 +273,7 @@ window.views.gmSessions = (function () {
             '<input type="date" id="sc-date" name="date">' +
           '</label>' +
           '<label for="sc-time-now">Time Now (hours)<br>' +
-            '<input type="number" id="sc-time-now" name="time_now" min="0" max="999" step="1" placeholder="e.g. 4">' +
+            '<input type="number" id="sc-time-now" name="time_now" min="0" max="999" step="1" placeholder="e.g. 4" inputmode="numeric">' +
           '</label>' +
           '<label for="sc-notes">Notes<br>' +
             '<textarea id="sc-notes" name="notes" rows="3" placeholder="GM notes (not shown to players)"></textarea>' +
@@ -367,7 +367,7 @@ window.views.gmSessions = (function () {
             '<input type="date" id="se-date" name="date" value="' + _esc(dateValue) + '">' +
           '</label>' +
           '<label for="se-time-now">Time Now (hours)<br>' +
-            '<input type="number" id="se-time-now" name="time_now" min="0" max="999" step="1" value="' + _esc(session.time_now != null ? String(session.time_now) : "") + '">' +
+            '<input type="number" id="se-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + _esc(session.time_now != null ? String(session.time_now) : "") + '">' +
           '</label>' +
           '<label for="se-notes">Notes<br>' +
             '<textarea id="se-notes" name="notes" rows="3">' + _esc(session.notes || "") + '</textarea>' +

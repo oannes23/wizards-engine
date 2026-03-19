@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-18
-**Last verified**: 2026-03-19 (Epics 6.2, 6.3, 6.4 — Player Character, Proposal System, World Browser)
+**Last verified**: 2026-03-19 (Epics 6.2, 6.3, 6.4, 6.5, 6.6 — Player Character, Proposal System, World Browser, GM Tools, Polish & Integration all verified)
 **Depends on**: [auth](auth.md), [actions](actions.md), [feed](feed.md), [character-core](character-core.md), [game-objects](game-objects.md), [downtime](downtime.md), [events](events.md)
 **Depended on by**: None (terminal consumer)
 
@@ -381,6 +381,12 @@ Compact cards for entities in the world browser:
 
 Tapping navigates to the detail view.
 
+Each card includes a **star/unstar toggle button** (★/☆) in the card header. The button:
+- Renders ★ (aria-pressed="true") when `data.starred` is truthy, ☆ otherwise
+- Stops click propagation so tapping the star does not trigger card navigation
+- Is wired via `components.gameObjectCard.bindStarClicks(container, onStar)` called after `bindClicks()`
+- The `onStar` callback receives `(type, id, currentlyStarred)` and is responsible for calling `POST /api/v1/me/starred` or `DELETE /api/v1/me/starred/{type}/{id}` and updating the local `starred` state
+
 ### Trait/Effect Cards
 
 Cards within the character sheet tabs:
@@ -663,6 +669,30 @@ Static files are co-located inside the Python package at `src/wizards_engine/sta
 - **Rationale**: Alpine reactivity requires all reactive properties to live in a single `x-data` scope. Composing a separate component's data into the parent scope requires manual property merging; inlining avoids the indirection.
 - **Implications**: `sacrifice-builder.js` is available for future reuse (e.g., a standalone magic action form) but is not currently called by `proposal-submit.js`. Both implementations are functionally equivalent. If the sacrifice builder is needed elsewhere, prefer the component.
 
+### Mobile Breakpoint — 480px, Not 360px
+
+- **Decision**: Mobile-specific CSS overrides (touch targets, modal bottom-sheet, meter sizing, overflow guards) are applied at `@media (max-width: 480px)`, not at 360px.
+- **Rationale**: 360px targets only the very smallest phones. 480px covers all common small-phone viewports (390px iPhone, 412px Pixel) without affecting tablets or landscape-mode phones. The design target of "phone screens" is achieved more reliably at 480px.
+- **Implications**: The base styles already set 44px touch targets on nav tabs, proposal CTAs, and character sheet tabs. The `@media (max-width: 480px)` block upgrades the remaining sub-threshold elements (sacrifice builder buttons, action buttons, narrative modal buttons, GM queue reject toggle). No layout changes occur above 480px.
+
+### Number Inputs — inputmode="numeric"
+
+- **Decision**: All number-type inputs across the UI carry `inputmode="numeric"`.
+- **Rationale**: `type="number"` alone does not trigger a numeric keyboard on all mobile browsers. `inputmode="numeric"` is the reliable cross-browser way to summon the digit keyboard for fields like meter values, power levels, and charge counts.
+- **Implications**: Applied to 23 inputs across 6 view files in Story 6.6.2. No API or validation change — purely a mobile UX improvement.
+
+### Refresh Login Link — window.confirm Confirmation
+
+- **Decision**: The "Generate new login link" action in `profile.js` uses `window.confirm()` before calling `POST /api/v1/me/refresh-link`.
+- **Rationale**: Regenerating the login link is destructive — the old link immediately stops working. A confirmation dialog prevents accidental clicks. `window.confirm` is acceptable for low-frequency, high-stakes actions in this private tool context.
+- **Implications**: The new URL is displayed in the profile view after generation with a clear warning that the old link is invalid. Players must copy and save the new link before navigating away.
+
+### Find Time — No Confirmation Gate
+
+- **Decision**: The Find Time direct action button triggers immediately on tap — no `window.confirm()` or intermediate confirmation step.
+- **Rationale**: Find Time is a table-flow action with a strict time criterion (< 3 seconds, "1 tap → immediate"). An interstitial confirmation dialog breaks the criterion and adds friction at the table. The action is reversible in practice (the GM can correct via direct actions), and the resource cost (3 Plot → 1 FT) is clearly visible on the character sheet before the tap.
+- **Implications**: The button is shown only when Plot >= 3 (already gated by a condition), so accidental activation without the resource is impossible. This decision was confirmed during the Story 6.6.3 table-flow acceptance test — a prior implementation included `window.confirm()` which was removed as a bug fix to pass criterion 3.
+
 ### Auth Views — sessionStorage for Invite Code Handoff
 
 - **Decision**: Auth views use `sessionStorage` to hand off the invite code between the login view and the join view. When `/login/{code}` detects an invite-type response, the code is written to `sessionStorage` before navigating to `#/join`.
@@ -689,4 +719,4 @@ All resolved.
 
 ---
 
-_Last updated: 2026-03-18_
+_Last updated: 2026-03-19_

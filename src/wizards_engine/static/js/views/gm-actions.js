@@ -1014,6 +1014,7 @@ window.views.gmActions = (function () {
       '    <input id="' + _esc(idPrefix) + '-val" type="number"',
       '           x-model.number="' + _esc(fieldPrefix) + '_value"',
       '           :placeholder="' + _esc(fieldPrefix) + '_op === \'set\' ? \'new value\' : \'amount\'"',
+      '           inputmode="numeric"',
       '           aria-label="' + _esc(label) + ' amount" />',
       '  </div>',
       '</div>',
@@ -1252,7 +1253,7 @@ window.views.gmActions = (function () {
       skillOptions,
       '        </select>',
       '        <label>Level',
-      '          <input type="number" x-model.number="sc.level" min="0" max="10" aria-label="Skill level" />',
+      '          <input type="number" x-model.number="sc.level" min="0" max="10" inputmode="numeric" aria-label="Skill level" />',
       '        </label>',
       '        <button type="button" class="secondary" @click="removeSkillChange(i)" aria-label="Remove skill change">Remove</button>',
       '      </div>',
@@ -1270,10 +1271,10 @@ window.views.gmActions = (function () {
       _buildMagicStatOptions(),
       '        </select>',
       '        <label>XP delta',
-      '          <input type="number" x-model.number="mc.xp" aria-label="XP delta" />',
+      '          <input type="number" x-model.number="mc.xp" inputmode="numeric" aria-label="XP delta" />',
       '        </label>',
       '        <label>Force level',
-      '          <input type="number" x-model.number="mc.level" min="0" placeholder="(keep current)" aria-label="Force level" />',
+      '          <input type="number" x-model.number="mc.level" min="0" placeholder="(keep current)" inputmode="numeric" aria-label="Force level" />',
       '        </label>',
       '        <button type="button" class="secondary" @click="removeMagicChange(i)" aria-label="Remove magic stat change">Remove</button>',
       '      </div>',
@@ -1310,7 +1311,7 @@ window.views.gmActions = (function () {
       '  </select>',
       '  <p x-show="errors.xp_magic_stat" role="alert" class="error-text" x-text="errors.xp_magic_stat"></p>',
       '  <label for="xp-amount">XP Amount</label>',
-      '  <input id="xp-amount" type="number" x-model.number="xp_amount" min="1" value="1" />',
+      '  <input id="xp-amount" type="number" x-model.number="xp_amount" min="1" value="1" inputmode="numeric" />',
       '</fieldset>',
     ].join("\n");
   }
@@ -1471,13 +1472,13 @@ window.views.gmActions = (function () {
       '  </select>',
 
       '  <label for="eff-power">Power Level (1–5)</label>',
-      '  <input id="eff-power" type="number" x-model.number="effect_power_level" min="1" max="5" />',
+      '  <input id="eff-power" type="number" x-model.number="effect_power_level" min="1" max="5" inputmode="numeric" />',
 
       '  <div x-show="effect_type === \'charged\'">',
       '    <label for="eff-charges-cur">Current Charges</label>',
-      '    <input id="eff-charges-cur" type="number" x-model.number="effect_charges_current" min="0" />',
+      '    <input id="eff-charges-cur" type="number" x-model.number="effect_charges_current" min="0" inputmode="numeric" />',
       '    <label for="eff-charges-max">Max Charges</label>',
-      '    <input id="eff-charges-max" type="number" x-model.number="effect_charges_max" min="0" />',
+      '    <input id="eff-charges-max" type="number" x-model.number="effect_charges_max" min="0" inputmode="numeric" />',
       '  </div>',
 
       '</fieldset>',
@@ -1492,7 +1493,7 @@ window.views.gmActions = (function () {
       '<fieldset class="gm-actions__changes" x-show="selectedType === \'modify_effect\'">',
       '  <legend>Modify Effect</legend>',
       '  <label for="meff-power">Power Level (0 = keep current)</label>',
-      '  <input id="meff-power" type="number" x-model.number="meff_power_level" min="0" max="5" />',
+      '  <input id="meff-power" type="number" x-model.number="meff_power_level" min="0" max="5" inputmode="numeric" />',
       _buildMeterChangeHtml("meff_charges_current", "Current Charges", "meff-cur"),
       _buildMeterChangeHtml("meff_charges_max",      "Max Charges",     "meff-max"),
       '  <label for="meff-name">New Name <small>(optional)</small></label>',
@@ -1525,7 +1526,7 @@ window.views.gmActions = (function () {
       '<fieldset class="gm-actions__changes" x-show="selectedType === \'modify_group\'">',
       '  <legend>Modify Group</legend>',
       '  <label for="group-tier">Tier</label>',
-      '  <input id="group-tier" type="number" x-model.number="group_tier" min="0" max="10" />',
+      '  <input id="group-tier" type="number" x-model.number="group_tier" min="0" max="10" inputmode="numeric" />',
       '</fieldset>',
     ].join("\n");
   }

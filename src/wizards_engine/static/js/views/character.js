@@ -842,11 +842,11 @@ window.views.character = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Handle "Find Time": confirm → POST → refresh.
+   * Handle "Find Time": POST directly → refresh. No confirmation dialog.
+   * The button is only rendered when plot >= 3, so tapping it always
+   * succeeds (barring network error). A single tap is all that is needed.
    */
   function _onFindTime() {
-    if (!window.confirm("Spend 3 Plot to gain 1 Free Time?")) return;
-
     var id = _characterId;
     _doAction(
       "/api/v1/characters/" + id + "/find-time",

@@ -17,9 +17,9 @@ Final polish: profile and starring management, GM silent feed, mobile optimizati
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.6.1 — Profile, Starring, GM Silent Feed | 🔴 Not started | — |
-| 6.6.2 — Mobile Optimizations + Touch Targets | 🔴 Not started | — |
-| 6.6.3 — Table-Flow Acceptance Testing | 🔴 Not started | — |
+| 6.6.1 — Profile, Starring, GM Silent Feed | 🟢 Complete | 2026-03-19 |
+| 6.6.2 — Mobile Optimizations + Touch Targets | 🟢 Complete | 2026-03-19 |
+| 6.6.3 — Table-Flow Acceptance Testing | 🟢 Complete | 2026-03-19 |
 
 ### Story 6.6.1 — Profile, Starring, GM Silent Feed
 

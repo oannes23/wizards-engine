@@ -66,6 +66,7 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Events | [events.md](domains/events.md) | 🟢 | All resolved. **Verified 2026-03-16**: Clarified `GET /events/{id}` returns 404 for silent events for all callers including GM. session.participant_added default visibility (global) added against Story 5.1.2. |
 | Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Verified 2026-03-16**: GM silent feed excludes story entries. POST /me/starred idempotency (200 if already starred, 201 on new star) and DELETE /me/starred idempotency documented. |
 | Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. **Verified 2026-03-16**: Login response `type` discriminator and cookie max_age documented. |
+| Web UI | [web-ui.md](domains/web-ui.md) | 🟢 | Full UX specification for Phase 6. Technology stack (Pico CSS + Alpine.js), navigation architecture, complete screen inventory (40+ screens), interaction flows, component definitions, information hierarchy, table-flow design principles, API additions. Spec changes: `narrative` optional on session actions; `recharge_trait` and `maintain_bond` promoted to direct player actions. |
 
 ---
 
@@ -149,7 +150,7 @@ All propagation complete as of 2026-03-14. All specs aligned.
 
 Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/mvp-scope.md)). Epic/Story breakdown is in [`spec/implementation/`](implementation/README.md).
 
-**13 Epics, 46 Stories** across 5 API phases (Phase 6 Web UI deferred).
+**20 Epics, 78 Stories** across 7 phases (5 complete + Phase 5.5 backend additions + Phase 6 Web UI).
 
 | Phase | Epic | File | Stories | Status |
 |-------|------|------|---------|--------|
@@ -166,6 +167,13 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 4 | 4.3 — Proposal Workflow | [phase4-proposal-workflow.md](implementation/phase4-proposal-workflow.md) | 5 | 🟢 |
 | 4 | 4.4 — Feed System | [phase4-feed-system.md](implementation/phase4-feed-system.md) | 4 | 🟢 |
 | 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🟢 |
+| 5.5 | 5.5 — Pre-UI API Additions | [phase55-api-additions.md](implementation/phase55-api-additions.md) | 6 | 🟢 |
+| 6 | 6.1 — SPA Foundation & Auth | [phase6-spa-foundation.md](implementation/phase6-spa-foundation.md) | 5 | 🔴 |
+| 6 | 6.2 — Player Character & Direct Actions | [phase6-player-character.md](implementation/phase6-player-character.md) | 4 | 🔴 |
+| 6 | 6.3 — Proposal System | [phase6-proposal-system.md](implementation/phase6-proposal-system.md) | 5 | 🔴 |
+| 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🔴 |
+| 6 | 6.5 — GM Tools & Session Management | [phase6-gm-tools.md](implementation/phase6-gm-tools.md) | 5 | 🔴 |
+| 6 | 6.6 — Polish & Integration | [phase6-polish.md](implementation/phase6-polish.md) | 3 | 🔴 |
 
 ---
 
@@ -195,6 +203,16 @@ game-objects (primitive)        events (primitive)        auth (primitive)
 ---
 
 ## Recent Changes
+
+### 2026-03-18: Web UI UX Specification Complete
+
+- **web-ui.md created** — full UX specification for Phase 6 Web UI. Covers technology stack (Pico CSS v2 + Alpine.js v3, no build step), authentication/onboarding flows, navigation architecture (player mobile/desktop, GM mobile/desktop), complete screen inventory (40+ screens across 3 roles), key interaction flows (3-step proposal submission, GM review queue, direct actions, progressive disclosure character sheet), component definitions, information architecture, table-flow design principles, polling strategy, and proposed API additions.
+- **Spec changes propagated**:
+  - `actions.md`: `narrative` now optional (nullable) for session action proposals (`use_skill`, `use_magic`, `charge_magic`). `recharge_trait` and `maintain_bond` promoted from downtime proposals to direct player actions (require narrative, cost 1 FT, immediate resolution).
+  - `downtime.md`: Downtime proposal types reduced from 7 to 5. Two new direct action endpoints documented.
+  - `glossary.md`: Updated Player Direct Action (5 types), Recharge Trait, and Maintain Bond entries.
+  - `walkthrough.md`: Updated to reflect optional narrative on session actions and direct actions for recharge_trait/maintain_bond.
+- **implementation/README.md**: Added Phase 5.5 — API Additions section tracking 6 backend stories needed before/alongside Phase 6.
 
 ### 2026-03-10: Propagation Sweep — CRUD/GM Split, Character-intermediary Rename, GM Event Types
 
@@ -688,4 +706,4 @@ See [glossary.md](glossary.md) for canonical definitions of all terms.
 ---
 
 ## Last Updated
-_2026-03-14 — Cross-domain spec audit: resolved first-session FT contradiction (delta from 0), added stories.visibility_level to data-model.md, aligned character list pagination with api-conventions.md, added has_more to paginated response envelope, fixed stale proposals.md links, updated Implementation Specs section for 6-phase build._
+_2026-03-18 — Epic 5.5 (Pre-UI API Additions) complete: all 6 stories done. events.md updated with player.recharge_trait and player.maintain_bond event types. Implementation index updated: 14 complete epics, 52 complete stories. Previous: Implementation epics and stories created for Phase 5.5 (1 epic, 6 stories) and Phase 6 (6 epics, 26 stories)._

@@ -89,12 +89,12 @@ TRAIT_LIMITS: dict[str, int] = {
     "role_trait": 3,
 }
 
-#: All 7 downtime action types that auto-cost 1 FT.
+#: Downtime action types that auto-cost 1 FT (proposal-based only).
+#: ``recharge_trait`` and ``maintain_bond`` were promoted to direct player
+#: actions in Phase 5.5 and are no longer valid proposal action types.
 DOWNTIME_ACTION_TYPES: frozenset[str] = frozenset(
     {
         "regain_gnosis",
-        "recharge_trait",
-        "maintain_bond",
         "work_on_project",
         "rest",
         "new_trait",
@@ -1336,7 +1336,7 @@ def create_proposal(
     *,
     character_id: str,
     action_type: str,
-    narrative: str,
+    narrative: str | None,
     selections: dict[str, Any],
     actor_id: str,
 ) -> Proposal:
@@ -1350,7 +1350,9 @@ def create_proposal(
         db: Active SQLAlchemy session.
         character_id: ULID of the submitting character.
         action_type: One of the 10 player-submittable action types.
-        narrative: Player-written description of the intended action.
+        narrative: Player-written description of the intended action.  May be
+            ``None`` for session action types (``use_skill``, ``use_magic``,
+            ``charge_magic``).
         selections: Type-specific input dict (validated at the API layer).
         actor_id: ULID of the authenticated user (for event creation).
 

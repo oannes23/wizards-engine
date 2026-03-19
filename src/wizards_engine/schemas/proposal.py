@@ -6,7 +6,7 @@ Covers request bodies and the response shape for
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Valid action types
@@ -18,8 +18,6 @@ VALID_ACTION_TYPES: frozenset[str] = frozenset(
         "use_magic",
         "charge_magic",
         "regain_gnosis",
-        "recharge_trait",
-        "maintain_bond",
         "work_on_project",
         "rest",
         "new_trait",
@@ -38,6 +36,14 @@ SYSTEM_ONLY_ACTION_TYPES: frozenset[str] = frozenset(
     }
 )
 
+#: Session action types — narrative is optional for these.
+SESSION_ACTION_TYPES: frozenset[str] = frozenset({"use_skill", "use_magic", "charge_magic"})
+
+#: Downtime proposal types — narrative is required for these.
+DOWNTIME_PROPOSAL_TYPES: frozenset[str] = frozenset(
+    {"regain_gnosis", "work_on_project", "rest", "new_trait", "new_bond"}
+)
+
 
 # ---------------------------------------------------------------------------
 # Request schemas
@@ -53,10 +59,12 @@ class CreateProposalRequest(BaseModel):
         ULID of the character submitting the proposal.  Must belong to the
         authenticated user (``user.character_id == character_id``).
     action_type:
-        One of the 10 player-submittable action types.  ``resolve_clock``
+        One of the 9 player-submittable action types.  ``resolve_clock``
         and ``resolve_trauma`` are system-only and will be rejected.
     narrative:
-        Player-written description of the intended action.
+        Player-written description of the intended action.  Optional for
+        session action types (``use_skill``, ``use_magic``, ``charge_magic``);
+        required for downtime action types.
     selections:
         Type-specific inputs (modifier trait/bond IDs, plot_spend, etc.).
         Full validation of the contents is deferred to later stories.
@@ -64,7 +72,7 @@ class CreateProposalRequest(BaseModel):
 
     character_id: str
     action_type: str
-    narrative: str
+    narrative: str | None = None
     selections: dict = {}
 
     @field_validator("action_type")
@@ -88,6 +96,14 @@ class CreateProposalRequest(BaseModel):
         if not isinstance(v, dict):
             raise ValueError("selections must be a JSON object")
         return v
+
+    @model_validator(mode="after")
+    def validate_narrative_for_downtime(self) -> "CreateProposalRequest":
+        """Downtime actions require a non-empty narrative."""
+        if self.action_type in DOWNTIME_PROPOSAL_TYPES:
+            if not self.narrative or not self.narrative.strip():
+                raise ValueError("Narrative is required for downtime actions")
+        return self
 
 
 class UpdateProposalRequest(BaseModel):
@@ -216,7 +232,7 @@ class ProposalResponse(BaseModel):
     character_id: str | None
     action_type: str
     origin: str
-    narrative: str
+    narrative: str | None
     selections: dict
     calculated_effect: dict | None
     status: str

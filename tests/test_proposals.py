@@ -31,7 +31,7 @@ def _proposal(
     *,
     character_id: str,
     action_type: str = "use_skill",
-    narrative: str = "Test narrative",
+    narrative: str | None = "Test narrative",
     selections: dict | None = None,
     status: str = "pending",
     origin: str = "player",
@@ -912,3 +912,210 @@ class TestProposalRevisedEventTarget:
         assert primary is not None
         assert primary.target_type == "character"
         assert primary.target_id == pc1.id
+
+
+# ===========================================================================
+# Story 5.5.3 — Nullable narrative for session action types
+# ===========================================================================
+
+
+class TestNullableNarrative:
+    """Story 5.5.3 — narrative is optional for session actions, required for downtime."""
+
+    def test_session_action_null_narrative_accepted(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        """use_skill with narrative=None is accepted (201)."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "narrative": None,
+                "selections": {"skill": "awareness"},
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["narrative"] is None
+
+    def test_session_action_omitted_narrative_accepted(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        """use_skill with narrative key absent is accepted (201)."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "selections": {"skill": "awareness"},
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["narrative"] is None
+
+    def test_use_magic_null_narrative_accepted(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """use_magic with no narrative is accepted (201)."""
+        pc1 = seed_data["pc1"]
+        pc1.gnosis = 5
+        db.flush()
+
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": pc1.id,
+                "action_type": "use_magic",
+                "selections": {
+                    "suggested_stat": "being",
+                    "sacrifice": [{"type": "gnosis", "amount": 1}],
+                },
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["narrative"] is None
+
+    def test_charge_magic_null_narrative_accepted(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """charge_magic with no narrative is accepted (201)."""
+        from wizards_engine.models.magic_effect import MagicEffect
+        from ulid import ULID
+
+        pc1 = seed_data["pc1"]
+        eff = MagicEffect(
+            id=str(ULID()),
+            character_id=pc1.id,
+            name="Test Effect",
+            description="A test effect.",
+            effect_type="charged",
+            power_level=1,
+            charges_current=0,
+            charges_max=3,
+            is_active=True,
+        )
+        db.add(eff)
+        db.flush()
+
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": pc1.id,
+                "action_type": "charge_magic",
+                "selections": {
+                    "effect_id": eff.id,
+                    "suggested_stat": "enchanting",
+                },
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["narrative"] is None
+
+    @pytest.mark.parametrize(
+        "downtime_type",
+        ["regain_gnosis", "work_on_project", "rest", "new_trait", "new_bond"],
+    )
+    def test_downtime_action_null_narrative_rejected(
+        self, client: TestClient, seed_data: dict, downtime_type: str
+    ) -> None:
+        """Downtime action with narrative=None is rejected with 422."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": downtime_type,
+                "narrative": None,
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.parametrize(
+        "downtime_type",
+        ["regain_gnosis", "work_on_project", "rest", "new_trait", "new_bond"],
+    )
+    def test_downtime_action_empty_narrative_rejected(
+        self, client: TestClient, seed_data: dict, downtime_type: str
+    ) -> None:
+        """Downtime action with narrative="" is rejected with 422."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": downtime_type,
+                "narrative": "",
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.parametrize(
+        "downtime_type",
+        ["regain_gnosis", "work_on_project", "rest", "new_trait", "new_bond"],
+    )
+    def test_downtime_action_whitespace_only_narrative_rejected(
+        self, client: TestClient, seed_data: dict, downtime_type: str
+    ) -> None:
+        """Downtime action with narrative containing only whitespace is rejected."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": downtime_type,
+                "narrative": "   ",
+            },
+        )
+        assert response.status_code == 422
+
+    def test_patch_narrative_onto_pending_session_action(
+        self, client: TestClient, db: Session, seed_data: dict
+    ) -> None:
+        """PATCH can set a narrative on a pending use_skill proposal that had none."""
+        pc1 = seed_data["pc1"]
+        p = _proposal(db, character_id=pc1.id, action_type="use_skill", narrative=None)
+        db.commit()
+
+        auth_as(client, seed_data["player1"])
+        response = client.patch(
+            f"/api/v1/proposals/{p.id}",
+            json={"narrative": "Added later."},
+        )
+        assert response.status_code == 200
+        assert response.json()["narrative"] == "Added later."
+
+    def test_approval_with_both_null_narratives(
+        self, client: TestClient, db: Session, seed_data: dict
+    ) -> None:
+        """Approving a use_skill where narrative=None and gm_narrative=None produces event with narrative=None."""
+        from wizards_engine.models.event import Event
+
+        pc1 = seed_data["pc1"]
+        p = _proposal(
+            db,
+            character_id=pc1.id,
+            action_type="use_skill",
+            narrative=None,
+            selections={"skill": "awareness"},
+        )
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = client.post(
+            f"/api/v1/proposals/{p.id}/approve",
+            json={},
+        )
+        assert response.status_code == 200
+
+        db.expire_all()
+        approval_event = (
+            db.query(Event)
+            .filter(Event.proposal_id == p.id, Event.type == "proposal.approved")
+            .first()
+        )
+        assert approval_event is not None
+        assert approval_event.narrative is None

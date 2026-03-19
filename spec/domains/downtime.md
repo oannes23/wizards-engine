@@ -88,19 +88,24 @@ FT gained from Find Time respects the 20 cap.
 
 Players can submit Downtime Action proposals **at any time** they have Free Time — there is no "downtime window" or mode. All downtime actions cost 1 FT automatically (deducted on approval).
 
-Seven Downtime Action types (defined in [actions](actions.md)):
+Five Downtime Action proposal types (defined in [actions](actions.md)):
 
 | Type | Effect | Supports Modifiers |
 |------|--------|-------------------|
 | `regain_gnosis` | 3 + lowest Magic Stat + mods (0–3) Gnosis | Yes |
-| `recharge_trait` | Restore selected trait to 5 charges | No |
-| `maintain_bond` | Heal selected bond's stress to 0 | No |
 | `work_on_project` | Narrative note on target Story/Arc | No |
 | `rest` | 3 + mods (0–3) Stress healed | Yes |
 | `new_trait` | Replace/fill a trait slot | No |
 | `new_bond` | Replace/fill a bond slot | No |
 
-**No activity limit** beyond FT cost. Players can submit as many downtime proposals as they can afford.
+Two additional downtime activities are **direct player actions** (no GM approval, immediate resolution):
+
+| Action | Endpoint | Effect | Narrative |
+|--------|----------|--------|-----------|
+| `recharge_trait` | `POST /characters/{id}/recharge-trait` | Restore selected trait to 5 charges, costs 1 FT | Required |
+| `maintain_bond` | `POST /characters/{id}/maintain-bond` | Restore selected bond's charges to effective max, costs 1 FT | Required |
+
+**No activity limit** beyond FT cost. Players can submit as many downtime proposals as they can afford. Direct actions also consume FT.
 
 ### Group Clock Adjustments
 
@@ -296,6 +301,8 @@ Sessions have a participant list tracking who played:
 
 ### Direct Player Actions
 - `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player or GM, no approval). Empty request body. Validates Plot >= 3 and FT < 20. Only full (PC-level) characters may use this action — returns 422 `not_a_pc` otherwise.
+- `POST /api/v1/characters/{id}/recharge-trait` — restore a trait to 5 charges (player or GM, no approval). Body: `{trait_instance_id: string, narrative: string}`. Validates FT >= 1 and trait charges < 5. Costs 1 FT.
+- `POST /api/v1/characters/{id}/maintain-bond` — restore a bond's charges to effective max (player or GM, no approval). Body: `{bond_instance_id: string, narrative: string}`. Validates FT >= 1 and bond charges < effective max. Costs 1 FT.
 
 ### Downtime Proposals
 All downtime actions are submitted as proposals via `POST /api/v1/proposals` (see [actions](actions.md)).
@@ -327,4 +334,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-16 (verified against Stories 5.1.1–5.1.5 implementation: GM may call find-time on behalf of any character; find-time validates detail_level = full with 422 not_a_pc; session start error codes session_not_draft, active_session_exists, time_now_not_set documented; session end error code session_not_active documented; session.participant_added event (late join distribution) uses visibility global with character as primary target, changes include free_time, last_session_time_now, and plot; ended session guard on participant add/remove uses error code session_ended. Story 5.1.5: added GET /sessions/{id}/timeline to API Endpoints; silent events excluded for all callers including the GM.)_
+_Last updated: 2026-03-18 (Phase 6 UX spec changes: `recharge_trait` and `maintain_bond` promoted from downtime proposals to direct player actions with required narrative; two new direct action endpoints added. Previous: 2026-03-16 verified against Phase 5 implementation.)_

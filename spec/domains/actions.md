@@ -42,7 +42,7 @@ The system does **not** record dice results. Dice are rolled at the physical tab
 
 ### Action Types
 
-Three categories, 12 types total:
+Three categories, 10 proposal types total (plus 2 former downtime types promoted to direct actions — see Player Direct Actions below):
 
 **Actions** (session play):
 
@@ -57,8 +57,6 @@ Three categories, 12 types total:
 | Type | Description | Calculated Effect | Supports Modifiers |
 |------|-------------|------------------|-------------------|
 | `regain_gnosis` | Study/meditate to regain Gnosis | 3 + lowest Magic Stat + modifiers (up to +3) | Yes |
-| `recharge_trait` | Fully restore charges on one trait | Fixed: restore to 5 | No |
-| `maintain_bond` | Fully heal stress on one bond | Fixed: stress → 0 | No |
 | `work_on_project` | Advance a personal project (Story/Arc) | Narrative note added | No |
 | `rest` | Heal accumulated Stress | 3 + modifiers (up to +3) | Yes |
 | `new_trait` | Replace a trait or fill a blank slot | Structural change | No |
@@ -71,7 +69,7 @@ Three categories, 12 types total:
 | `resolve_clock` | Resolve a completed clock | Clock reaches completion (progress >= segments) |
 | `resolve_trauma` | Resolve a Trauma event | Character Stress hits effective max |
 
-**Downtime structural rule**: All Downtime Actions automatically cost 1 Free Time, deducted on approval. This cost is implicit — not specified by the player.
+**Downtime structural rule**: All Downtime Action proposals automatically cost 1 Free Time, deducted on approval. This cost is implicit — not specified by the player. The two direct downtime actions (`recharge_trait`, `maintain_bond`) also cost 1 FT, deducted immediately on execution.
 
 **Skill training**: Increasing a Skill level is a project — players use `work_on_project` targeting a Story/Arc for the skill they're training. GM resolves when the narrative warrants it.
 
@@ -83,9 +81,9 @@ Three categories, 12 types total:
 |-------|------|----------|-------|
 | id | string | yes | Primary key (ULID) |
 | character_id | ref → Character | no | Submitting character. Null for system-generated proposals. |
-| action_type | enum | yes | One of the 12 types |
+| action_type | enum | yes | One of the 10 proposal types |
 | origin | enum | yes | `player` or `system`. Distinguishes player-submitted from system-generated. |
-| narrative | text | yes | Player's description of their action (player-written). GM can edit on approval. |
+| narrative | text | conditional | Player's description of their action (player-written). GM can edit on approval. **Required for downtime actions; optional (nullable) for session actions** (`use_skill`, `use_magic`, `charge_magic`). Players can PATCH narrative onto pending proposals. |
 | modifiers | JSON | no | `{core_trait_id?, role_trait_id?, bond_id?}` — up to 1 of each |
 | plot_spend | integer | no | Number of Plot points spent (default 0) |
 | details | JSON | no | Type-specific data (see below) |
@@ -106,8 +104,6 @@ Three categories, 12 types total:
 | `use_magic` | `{intention: string, symbolism: string, sacrifice_list: [{type, amount, target_id?}], suggested_stat: string}` |
 | `charge_magic` | `{intention: string, symbolism: string, sacrifice_list: [...], suggested_stat: string, target_effect_id: string}` |
 | `regain_gnosis` | `{}` — no extra details |
-| `recharge_trait` | `{trait_instance_id: string}` |
-| `maintain_bond` | `{bond_instance_id: string}` |
 | `work_on_project` | `{story_id: string}` — which Story/Arc to progress |
 | `rest` | `{}` — no extra details |
 | `new_trait` | `{slot_type: "core"\|"role", template_id?: string, proposed_name?: string, proposed_description?: string, retire_trait_id?: string}` — retire_trait_id required when at max active count for that slot_type |
@@ -194,18 +190,6 @@ rest: {
   }
 }
 
-recharge_trait: {
-  trait_id: string,
-  charges_restored: 5,
-  costs: { free_time: 1 }
-}
-
-maintain_bond: {
-  target_bond_id: string,
-  stress_restored_to: 0,
-  costs: { free_time: 1 }
-}
-
 work_on_project: {
   target_story_id: string,
   costs: { free_time: 1 }
@@ -230,6 +214,14 @@ new_bond: {
 resolve_clock: {}  // No calculation — GM fills in narrative and outcome
 resolve_trauma: {}  // No calculation — GM fills in trauma details
 ```
+
+### Narrative Requirements
+
+**Session actions** (`use_skill`, `use_magic`, `charge_magic`): Narrative is **optional** on submission. Players can PATCH narrative onto pending proposals after the fact. This supports fast table flow — the verbal description at the table is the primary narrative, and typed text can be added later.
+
+**Downtime actions** (`regain_gnosis`, `work_on_project`, `rest`, `new_trait`, `new_bond`): Narrative is **required** on submission. These actions happen between sessions where there's time to write.
+
+**Direct actions** (`recharge_trait`, `maintain_bond`): Narrative is **required**. These bypass GM approval but still need fiction grounding.
 
 ### Player-Written Narratives
 
@@ -261,7 +253,7 @@ When the GM approves, they provide:
 
 The system then auto-applies (using overridden values where present):
 1. **Costs**: trait charge decrements, Free Time (downtime), Plot, Gnosis sacrifice, Stress sacrifice
-2. **Outcomes**: Stress healing (rest), Gnosis gain (regain_gnosis), trait charge restore (recharge_trait), bond stress heal (maintain_bond), Magic Effect creation, trait/bond retirement + replacement (new_trait, new_bond), narrative note on Story (work_on_project)
+2. **Outcomes**: Stress healing (rest), Gnosis gain (regain_gnosis), Magic Effect creation, trait/bond retirement + replacement (new_trait, new_bond), narrative note on Story (work_on_project)
 3. **Side effects**: Bond stress +1 if GM flags strain, Trauma cascade if Stress sacrifice hits max
 
 ### Rider Events
@@ -370,11 +362,11 @@ No cap on Plot spend per proposal.
 |------|---------|
 | `regain_gnosis` | 3 + lowest Magic Stat level + modifiers (0–3) |
 | `rest` | 3 + modifiers (0–3) Stress healed |
-| `recharge_trait` | Fixed: restore selected trait to 5 charges |
-| `maintain_bond` | Fixed: selected bond stress → 0 |
 | `work_on_project` | Narrative note added to target Story |
 | `new_trait` | Old trait → Past, new trait at 5 charges (or fills blank) |
 | `new_bond` | Old bond → Past, new bond at stress 0 (or fills blank) |
+| `recharge_trait` *(direct action)* | Fixed: restore selected trait to 5 charges |
+| `maintain_bond` *(direct action)* | Fixed: selected bond charges → effective max |
 
 ### Revision Flow
 
@@ -473,6 +465,8 @@ Low-stakes player actions that bypass proposals and create events immediately:
 | Find Time | `POST /api/v1/characters/{id}/find-time` | Converts 3 Plot → 1 FT |
 | Use Magic Effect | `POST /api/v1/characters/{id}/effects/{id}/use` | Decrements 1 charge, logs event |
 | Retire Magic Effect | `POST /api/v1/characters/{id}/effects/{id}/retire` | Sets `is_active = false`, frees cap |
+| Recharge Trait | `POST /api/v1/characters/{id}/recharge-trait` | Restores selected trait to 5 charges, costs 1 FT. Body: `{trait_instance_id, narrative}`. Narrative required. |
+| Maintain Bond | `POST /api/v1/characters/{id}/maintain-bond` | Restores selected bond charges to effective max, costs 1 FT. Body: `{bond_instance_id, narrative}`. Narrative required. |
 
 All player direct actions validate ownership and produce events.
 
@@ -482,9 +476,9 @@ All player direct actions validate ownership and produce events.
 
 ### Action Type Enumeration
 
-- **Decision**: 12 action types in three categories — Actions (`use_skill`, `use_magic`, `charge_magic`), Downtime Actions (`regain_gnosis`, `recharge_trait`, `maintain_bond`, `work_on_project`, `rest`, `new_trait`, `new_bond`), and System Proposals (`resolve_clock`, `resolve_trauma`).
-- **Rationale**: Covers all player-initiated mechanical actions plus system-generated prompts. Clean split between session play, downtime, and system triggers. System proposals reuse the same proposal model.
-- **Implications**: Each type has its own validation and calculation logic in Python. The `action_type` enum drives which `details` fields are required.
+- **Decision**: 10 proposal types in three categories — Actions (`use_skill`, `use_magic`, `charge_magic`), Downtime Actions (`regain_gnosis`, `work_on_project`, `rest`, `new_trait`, `new_bond`), and System Proposals (`resolve_clock`, `resolve_trauma`). Plus 5 direct player actions (`find_time`, `use_effect`, `retire_effect`, `recharge_trait`, `maintain_bond`). `recharge_trait` and `maintain_bond` were promoted from downtime proposals to direct actions — they have fixed outcomes and no meaningful GM decision point.
+- **Rationale**: Covers all player-initiated mechanical actions plus system-generated prompts. Clean split between session play, downtime, system triggers, and direct actions. System proposals reuse the same proposal model. Direct actions avoid unnecessary queue overhead for predictable operations.
+- **Implications**: Each proposal type has its own validation and calculation logic in Python. The `action_type` enum drives which `details` fields are required. Direct actions have their own endpoints.
 
 ### resolve_clock as Same Model
 
@@ -512,9 +506,9 @@ All player direct actions validate ownership and produce events.
 
 ### Player-Written Narratives
 
-- **Decision**: Players write the narrative on submission. The GM can accept it as-is (approve without providing `gm_narrative`), edit it, or reject for revision. The player's narrative becomes the event narrative unless the GM overrides.
-- **Rationale**: Reduces GM workload. Players describe their own actions. The GM is an arbiter, not a narrator-of-everything.
-- **Implications**: `narrative` is required on submission. `gm_narrative` is optional on approval — if absent, player narrative is used.
+- **Decision**: Players write the narrative on submission. The GM can accept it as-is (approve without providing `gm_narrative`), edit it, or reject for revision. The player's narrative becomes the event narrative unless the GM overrides. **For session actions** (`use_skill`, `use_magic`, `charge_magic`), narrative is **optional** on submission — players can PATCH it onto pending proposals later. For downtime actions, narrative remains required. For direct actions (`recharge_trait`, `maintain_bond`), narrative is required.
+- **Rationale**: Reduces GM workload. Players describe their own actions. The GM is an arbiter, not a narrator-of-everything. Optional narrative on session actions supports fast table flow — the verbal action at the table is primary, typed text can follow.
+- **Implications**: `narrative` is required for downtime proposals and direct actions; optional for session action proposals. `gm_narrative` is optional on approval — if absent, player narrative is used.
 
 ### Rider Events on Approval
 
@@ -728,6 +722,8 @@ All player direct actions validate ownership and produce events.
 - `POST /api/v1/characters/{id}/find-time` — convert 3 Plot → 1 FT (player, no approval)
 - `POST /api/v1/characters/{id}/effects/{effect_id}/use` — use a charged Magic Effect (player, costs 1 charge)
 - `POST /api/v1/characters/{id}/effects/{effect_id}/retire` — retire a Magic Effect (player, frees cap)
+- `POST /api/v1/characters/{id}/recharge-trait` — restore a trait to 5 charges (player, costs 1 FT, narrative required). Body: `{trait_instance_id: string, narrative: string}`
+- `POST /api/v1/characters/{id}/maintain-bond` — restore a bond to effective max charges (player, costs 1 FT, narrative required). Body: `{bond_instance_id: string, narrative: string}`
 
 ---
 
@@ -735,7 +731,7 @@ All player direct actions validate ownership and produce events.
 
 | Spec | Implication |
 |------|-------------|
-| [downtime](downtime.md) | All 7 downtime action types defined with formulas. All cost 1 FT. "Heal Bond Stress" renamed to "Maintain Bond". "Rest" is a new action. Skill training uses `work_on_project`. |
+| [downtime](downtime.md) | 5 downtime proposal types + 2 direct actions defined with formulas. All cost 1 FT. `recharge_trait` and `maintain_bond` promoted to direct player actions. "Rest" is a new action. Skill training uses `work_on_project`. |
 | [events](events.md) | 🔄 One event per approved proposal + optional rider event. GM actions reuse domain event types (no `gm.*` prefix) — distinguished by `actor_type: "gm"`. Remove any `gm.*` event type references. |
 | [traits](traits.md) | 🔄 Trait slots are count-based (not indexed). `new_trait` uses `retire_trait_id`. All GM trait management via `POST /gm/actions` — remove write sub-resource endpoints. |
 | [bonds](bonds.md) | 🔄 Bond +1d modifier may cause +1 bond stress. `new_bond` uses `retire_bond_id`. All GM bond management via `POST /gm/actions` — remove write sub-resource endpoints (POST/PATCH/DELETE `/{type}/{id}/bonds`). |
@@ -753,4 +749,4 @@ All resolved.
 
 ---
 
-_Last updated: 2026-03-16 (verified against Phase 4 implementation: corrected calculated_effect schemas to match actual field names produced by proposal service — use_magic/charge_magic use `total_gnosis_equivalent`, `sacrifice_dice`, `sacrifice_details`, `bond_sacrifices`, `trait_sacrifices`, `name` (not `label`), `cost: 1` (not `charge_cost: 1`); charge_magic adds `target_effect` key; recharge_trait uses `trait_id`/`charges_restored` (not `target_trait_id`/`charges_restored_to`); regain_gnosis/rest omit `modifiers` list from calculated_effect. Updated GM Action Validation decision: code clamps meters to documented ranges rather than allowing arbitrary values.)_
+_Last updated: 2026-03-18 (Phase 6 UX spec changes: `narrative` now optional for session action proposals; `recharge_trait` and `maintain_bond` promoted from downtime proposals to direct player actions with required narrative; two new direct action endpoints added. Previous: 2026-03-16 verified against Phase 4 implementation.)_

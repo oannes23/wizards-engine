@@ -8,12 +8,14 @@ Endpoints
 ---------
 POST   /characters          — GM only.  Create a simplified character.
 GET    /characters          — Authenticated.  List with filters + pagination.
+GET    /characters/summary  — Authenticated.  Compact PC overview (meters only).
 GET    /characters/{id}     — Authenticated.  Character detail (incl. soft-deleted).
 PATCH  /characters/{id}     — Owner or GM.  Update name/description/notes.
 DELETE /characters/{id}     — GM only.  Soft delete.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
@@ -44,6 +46,52 @@ from wizards_engine.services.bond import get_bonds_display_for_entity
 from wizards_engine.services.presence import get_locations_for_character
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Summary schemas — defined here because they are router-local and small
+# ---------------------------------------------------------------------------
+
+
+class CharacterSummaryItem(BaseModel):
+    """Compact PC overview item returned by GET /characters/summary.
+
+    Attributes
+    ----------
+    id:
+        ULID primary key of the character.
+    name:
+        Character display name.
+    stress:
+        Current Stress meter value (0 if null in DB).
+    free_time:
+        Current Free Time resource (0 if null in DB).
+    plot:
+        Current Plot resource (0 if null in DB).
+    gnosis:
+        Current Gnosis resource (0 if null in DB).
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    stress: int
+    free_time: int
+    plot: int
+    gnosis: int
+
+
+class CharactersSummaryResponse(BaseModel):
+    """Response body for GET /characters/summary.
+
+    Attributes
+    ----------
+    items:
+        Ordered list of compact PC summaries, sorted by name ascending.
+    """
+
+    items: list[CharacterSummaryItem]
 
 
 @router.post(
@@ -139,6 +187,63 @@ def list_characters(
         items=[CharacterResponse.model_validate(c) for c in page.items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
+    )
+
+
+@router.get(
+    "/characters/summary",
+    response_model=CharactersSummaryResponse,
+    status_code=200,
+    summary="Characters summary — compact PC overview",
+    description=(
+        "Returns a compact list of all active full (PC-level) characters with "
+        "their current meter values: stress, free_time, plot, and gnosis.  "
+        "Soft-deleted characters and simplified (NPC) characters are excluded.  "
+        "Results are sorted by name ascending.  "
+        "Available to any authenticated user (player or GM)."
+    ),
+)
+def characters_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CharactersSummaryResponse:
+    """Return compact summaries of all active PCs.
+
+    Queries for all non-deleted full characters and returns a minimal
+    subset of fields — just the four meter columns plus id and name.
+    Nullable meter columns are coerced to 0 so the client always receives
+    integer values.
+
+    Args:
+        current_user: Authenticated user (any role).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``CharactersSummaryResponse`` with one ``CharacterSummaryItem`` per
+        active full character, ordered by name ascending.
+    """
+    stmt = (
+        select(Character)
+        .where(
+            Character.detail_level == "full",
+            Character.is_deleted == False,  # noqa: E712
+        )
+        .order_by(Character.name.asc())
+    )
+    characters = db.scalars(stmt).all()
+
+    return CharactersSummaryResponse(
+        items=[
+            CharacterSummaryItem(
+                id=c.id,
+                name=c.name,
+                stress=c.stress or 0,
+                free_time=c.free_time or 0,
+                plot=c.plot or 0,
+                gnosis=c.gnosis or 0,
+            )
+            for c in characters
+        ]
     )
 
 

@@ -407,17 +407,20 @@ class TestRegainGnosisApproval:
 
 
 # ===========================================================================
-# recharge_trait
+# recharge_trait — now a direct action (Story 5.5.1)
 # ===========================================================================
+# recharge_trait was converted from a proposal-based downtime action to a
+# direct action in Story 5.5.1.  Submitting it as a proposal is now rejected
+# with 422.  See tests/test_recharge_trait.py for the direct-action tests.
 
 
-class TestRechargeTraitSubmission:
-    """Submission validation for recharge_trait."""
+class TestRechargeTraitProposalRejected:
+    """recharge_trait is no longer a valid proposal action_type (direct action only)."""
 
-    def test_happy_path(
+    def test_proposal_submission_rejected_with_422(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """Valid trait_id returns calculated_effect with charges_restored=5."""
+        """Submitting recharge_trait as a proposal returns 422 (invalid action type)."""
         pc1 = seed_data["pc1"]
         _set_ft(db, pc1, 1)
         trait = _core_trait(db, pc1.id, charge=2)
@@ -426,263 +429,33 @@ class TestRechargeTraitSubmission:
         auth_as(client, seed_data["player1"])
         resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
 
-        assert resp.status_code == 201
-        ce = resp.json()["calculated_effect"]
-        assert ce["trait_id"] == trait.id
-        assert ce["charges_restored"] == 5
-        assert ce["costs"]["free_time"] == 1
-
-    def test_missing_trait_id_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "recharge_trait", {})
-
         assert resp.status_code == 422
-        assert "trait_id" in resp.json()["error"]["details"]["fields"]
-
-    def test_wrong_owner_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1, pc2 = seed_data["pc1"], seed_data["pc2"]
-        _set_ft(db, pc1, 1)
-        # Trait belongs to pc2, not pc1.
-        trait = _core_trait(db, pc2.id, charge=2)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
-
-        assert resp.status_code == 422
-
-    def test_inactive_trait_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        trait = _core_trait(db, pc1.id, is_active=False)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
-
-        assert resp.status_code == 422
-
-    def test_wrong_slot_type_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        """Trying to recharge a pc_bond (not a trait) returns 422."""
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        bond = _pc_bond_slot(db, pc1.id)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": bond.id})
-
-        assert resp.status_code == 422
-
-    def test_missing_ft_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        trait = _core_trait(db, pc1.id)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
-
-        assert resp.status_code == 422
-        assert "free_time" in resp.json()["error"]["details"]["fields"]
-
-
-class TestRechargeTraitApproval:
-    """Approval effects for recharge_trait."""
-
-    def test_charge_set_to_5_on_approval(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        trait = _core_trait(db, pc1.id, charge=1)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        submit_resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
-        assert submit_resp.status_code == 201
-        proposal_id = submit_resp.json()["id"]
-
-        auth_as(client, seed_data["gm"])
-        _approve(client, proposal_id)
-
-        db.expire_all()
-        db.refresh(trait)
-        assert trait.charge == 5
-        assert pc1.free_time == 0
-
-    def test_role_trait_can_be_recharged(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        trait = _role_trait(db, pc1.id, charge=2)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        submit_resp = _post_proposal(client, pc1.id, "recharge_trait", {"trait_id": trait.id})
-        assert submit_resp.status_code == 201
-
-        auth_as(client, seed_data["gm"])
-        _approve(client, submit_resp.json()["id"])
-
-        db.expire_all()
-        db.refresh(trait)
-        assert trait.charge == 5
 
 
 # ===========================================================================
-# maintain_bond
+# maintain_bond — now a direct action (Story 5.5.2)
 # ===========================================================================
+# maintain_bond was converted from a proposal-based downtime action to a
+# direct action in Story 5.5.2.  Submitting it as a proposal is now rejected
+# with 422.  See tests/test_maintain_bond.py for the direct-action tests.
 
 
-class TestMaintainBondSubmission:
-    """Submission validation for maintain_bond."""
+class TestMaintainBondProposalRejected:
+    """maintain_bond is no longer a valid proposal action_type (direct action only)."""
 
-    def test_happy_path(
+    def test_proposal_submission_rejected_with_422(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """Submitting a valid bond_id returns stress_healed in calculated_effect."""
+        """Submitting maintain_bond as a proposal returns 422 (invalid action type)."""
         pc1 = seed_data["pc1"]
         _set_ft(db, pc1, 1)
-        bond = seed_data["pc1_bond"]  # stress=5 from seed data
+        bond = seed_data["pc1_bond"]
         db.commit()
 
         auth_as(client, seed_data["player1"])
         resp = _post_proposal(client, pc1.id, "maintain_bond", {"bond_id": bond.id})
 
-        assert resp.status_code == 201
-        ce = resp.json()["calculated_effect"]
-        assert ce["bond_id"] == bond.id
-        assert ce["stress_healed"] == 5  # bond.stress is 5 in seed data
-        assert ce["costs"]["free_time"] == 1
-
-    def test_missing_bond_id_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "maintain_bond", {})
-
         assert resp.status_code == 422
-        assert "bond_id" in resp.json()["error"]["details"]["fields"]
-
-    def test_wrong_owner_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1, pc2 = seed_data["pc1"], seed_data["pc2"]
-        _set_ft(db, pc1, 1)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        # pc2_bond belongs to pc2, not pc1.
-        resp = _post_proposal(
-            client, pc1.id, "maintain_bond", {"bond_id": seed_data["pc2_bond"].id}
-        )
-
-        assert resp.status_code == 422
-
-    def test_not_pc_bond_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        """Maintaining an npc_bond (not owned by a PC) returns 422."""
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        # Create an npc_bond on pc1 — slot_type is wrong.
-        slot = Slot(
-            slot_type="npc_bond",
-            owner_type="character",
-            owner_id=pc1.id,
-            name="Wrong Type Bond",
-            is_active=True,
-        )
-        db.add(slot)
-        db.flush()
-        db.refresh(slot)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(client, pc1.id, "maintain_bond", {"bond_id": slot.id})
-
-        assert resp.status_code == 422
-
-    def test_missing_ft_returns_422(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        pc1 = seed_data["pc1"]
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        resp = _post_proposal(
-            client, pc1.id, "maintain_bond", {"bond_id": seed_data["pc1_bond"].id}
-        )
-
-        assert resp.status_code == 422
-
-
-class TestMaintainBondApproval:
-    """Approval effects for maintain_bond."""
-
-    def test_bond_stress_reset_to_0_on_approval(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        """Bond stress is reset to 0 on approval."""
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        bond = _pc_bond_slot(db, pc1.id, stress=3)
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        submit_resp = _post_proposal(client, pc1.id, "maintain_bond", {"bond_id": bond.id})
-        assert submit_resp.status_code == 201
-        proposal_id = submit_resp.json()["id"]
-
-        auth_as(client, seed_data["gm"])
-        _approve(client, proposal_id)
-
-        db.expire_all()
-        db.refresh(bond)
-        assert bond.stress == 0
-        assert pc1.free_time == 0
-
-    def test_degradations_not_reversed(
-        self, client: TestClient, db: Session, seed_data: dict
-    ) -> None:
-        """Bond degradations are NOT reversed by maintain_bond."""
-        pc1 = seed_data["pc1"]
-        _set_ft(db, pc1, 1)
-        bond = _pc_bond_slot(db, pc1.id, stress=2)
-        bond.stress_degradations = 2  # pre-existing degradations
-        db.flush()
-        db.commit()
-
-        auth_as(client, seed_data["player1"])
-        submit_resp = _post_proposal(client, pc1.id, "maintain_bond", {"bond_id": bond.id})
-        assert submit_resp.status_code == 201
-
-        auth_as(client, seed_data["gm"])
-        _approve(client, submit_resp.json()["id"])
-
-        db.expire_all()
-        db.refresh(bond)
-        assert bond.stress == 0
-        assert bond.stress_degradations == 2  # unchanged
 
 
 # ===========================================================================

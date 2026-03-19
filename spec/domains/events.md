@@ -118,7 +118,7 @@ Convention-based strings following `{domain}.{action}` naming. NPCs use `charact
 | `group` | `group.created`, `group.updated`, `group.bond_changed` |
 | `location` | `location.created`, `location.updated` |
 | `story` | `story.created`, `story.updated` |
-| `player` | `player.find_time` |
+| `player` | `player.find_time`, `player.recharge_trait`, `player.maintain_bond` |
 | `character` | `character.resolve_trauma_generated` |
 
 No category field — the domain prefix provides natural grouping. New types can be added without schema changes.
@@ -206,6 +206,8 @@ Event visibility uses the **unified 7-level visibility model** defined in [feed.
 | `story.*` | `bonded` | Story object mutations visible to bonded entities |
 | GM-initiated domain events | Per action type default | GM actions reuse domain event types (e.g., `character.stress_changed`) with `actor_type: "gm"`. Default visibility per action type — see [actions.md](actions.md). |
 | `player.find_time` | `private` | Resource conversion is personal |
+| `player.recharge_trait` | `private` | Trait maintenance is personal |
+| `player.maintain_bond` | `private` | Bond maintenance is personal |
 
 ### GM Override
 
@@ -231,7 +233,7 @@ Events are created by:
 - **Rejected proposals**: A `proposal.rejected` event is created (private visibility)
 - **Revised proposals**: A `proposal.revised` event is created (private visibility)
 - **GM direct actions**: Any GM state change produces an event
-- **Player direct actions**: Find Time, Magic Effect use/retirement produce events
+- **Player direct actions**: Find Time, Magic Effect use/retirement, Recharge Trait, Maintain Bond produce events
 - **Session start**: Produces 3 separate events — `session.started` (global), `session.ft_distributed` (silent), `session.plot_distributed` (silent)
 - **Session end**: Produces a `session.ended` event (global)
 - **Clock completion**: System detects completion, produces `clock.completed` event (bonded) and auto-generates a `resolve_clock` proposal with a `clock.resolve_generated` event (silent)
@@ -499,4 +501,4 @@ _None — all questions resolved during 2026-03-12 interrogation._
 
 ---
 
-_Last updated: 2026-03-16 (verified against Phase 4 implementation: clarified that GET /events/{id} returns 404 for silent events for all callers including the GM — silent events are only accessible via the dedicated silent feed endpoint. Updated 2026-03-16: added session.participant_added default visibility (global) — verified against Story 5.1.2 implementation.)_
+_Last updated: 2026-03-18 (added player.recharge_trait and player.maintain_bond to the event type catalog with private default visibility — implemented in Epic 5.5 Stories 5.5.1 and 5.5.2. Previous: 2026-03-16 verified against Phase 4 implementation.)_

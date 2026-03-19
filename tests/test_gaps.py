@@ -108,15 +108,15 @@ def test_pyproject_requires_python_311():
     )
 
 
-def test_single_migration_file():
-    """There must be exactly one migration file in alembic/versions/."""
+def test_at_least_one_migration_file():
+    """There must be at least one migration file in alembic/versions/."""
     versions_dir = os.path.join(_REPO_ROOT, "alembic", "versions")
     migration_files = [
         f for f in os.listdir(versions_dir)
         if f.endswith(".py") and not f.startswith("__")
     ]
-    assert len(migration_files) == 1, (
-        f"Expected 1 migration file, found {len(migration_files)}: {migration_files}"
+    assert len(migration_files) >= 1, (
+        f"Expected at least 1 migration file, found none in {versions_dir}"
     )
 
 

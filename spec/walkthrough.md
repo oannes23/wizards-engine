@@ -203,7 +203,7 @@ Only one session can be Active at a time. The session is now live.
 
 During the session, your character tries to sneak past guards. At the table, you describe what you're doing. Then you formalize it in the system.
 
-**You submit a proposal** (`POST /api/v1/proposals`):
+**You submit a proposal** (`POST /api/v1/proposals`). Note: for session actions (`use_skill`, `use_magic`, `charge_magic`), the narrative is **optional** — you can add it later via PATCH. But let's include one here:
 ```json
 {
   "character_id": "01HKAEL...",
@@ -358,7 +358,9 @@ If you no longer want an effect, you can self-retire it (`POST /characters/{id}/
 
 You have 7 FT. Downtime proposals can be submitted anytime you have FT — there's no "downtime mode."
 
-**All downtime actions require a narrative** — a description of what your character is doing in the fiction to accomplish this. Even mundane activities need at least a sentence ("slept all day", "meditated by the canal"). The narrative is the proposal's `narrative` field and becomes part of the event log.
+**All downtime proposals require a narrative** — a description of what your character is doing in the fiction to accomplish this. Even mundane activities need at least a sentence ("slept all day", "meditated by the canal"). The narrative is the proposal's `narrative` field and becomes part of the event log.
+
+Note: **Recharge Trait** and **Maintain Bond** are now **direct player actions** — they don't go through the proposal queue. You trigger them directly from your character sheet, write a brief narrative, and they resolve immediately. They still cost 1 FT each.
 
 **Rest** (heal stress):
 ```json
@@ -370,15 +372,15 @@ You have 7 FT. Downtime proposals can be submitted anytime you have FT — there
 ```
 Calculated: 3 base + 1 (Bond modifier) = 4 Stress healed. Costs 1 FT.
 
-**Recharge Trait** (restore charges):
+**Recharge Trait** (direct action — restore charges):
+`POST /api/v1/characters/{id}/recharge-trait`:
 ```json
 {
-  "action_type": "recharge_trait",
-  "narrative": "Kael spends the morning running the rooftop circuit — the old training route from when he first learned to move.",
-  "details": { "trait_instance_id": "01HGUTTER..." }
+  "trait_instance_id": "01HGUTTER...",
+  "narrative": "Kael spends the morning running the rooftop circuit — the old training route from when he first learned to move."
 }
 ```
-"Gutter Runner" charges: 4 → 5. Costs 1 FT.
+"Gutter Runner" charges: 4 → 5. Costs 1 FT. No GM approval needed — resolves immediately.
 
 **Regain Gnosis** (recover magical energy):
 ```json
@@ -390,15 +392,15 @@ Calculated: 3 base + 1 (Bond modifier) = 4 Stress healed. Costs 1 FT.
 ```
 Calculated: 3 base + 0 (lowest Magic Stat = Wyrding 0) + 2 (modifiers) = 5 Gnosis regained. Costs 1 FT.
 
-**Maintain Bond** (heal bond stress):
+**Maintain Bond** (direct action — restore bond charges):
+`POST /api/v1/characters/{id}/maintain-bond`:
 ```json
 {
-  "action_type": "maintain_bond",
-  "narrative": "Kael walks the old paths through the Warrens alone, remembering why this place matters.",
-  "details": { "bond_instance_id": "01HWARRENS..." }
+  "bond_instance_id": "01HWARRENS...",
+  "narrative": "Kael walks the old paths through the Warrens alone, remembering why this place matters."
 }
 ```
-The Warrens bond stress → 0. Costs 1 FT.
+The Warrens bond charges → effective max. Costs 1 FT. No GM approval needed — resolves immediately.
 
 **New Bond** (add or replace):
 ```json
@@ -423,9 +425,9 @@ You have 4/8 bonds, so this fills a blank slot (no `retire_bond_id` needed). Cos
 ```
 Adds your narrative as an entry to the Story. The GM resolves skill-ups when the fiction warrants it. Costs 1 FT.
 
-All of these go through the proposal workflow — GM reviews and approves each one.
+Rest, Regain Gnosis, New Bond, New Trait, and Work on Project go through the proposal workflow — GM reviews and approves each one. Recharge Trait and Maintain Bond are direct actions that resolve immediately.
 
-> **Spec refs**: [actions.md](domains/actions.md) — Downtime Actions; [downtime.md](domains/downtime.md) — No Downtime Mode
+> **Spec refs**: [actions.md](domains/actions.md) — Downtime Actions, Player Direct Actions; [downtime.md](domains/downtime.md) — No Downtime Mode
 
 ---
 
@@ -994,4 +996,4 @@ GET /api/v1/characters
 
 ---
 
-_Last updated: 2026-03-14_
+_Last updated: 2026-03-18 (Phase 6 UX spec changes: session action narrative now optional; recharge_trait and maintain_bond updated to direct player actions)_

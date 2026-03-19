@@ -56,15 +56,46 @@ This directory contains one specification file per Epic, organized by the 6-phas
 
 | Epic | File | Stories | Depends On | Blocks |
 |------|------|---------|------------|--------|
-| **5.1** — Session Lifecycle | [phase5-session-lifecycle.md](phase5-session-lifecycle.md) | 5 | Phase 4 | Phase 6 |
+| **5.1** — Session Lifecycle | [phase5-session-lifecycle.md](phase5-session-lifecycle.md) | 5 | Phase 4 | Phase 5.5 |
 
 **Parallelism**: Sequential — tightly coupled stories.
 
 ---
 
+## Phase 5.5: API Additions (Pre-UI Backend Work)
+
+| Epic | File | Stories | Depends On | Blocks |
+|------|------|---------|------------|--------|
+| **5.5** — Pre-UI API Additions | [phase55-api-additions.md](phase55-api-additions.md) | 6 | Phases 3–5 | Phase 6 |
+
+Backend API additions required before the Web UI. Six independent stories: two new direct player actions (`recharge_trait`, `maintain_bond`), one schema change (nullable narrative), and three new endpoints (GM dashboard, batch actions, characters summary). All follow established patterns from Phases 1–5.
+
+**Parallelism**: All 6 stories are independent — max parallelism = 6.
+
+**Per-story dependency arrows**:
+- 5.5.1 Recharge Trait → blocks 6.2.3 (direct action buttons)
+- 5.5.2 Maintain Bond → blocks 6.2.3 (direct action buttons)
+- 5.5.3 Nullable Narrative → blocks 6.3.1 (proposal submission)
+- 5.5.4 GM Dashboard → blocks 6.5.1 (GM dashboard view)
+- 5.5.5 Batch Actions → blocks 6.5.4 (GM direct actions form)
+- 5.5.6 Characters Summary → blocks 6.5.1 (GM dashboard view)
+
+---
+
 ## Phase 6: Web UI
 
-Not broken down here. UI epics will be planned separately once the API is complete.
+| Epic | File | Stories | Depends On | Blocks |
+|------|------|---------|------------|--------|
+| **6.1** — SPA Foundation & Auth | [phase6-spa-foundation.md](phase6-spa-foundation.md) | 5 | Phase 5 | 6.2–6.6 |
+| **6.2** — Player Character & Direct Actions | [phase6-player-character.md](phase6-player-character.md) | 4 | 6.1, 5.5.1, 5.5.2 | 6.6 |
+| **6.3** — Proposal System | [phase6-proposal-system.md](phase6-proposal-system.md) | 5 | 6.1, 5.5.3 | 6.5, 6.6 |
+| **6.4** — World Browser & Feed | [phase6-world-browser.md](phase6-world-browser.md) | 4 | 6.1 | 6.6 |
+| **6.5** — GM Tools & Session Management | [phase6-gm-tools.md](phase6-gm-tools.md) | 5 | 6.1, 6.3, 5.5.4–6 | 6.6 |
+| **6.6** — Polish & Integration | [phase6-polish.md](phase6-polish.md) | 3 | 6.2–6.5 | — |
+
+**Parallelism**: Epics 6.2, 6.3, and 6.4 can run in parallel after 6.1 completes (max 3 parallel tracks). 6.5 waits for 6.3 (GM queue component). 6.6 waits for all.
+
+**Critical path**: 6.1 → 6.3 → 6.5 → 6.6
 
 ---
 
@@ -90,16 +121,37 @@ Phase 4 (1 then 2 parallel, then merge)
 
 Phase 5 (sequential)
   5.1 Session Lifecycle
+
+Phase 5.5 (all 6 stories parallel)
+  5.5.1 Recharge Trait ─────────────────────────> 6.2 (direct action buttons)
+  5.5.2 Maintain Bond  ─────────────────────────> 6.2 (direct action buttons)
+  5.5.3 Nullable Narrative ─────────────────────> 6.3 (proposal submission)
+  5.5.4 GM Dashboard  ──────────────────────────> 6.5 (GM dashboard view)
+  5.5.5 Batch Actions  ─────────────────────────> 6.5 (GM direct actions form)
+  5.5.6 Char Summary  ──────────────────────────> 6.5 (GM dashboard view)
+
+Phase 6 (3 parallel tracks, then merge)
+  6.1 SPA Foundation ──┬──> 6.2 Player Character ─────────┐
+                       ├──> 6.3 Proposals ─────────────────┤
+                       ├──> 6.4 World & Feed ──────────────┤
+                       │                                    │
+                       └──> 6.5 GM Tools <── 5.5.4/5/6 ───┤
+                              │                             │
+                       ┌──────┘                             │
+                       ▼                                    │
+                    6.6 Polish <────────────────────────────┘
 ```
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Phases | 5 (+ Phase 6 UI deferred) |
-| Epics | 13 |
-| Stories | 46 |
-| Max parallel tracks | 2 |
+| Phases | 5 complete + Phase 5.5 complete + Phase 6 |
+| Epics | 14 complete + 6 new (6 frontend) |
+| Stories | 52 complete + 26 new (26 frontend) |
+| Max parallel tracks | 3 (Epics 6.2, 6.3, 6.4 after 6.1) |
+| Estimated new backend tests | ~73 (across Phase 5.5) |
+| Frontend test approach | Manual + browser dev tools (per spec) |
 
 ---
 
@@ -120,3 +172,10 @@ Phase 5 (sequential)
 | 4.3 — Proposal Workflow | 🟢 Complete | 5/5 |
 | 4.4 — Feed System | 🟢 Complete | 4/4 |
 | 5.1 — Session Lifecycle | 🟢 Complete | 5/5 |
+| 5.5 — Pre-UI API Additions | 🟢 Complete | 6/6 |
+| 6.1 — SPA Foundation & Auth | 🔴 Not started | 0/5 |
+| 6.2 — Player Character & Direct Actions | 🔴 Not started | 0/4 |
+| 6.3 — Proposal System | 🔴 Not started | 0/5 |
+| 6.4 — World Browser & Feed | 🔴 Not started | 0/4 |
+| 6.5 — GM Tools & Session Management | 🔴 Not started | 0/5 |
+| 6.6 — Polish & Integration | 🔴 Not started | 0/3 |

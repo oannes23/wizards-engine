@@ -173,7 +173,7 @@ Phase 6 (3 parallel tracks, then merge)
 | 4.4 — Feed System | 🟢 Complete | 4/4 |
 | 5.1 — Session Lifecycle | 🟢 Complete | 5/5 |
 | 5.5 — Pre-UI API Additions | 🟢 Complete | 6/6 |
-| 6.1 — SPA Foundation & Auth | 🔴 Not started | 0/5 |
+| 6.1 — SPA Foundation & Auth | 🟢 Complete | 5/5 |
 | 6.2 — Player Character & Direct Actions | 🔴 Not started | 0/4 |
 | 6.3 — Proposal System | 🔴 Not started | 0/5 |
 | 6.4 — World Browser & Feed | 🔴 Not started | 0/4 |

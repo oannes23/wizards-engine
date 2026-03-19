@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-18
-**Last verified**: —
+**Last verified**: 2026-03-18 (Epic 6.1 — SPA Foundation & Auth)
 **Depends on**: [auth](auth.md), [actions](actions.md), [feed](feed.md), [character-core](character-core.md), [game-objects](game-objects.md), [downtime](downtime.md), [events](events.md)
 **Depended on by**: None (terminal consumer)
 
@@ -526,7 +526,7 @@ Rationale for promotions: These are fixed-outcome, predictable actions. Routing 
 ## J. Static File Structure
 
 ```
-src/static/
+src/wizards_engine/static/
 ├── index.html              # SPA shell — Pico CSS, Alpine.js, router bootstrap
 ├── css/
 │   ├── pico.min.css        # Pico CSS v2 (vendored)
@@ -557,10 +557,10 @@ src/static/
 ```python
 from fastapi.staticfiles import StaticFiles
 
-app.mount("/static", StaticFiles(directory="src/static"), name="static")
+app.mount("/static", StaticFiles(directory="src/wizards_engine/static"), name="static")
 ```
 
-The `index.html` SPA shell is served for all non-API routes (catch-all route or middleware that serves `index.html` for paths not matching `/api/`).
+Static files are co-located inside the Python package at `src/wizards_engine/static/` rather than a top-level `src/static/` directory. The `index.html` SPA shell is served by explicit FastAPI routes for `GET /`, `GET /login/{code}`, and `GET /setup` — not by a wildcard catch-all or middleware. This preserves `/docs`, `/redoc`, and all `/api/` routes without any special exclusion logic.
 
 ---
 
@@ -625,6 +625,30 @@ The `index.html` SPA shell is served for all non-API routes (catch-all route or 
 - **Decision**: Session action proposals (`use_skill`, `use_magic`, `charge_magic`) accept nullable `narrative`. Players can PATCH narrative onto pending proposals later. Downtime actions still require narrative.
 - **Rationale**: At the table, the action happens verbally and physically. Requiring typed narrative before submission slows the flow. Players can add it between turns or after the session.
 - **Implications**: Submission validation relaxed for 3 action types. PATCH endpoint already supports narrative updates.
+
+### Hash Router — Static vs Parameterized Routes
+
+- **Decision**: The hash router uses exact-match for static routes in Epic 6.1. Parameterized routes (e.g., `#/world/characters/:id`, `#/proposals/:id`) will require pattern-matching logic added in later stories (6.2–6.5).
+- **Rationale**: Epic 6.1 establishes the routing shell with placeholder views for all known static routes. Parameterized matching is deferred to the stories that implement those views.
+- **Implications**: Route table entries for parameterized routes must be updated when the corresponding view stories are implemented.
+
+### Alpine Store — isGm as Method
+
+- **Decision**: `isGm` is implemented as a method on the Alpine store, not a getter property, due to Alpine v3 not supporting computed properties directly on `Alpine.store()`.
+- **Rationale**: Alpine v3 store objects do not have a reactive getter mechanism. A method call (`$store.auth.isGm()`) achieves the same result.
+- **Implications**: Templates and components must call `$store.auth.isGm()` with parentheses rather than referencing `$store.auth.isGm` as a property.
+
+### Polling Resume — Immediate Fetch
+
+- **Decision**: When the browser tab becomes visible again after being hidden, polling fires an immediate fetch before restarting interval timers.
+- **Rationale**: If the tab was hidden for a full polling interval, data could be up to 2x the interval stale before the next scheduled poll. An immediate fetch on resume keeps data fresh.
+- **Implications**: Resume logic calls each registered poll's callback once synchronously (or immediately async) before re-establishing the interval. Poll errors on resume are handled the same way as scheduled poll errors — logged to console, not fatal.
+
+### Auth Views — sessionStorage for Invite Code Handoff
+
+- **Decision**: Auth views use `sessionStorage` to hand off the invite code between the login view and the join view. When `/login/{code}` detects an invite-type response, the code is written to `sessionStorage` before navigating to `#/join`.
+- **Rationale**: The hash router navigates between views without a page reload. The code cannot be passed in the hash fragment without exposing it in browser history. `sessionStorage` is cleared when the tab closes, limiting exposure.
+- **Implications**: The join view reads the invite code from `sessionStorage` on mount and clears it after use. If `sessionStorage` is empty when `#/join` loads, the user is redirected to `#/login`.
 
 ---
 

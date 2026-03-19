@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wizards Engine</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <link rel="stylesheet" href="/static/css/app.css" />
+  </head>
+  <body>
+    <!-- API error toast — shown on api:error event, hidden by default -->
+    <div id="api-toast" role="alert" aria-live="assertive" hidden>
+      <span id="api-toast-message"></span>
+      <button id="api-toast-close" aria-label="Dismiss">&#x2715;</button>
+    </div>
+
+    <main class="container" x-data>
+      <!-- Router renders the current view here -->
+      <div id="view"></div>
+    </main>
+
+    <!-- Bottom navigation bar (mobile) / top bar (desktop).
+         Hidden by default; nav.js shows it once the user is authenticated
+         and not on a login/setup route. -->
+    <div id="nav-container" hidden></div>
+
+    <!-- Load order: Alpine (CDN) → api → store → router → components → app -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
+      defer
+    ></script>
+    <script src="/static/js/api.js" defer></script>
+    <script src="/static/js/store.js" defer></script>
+    <script src="/static/js/router.js" defer></script>
+    <script src="/static/js/views/login.js" defer></script>
+    <script src="/static/js/views/setup.js" defer></script>
+    <script src="/static/js/views/join.js" defer></script>
+    <script src="/static/js/components/nav.js" defer></script>
+    <script src="/static/js/app.js" defer></script>
+  </body>
+</html>

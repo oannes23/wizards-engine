@@ -1,0 +1,165 @@
+/* Wizards Engine — custom styles extending Pico CSS v2 */
+
+:root {
+  --we-stress-red: #c0392b;
+  --we-gnosis-blue: #2980b9;
+  --we-ft-green: #27ae60;
+  --we-plot-amber: #f39c12;
+}
+
+/* ---------------------------------------------------------------------------
+   Navigation — mobile bottom bar (default) + desktop top bar
+   --------------------------------------------------------------------------- */
+
+/*
+ * nav-container wraps the <nav> element.
+ * On mobile: fixed to the bottom of the viewport.
+ * On desktop (>= 768px): fixed to the top of the viewport.
+ */
+#nav-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+#nav-container[hidden] {
+  display: none;
+}
+
+/* The <nav> element itself */
+#app-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background-color: var(--pico-background-color, #1a1a2e);
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+  width: 100%;
+}
+
+/* Individual tab links */
+.nav-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;   /* touch target >= 44px */
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--pico-muted-color, #aaa);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+}
+
+/* Active tab */
+.nav-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+}
+
+/* GM-character secondary link — slightly de-emphasised */
+.nav-tab--secondary {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  padding: 0.5rem 0.5rem;
+  color: var(--pico-muted-color, #aaa);
+  opacity: 0.75;
+}
+
+.nav-tab--secondary.nav-tab--active {
+  opacity: 1;
+}
+
+/* Add bottom padding to <main> so content is not hidden behind the bottom bar */
+main.container {
+  padding-bottom: 60px;
+}
+
+/* ---------------------------------------------------------------------------
+   API error toast / banner
+   --------------------------------------------------------------------------- */
+
+#api-toast {
+  position: fixed;
+  bottom: calc(60px + 1rem); /* above the mobile bottom nav bar */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--we-stress-red);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-size: 0.9rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Desktop breakpoint (>= 768px): move nav to top bar
+   --------------------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  #nav-container {
+    bottom: auto;
+    top: 0;
+    border-bottom: 1px solid var(--pico-muted-border-color, #333);
+  }
+
+  #app-nav {
+    border-top: none;
+    border-bottom: none;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .nav-tab {
+    font-size: 0.875rem;
+    min-height: 48px;
+    padding: 0.5rem 1rem;
+    border-bottom: 2px solid transparent;
+    border-top: none;
+  }
+
+  .nav-tab--active {
+    border-bottom-color: var(--pico-primary, #7c6aff);
+  }
+
+  /* Restore normal bottom padding; add top padding to clear the top bar */
+  main.container {
+    padding-bottom: 1rem;
+    padding-top: 60px;
+  }
+
+  /* Move toast to bottom on desktop (no bottom nav bar) */
+  #api-toast {
+    bottom: 1rem;
+  }
+}
+
+#api-toast[hidden] {
+  display: none;
+}
+
+#api-toast-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}

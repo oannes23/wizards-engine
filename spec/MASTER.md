@@ -168,7 +168,7 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 4 | 4.4 — Feed System | [phase4-feed-system.md](implementation/phase4-feed-system.md) | 4 | 🟢 |
 | 5 | 5.1 — Session Lifecycle | [phase5-session-lifecycle.md](implementation/phase5-session-lifecycle.md) | 5 | 🟢 |
 | 5.5 | 5.5 — Pre-UI API Additions | [phase55-api-additions.md](implementation/phase55-api-additions.md) | 6 | 🟢 |
-| 6 | 6.1 — SPA Foundation & Auth | [phase6-spa-foundation.md](implementation/phase6-spa-foundation.md) | 5 | 🔴 |
+| 6 | 6.1 — SPA Foundation & Auth | [phase6-spa-foundation.md](implementation/phase6-spa-foundation.md) | 5 | 🟢 |
 | 6 | 6.2 — Player Character & Direct Actions | [phase6-player-character.md](implementation/phase6-player-character.md) | 4 | 🔴 |
 | 6 | 6.3 — Proposal System | [phase6-proposal-system.md](implementation/phase6-proposal-system.md) | 5 | 🔴 |
 | 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🔴 |
@@ -706,4 +706,4 @@ See [glossary.md](glossary.md) for canonical definitions of all terms.
 ---
 
 ## Last Updated
-_2026-03-18 — Epic 5.5 (Pre-UI API Additions) complete: all 6 stories done. events.md updated with player.recharge_trait and player.maintain_bond event types. Implementation index updated: 14 complete epics, 52 complete stories. Previous: Implementation epics and stories created for Phase 5.5 (1 epic, 6 stories) and Phase 6 (6 epics, 26 stories)._
+_2026-03-18 — Epic 6.1 (SPA Foundation & Auth) complete: all 5 stories done. Phase 6 Web UI implementation has begun. web-ui.md verified against implementation with notes on static file path, hash router pattern-matching, Alpine store isGm method, polling resume behavior, and sessionStorage invite code handoff. Previous: Epic 5.5 (Pre-UI API Additions) complete: all 6 stories done._

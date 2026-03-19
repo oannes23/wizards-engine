@@ -17,11 +17,11 @@ Build the single-page application shell: static file serving from FastAPI, Alpin
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 6.1.1 — Static File Serving + SPA Shell | 🔴 Not started | — |
-| 6.1.2 — API Client + Hash Router + Alpine Store | 🔴 Not started | — |
-| 6.1.3 — Auth Flows (Login, Join, Setup, 401 Redirect) | 🔴 Not started | — |
-| 6.1.4 — Navigation Shell (Player Tabs, GM Tabs, Responsive) | 🔴 Not started | — |
-| 6.1.5 — Polling Infrastructure + Visibility-Change Pause | 🔴 Not started | — |
+| 6.1.1 — Static File Serving + SPA Shell | 🟢 Complete | 2026-03-18 |
+| 6.1.2 — API Client + Hash Router + Alpine Store | 🟢 Complete | 2026-03-18 |
+| 6.1.3 — Auth Flows (Login, Join, Setup, 401 Redirect) | 🟢 Complete | 2026-03-18 |
+| 6.1.4 — Navigation Shell (Player Tabs, GM Tabs, Responsive) | 🟢 Complete | 2026-03-18 |
+| 6.1.5 — Polling Infrastructure + Visibility-Change Pause | 🟢 Complete | 2026-03-18 |
 
 ### Story 6.1.1 — Static File Serving + SPA Shell
 

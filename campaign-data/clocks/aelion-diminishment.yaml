@@ -1,0 +1,14 @@
+name: Aelion's Diminishment
+segments: 8
+progress: 5
+associated_with:
+  type: character
+  name: Aelion
+notes: >
+  Tracks how close Aelion is to dissolution. Each segment represents a
+  meaningful reduction in his divine presence: reduced river flow, weakened
+  oath-witnessing capacity, failing ability to communicate through dreams.
+  At segment 8, Aelion ceases to exist as a divine entity. Current rate
+  of progress is roughly one segment per month as the Iron Works expand
+  their water diversion. Reversing progress requires restoring river flow
+  and performing the restoration ritual at the ford.

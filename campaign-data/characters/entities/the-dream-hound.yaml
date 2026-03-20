@@ -1,0 +1,25 @@
+name: The Dream Hound
+detail_level: simplified
+description: >
+  A chthonic entity that patrols the border between the dream realm and waking
+  sleep — part of Hypnos's household, though not directly under his control.
+  It appears in dreams as an enormous dark hound with eyes that reflect scenes
+  from the dreamer's past. Enyo encountered it during a nightmare three sessions
+  ago; it has been following her through the dream border since, apparently
+  drawn by the divine-suppression compounds in her poison kit. Dream Hounds
+  are territorial but not aggressive unless provoked. This one seems curious
+  rather than hostile.
+attributes:
+  classification: chthonic boundary entity (Hypnos household, feral)
+  domain: dream-waking border patrol
+bonds:
+  - name: Curious Following
+    target:
+      type: character
+      name: Enyo
+    description: Drawn by her divine-suppression compounds. Following without apparent hostile intent.
+  - name: Domain Attachment
+    target:
+      type: location
+      name: The Dream Road
+    description: Patrols this border region as part of its natural territory.

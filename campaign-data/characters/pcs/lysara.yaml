@@ -1,0 +1,131 @@
+name: Lysara
+detail_level: full
+description: >
+  A half-mortal seeress from the hill-shrine of Argos whose prophetic visions
+  are mediated through involuntary possession trances. She was trained by the
+  Chorus of Fates — a secret society of oracular women — before a political
+  purge scattered them. Lysara survived by selling ambiguous futures to wealthy
+  patrons, but her true gift is reading the divine machinery operating behind
+  mortal events. She detects the presence of divine manipulation through a
+  sensation of harmonic resonance, as though two voices are singing slightly
+  out of tune.
+notes: >
+  Detection method: harmonic resonance — perceives divine overlay as a slight
+  pitch-dissonance sensation in her chest. The oracle trance is involuntary
+  and leaves her briefly blind. Currently investigating why the Chorus was
+  purged and whether the Iron Compact was behind it. Has a complicated history
+  with Drakos of the Iron Compact who once protected her before she refused
+  his marriage proposal.
+secrets: >
+  True lineage: Lysara's father was not the Argos shepherd she was told.
+  Her actual father was a minor sea-god — which explains the depth of her
+  prophetic ability, but also means the Iron Compact's interest in her may
+  be about extracting ichor rather than her oracle skills.
+
+  The Chorus: Lysara knows where the other surviving Chorus members are
+  hiding — she has deliberately concealed this from the group to protect them.
+  She fears that once the main plot resolves, her companions may not see
+  the Chorus's survival as worth protecting.
+attributes:
+  magic_detection: harmonic resonance dissonance
+  oracle_patron: The Fates (Moirai)
+  notable_items:
+    - Copper bowl used for smoke-scrying
+    - Sealed letter from her dead mentor
+meters:
+  stress: 2
+  free_time: 4
+  plot: 3
+  gnosis: 4
+skills:
+  awareness: 3
+  composure: 2
+  influence: 2
+  finesse: 1
+  speed: 1
+  power: 1
+  knowledge: 3
+  technology: 0
+magic_stats:
+  being: {level: 1, xp: 2}
+  wyrding: {level: 2, xp: 0}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 1, xp: 0}
+  dreaming: {level: 1, xp: 0}
+core_traits:
+  - template: Seer
+    charge: 4
+  - template: Oath-Keeper
+    charge: 5
+role_traits:
+  - template: Dream-Walker
+    charge: 3
+bonds:
+  - name: Fellow Wanderer
+    target:
+      type: group
+      name: The Scattered Chorus
+    description: Surviving member; carries the Chorus's oaths and practices forward.
+    charges: 5
+  - name: Uneasy Alliance
+    target:
+      type: character
+      name: Theron
+    description: >
+      Theron's blunt heroism grates on Lysara's patience but she trusts his
+      instincts in a fight. They argue about prophecy — he wants actionable
+      intelligence, she gives riddles.
+    charges: 4
+  - name: Recruited Contact
+    target:
+      type: character
+      name: Enyo
+    description: >
+      Lysara recruited Enyo from Troikas with a vision of shared fate. She
+      feels responsible for pulling Enyo into this danger.
+    charges: 4
+  - name: Complicated History
+    target:
+      type: character
+      name: Drakos
+    description: >
+      Former protector turned adversary. Drakos once sheltered Lysara from the
+      Chorus purge; she rejected his subsequent proposal. He now serves the
+      Iron Compact that destroyed her order.
+    charges: 2
+    degradations: 2
+    is_trauma: false
+  - name: Sworn to Illuminate
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: >
+      Lysara has sworn to report what she learns to the Keepers, who preserve
+      divine knowledge against the Iron Compact's revisionism.
+    charges: 4
+magic_effects:
+  - name: Oracle Trance
+    description: >
+      Involuntary prophetic possession state — Lysara's eyes roll back and the
+      Moirai speak through her in verse. She is briefly blind during and after.
+      The vision is always true but rarely clear. Others perceive this as
+      disturbing to witness; divine beings recognize it instantly.
+    effect_type: permanent
+    power_level: 3
+  - name: Fate-Thread Sight
+    description: >
+      In moments of stillness, Lysara can perceive the visible threads of
+      obligation, oath, and fate binding nearby figures. She cannot alter them
+      but she can read what they mean — who is bound to whom, what debts are
+      outstanding. Useful for navigating divine politics.
+    effect_type: instant
+    power_level: 2
+  - name: Dream Passage
+    description: >
+      Lysara can enter the dream of a sleeping person, move through the Hypnos
+      realm, and surface in another sleeper's dream up to a day's journey away.
+      She must know both dreamers personally. Used twice so far to ferry
+      messages between Chorus survivors.
+    effect_type: charged
+    power_level: 3
+    charges: {current: 2, max: 3}

@@ -1,0 +1,6 @@
+name: The Order
+tier: 2
+description: A secretive society that maintains balance between factions.
+traits:
+  - name: Ancient Rites
+    description: Deep knowledge of pre-modern ritual practices.

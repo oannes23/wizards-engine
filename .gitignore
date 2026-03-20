@@ -212,3 +212,6 @@ __marimo__/
 *.db
 *.db-shm
 *.db-wal
+
+# Real campaign data (private, not committed)
+wizards-campaign-data/

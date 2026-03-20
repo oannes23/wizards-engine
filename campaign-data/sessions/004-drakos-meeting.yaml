@@ -1,0 +1,23 @@
+number: 4
+status: ended
+time_now: 5
+date: "2026-02-21"
+summary: >
+  Drakos initiates contact — he knows the group is in Argos and requests a
+  meeting. Lysara and Enyo go; Theron waits outside. Drakos is surprisingly
+  direct: he tells Lysara the Compact knows where most of the surviving Chorus
+  members are, that her current activities will accelerate any action against
+  them, and that his offer of protection (via joining the Compact's information
+  arm) remains open. Lysara refuses. The conversation is civilized and terrible.
+  Drakos specifically does not mention Enyo's presence or her poison craft;
+  this omission seems deliberate. Myrtos is present at the meeting but says
+  nothing. Outside afterward, Enyo tells Lysara that Myrtos approached her
+  in Troikas before her exile. Neither had told the other. The night ends with
+  the group realizing they need to move faster.
+participants:
+  - character: "Lysara"
+    additional_contribution: false
+  - character: "Theron"
+    additional_contribution: false
+  - character: "Enyo"
+    additional_contribution: true

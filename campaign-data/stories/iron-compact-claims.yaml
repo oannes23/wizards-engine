@@ -1,0 +1,62 @@
+name: The Iron Compact's Divine Claims
+summary: >
+  The Iron Compact has filed formal claims with the Olympian Assembly asserting
+  that their patron deity Iron Voice supersedes older divine contracts in the
+  Argos region — which would legally allow them to void the existing oracle
+  oaths, water compacts, and mortal-divine agreements that structure the
+  territory. The Keepers of the Sacred Fire have filed counter-documentation.
+  The Assembly is reviewing. If the Compact's claims succeed, it creates a
+  legal framework for erasing the older divine-mortal relationship network
+  across the entire Known World.
+status: active
+tags: ["divine-court", "iron-compact", "political", "main-plot"]
+owners:
+  - type: group
+    name: Iron Compact
+  - type: group
+    name: Keepers of the Sacred Fire
+entries:
+  - text: >
+      The group learns from Magistra Vaela that the Compact's claims were formally
+      filed six weeks ago. The Assembly's review is Themis's jurisdiction; she has
+      ordered observation before action. This is standard procedure but the timeline
+      is unclear.
+    author: "GM"
+    character: null
+    session: 2
+  - text: >
+      Drakos confirms in his meeting with Lysara that the sacred ford marker stones
+      were removed deliberately — not incidentally. He calls it "clearing outdated
+      religious infrastructure." His confidence suggests the Compact believes their
+      divine claims will succeed.
+    author: "GM"
+    character: null
+    session: 4
+  - text: >
+      The Moirai's oracle trance at the ford: "the stones remember what the river
+      forgets." This suggests the sacred marker stones may be a physical component
+      of the older divine contracts — destroying or removing them may be weakening
+      the legal basis for the Keepers' counter-claims.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 3
+children:
+  - name: The Sacred Stones
+    summary: >
+      The Argos Ford's sacred marker stones are now counterweights in the Iron
+      Compact's sluice mechanism. Recovering them may be necessary both to
+      restore Aelion and to strengthen the Keepers' divine-court position.
+    status: active
+    tags: ["argos", "aelion", "artifacts"]
+    owners:
+      - type: location
+        name: Argos Ford
+    entries:
+      - text: >
+          Enyo's infiltration confirmed the stones are embedded in the sluice
+          mechanism. Three stones, roughly hand-sized, carved with river-oath
+          symbols. Removing them will require a planned operation — they are
+          now load-bearing components.
+        author: "GM"
+        character: null
+        session: 3

@@ -1,0 +1,33 @@
+name: The Scattered Chorus
+summary: >
+  A dozen or so oracle women survived the Iron Compact-adjacent purge two
+  years ago. They are hiding separately, unable to perform collective oracle
+  work, and being hunted down one or two at a time. Two have been captured
+  in the past month. Lysara knows where most of them are but has told no
+  one. Reassembling even three Chorus members would dramatically improve
+  the group's prophetic access — but finding and protecting them while the
+  Compact is actively searching is a logistical and strategic problem.
+status: active
+tags: ["chorus", "oracle", "protection", "lysara"]
+owners:
+  - type: character
+    name: Lysara
+  - type: group
+    name: The Scattered Chorus
+entries:
+  - text: >
+      Via Dream Passage, Lysara contacts Sondra (Chorus survivor, fishing village
+      east of Troikas). Sondra reports two more captures in the past month. She is
+      scared, isolated, and asks when Lysara is coming for her. Lysara gave no
+      promise but couldn't say no clearly either.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 5
+  - text: >
+      Drakos's mention that the Compact "knows where most surviving Chorus members
+      are" may have been a bluff or may be accurate. Either way, it suggests the
+      Compact's information about the oracle network is better than assumed.
+    author: "GM"
+    character: null
+    session: 4
+children: []

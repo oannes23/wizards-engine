@@ -1,0 +1,33 @@
+name: Evelyn
+detail_level: full
+description: A sharp-minded investigator with a complicated past.
+meters:
+  stress: 2
+  free_time: 1
+  plot: 3
+  gnosis: 0
+skills:
+  awareness: 2
+  composure: 1
+  influence: 1
+  finesse: 0
+  speed: 0
+  power: 0
+  knowledge: 2
+  technology: 0
+magic_stats:
+  being: {level: 1, xp: 2}
+  wyrding: {level: 0, xp: 0}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 0, xp: 0}
+  dreaming: {level: 0, xp: 0}
+core_traits:
+  - template: Iron Will
+    charge: 4
+bonds:
+  - name: Sworn Ally
+    target: {type: group, name: The Order}
+    description: Evelyn works alongside The Order on sensitive matters.
+    charges: 5
+    degradations: 0
+    is_trauma: false

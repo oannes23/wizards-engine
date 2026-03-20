@@ -1,0 +1,25 @@
+name: The Known World
+description: >
+  The mortal realm of city-states, rivers, and disputed territories where the
+  campaign is set. The Known World operates under the framework of divine-mortal
+  contracts established centuries ago — agreements between local gods, oracles,
+  and human communities that structured everything from water rights to seasonal
+  festivals. The Iron Compact is systematically renegotiating or ignoring these
+  contracts, which is disrupting the metaphysical fabric as much as the political
+  one. From the divine perspective, the Known World is a contested territory
+  currently in a paradigm transition.
+notes: >
+  The known world generates divine attention (gnosis) primarily through oath-
+  keeping, sacrifice, and oracle consultation. Cities generate more than
+  countryside. Contested cities generate the most of all.
+features:
+  - name: Oracle Network
+    description: >
+      A web of shrines, sacred sites, and oracle practitioners connecting city-
+      states. The Chorus was a key node. Its destruction has created information
+      gaps that the Compact is exploiting.
+  - name: Paradigm Contest
+    description: >
+      Bronze Age divine compacts versus Iron Age rational expansion. Both are
+      genuinely present. Which paradigm wins determines what kind of world
+      the Known World becomes.

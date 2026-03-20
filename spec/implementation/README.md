@@ -168,7 +168,7 @@ Phase 7 (sequential, depends on all prior phases)
 |--------|-------|
 | Phases | 6 complete (1–6) + Phase 7 |
 | Epics | 20 complete + 1 new (campaign tooling) |
-| Stories | 52 complete + 7 new (campaign tooling) |
+| Stories | 52 complete + 8 new (campaign tooling) |
 | Max parallel tracks | 2 (7.1.3 + 7.1.4 after 7.1.2) |
 | Estimated new backend tests | ~120 (across Phase 7) |
 
@@ -198,4 +198,4 @@ Phase 7 (sequential, depends on all prior phases)
 | 6.4 — World Browser & Feed | 🟢 Complete | 4/4 |
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
-| 7.1 — Campaign Import/Export & Notes Ingestion | 🔴 Not started | 0/7 |
+| 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |

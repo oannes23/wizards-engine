@@ -1,0 +1,27 @@
+name: Troikas Resistance
+description: >
+  The underground opposition to the oligarchic council that seized Troikas two
+  months ago with apparent Iron Compact backing. Led by Phila, the resistance
+  operates through the academic and merchant networks of Troikas's middle
+  districts. Seven active members, three sympathetic guild leaders. They
+  lack resources, weapons, and — currently — a plan beyond staying alive and
+  gathering information. Enyo's distance from the city is both a liability
+  (she's their best fighter) and an asset (she's gathering external support).
+tier: 1
+traits:
+  - name: Academic Network
+    description: >
+      Phila's philosopher contacts give the resistance access to gathering spaces,
+      courier routes, and cover identities that the oligarchs haven't thought
+      to surveil yet.
+  - name: Compromised
+    description: >
+      One of Phila's contacts is an Iron Compact informant. Phila doesn't know.
+      The party doesn't know. The informant is waiting for the right moment.
+relations:
+  - name: Exile in Solidarity
+    target: The Scattered Chorus
+    description: Some Chorus members passed through Troikas during the purge. Shared exile creates solidarity.
+  - name: Target
+    target: Iron Compact
+    description: The Compact is monitoring the resistance. The timeline for suppression is unclear.

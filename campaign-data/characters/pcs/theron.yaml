@@ -1,0 +1,133 @@
+name: Theron
+detail_level: full
+description: >
+  A son of a river god and a mortal smith-woman, raised among the ironworkers
+  of Argos before his divine parentage revealed itself through an incident of
+  uncontrolled strength during a flood. Theron fights with a war-spear and
+  a battered bronze shield, and his battle-chants can rally allies or scatter
+  enemies. He is blunt, physically fearless, and politically naive — a
+  combination that makes him invaluable in combat and a liability in
+  negotiation. He perceives divine presences as a temperature shift — warmth
+  for benevolent powers, bone-cold for chthonic ones.
+notes: >
+  Detection method: temperature sense — warm for divine benevolence, cold for
+  chthonic/dangerous. The river-god father is Aelion, a minor deity of the
+  Argos watershed, not a major Olympian — which makes Theron's status
+  ambiguous in divine courts. Aelion himself is imperiled: the Iron Compact
+  is diverting the Argos river to power a bronze-smelting operation, which
+  weakens him. Theron doesn't know his father is dying yet.
+secrets: >
+  Divine paternity complication: Aelion struck a secret bargain with the
+  Iron Compact years ago, granting them water rights in exchange for protection
+  from another god. Theron finding out his father is complicit — even partially
+  — will be a defining crisis. Aelion is trying to warn Theron through dreams
+  but doesn't know Theron lacks the dreaming skill to receive them clearly.
+
+  Battle rage: Theron has experienced two instances of uncontrolled divine
+  rage — genuine berserker states. The others saw it happen in Session 3.
+  He has not told them he cannot remember either event.
+attributes:
+  magic_detection: temperature shift
+  divine_parent: Aelion (river god, Argos watershed)
+  notable_items:
+    - War-spear (iron tip, unusual for the bronze age — a gift from his mother)
+    - Battered bronze shield with family crest
+meters:
+  stress: 3
+  free_time: 3
+  plot: 2
+  gnosis: 3
+skills:
+  awareness: 2
+  composure: 1
+  influence: 2
+  finesse: 2
+  speed: 2
+  power: 3
+  knowledge: 1
+  technology: 2
+magic_stats:
+  being: {level: 2, xp: 1}
+  wyrding: {level: 0, xp: 0}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 1, xp: 0}
+  dreaming: {level: 0, xp: 0}
+core_traits:
+  - template: Hero-Blooded
+    charge: 5
+  - template: Oath-Keeper
+    charge: 4
+role_traits:
+  - template: War-Chanter
+    charge: 5
+bonds:
+  - name: Prophetic Partnership
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Lysara's visions and Theron's direct action form the group's operational
+      core. He trusts her instincts even when her riddles frustrate him.
+    charges: 4
+  - name: Comrade in Arms
+    target:
+      type: character
+      name: Enyo
+    description: >
+      Theron and Enyo share a warrior's understanding. They don't need words
+      in a fight. He respects her judgment on Troikas politics.
+    charges: 5
+  - name: Ancestral Obligation
+    target:
+      type: character
+      name: Aelion
+    description: >
+      His divine father — distant, communicating only through dreams Theron
+      can barely receive. The obligation to protect the Argos watershed is
+      written into Theron's blood.
+    charges: 3
+  - name: Wary Respect
+    target:
+      type: group
+      name: Iron Compact
+    description: >
+      The Compact's soldiers are disciplined and dangerous. Theron respects
+      the threat without admiring the organization. He suspects they know more
+      about his father than they let on.
+    charges: 2
+    degradations: 1
+  - name: Allied Network
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: >
+      The Keepers sheltered Theron during the Session 1 pursuit. He owes
+      them a debt he hasn't fully repaid.
+    charges: 3
+magic_effects:
+  - name: River-Blood Resilience
+    description: >
+      Theron's divine heritage manifests as preternatural physical endurance.
+      Wounds that would cripple a mortal slow him but don't stop him. He can
+      function through stress levels that would incapacitate others. Not
+      immortality — he can die — but his threshold for incapacitation is
+      dramatically higher.
+    effect_type: permanent
+    power_level: 3
+  - name: "War-Chant: Shield Wall"
+    description: >
+      A specific battle-hymn Theron knows that shores up allies' courage and
+      physical coordination — those who hear it feel steadier on their feet
+      and more willing to hold a line. Enemies hear it as an ominous drone.
+      Lasts the duration of the engagement.
+    effect_type: charged
+    power_level: 2
+    charges: {current: 3, max: 4}
+  - name: Flood Strength
+    description: >
+      In moments of extreme need, Theron can call on the river's seasonal
+      flood force — a burst of strength that lets him move boulders, smash
+      gates, or overpower divine-tier opponents briefly. Exhausting and
+      currently uncontrolled. Twice it triggered without his intent.
+    effect_type: instant
+    power_level: 4

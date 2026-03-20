@@ -1,0 +1,29 @@
+name: Magistra Vaela
+detail_level: simplified
+description: >
+  The elderly head of the Keepers of the Sacred Fire — a woman in her
+  seventies who has been tending the fire and its archive for forty years.
+  Sharp, dry, and difficult to surprise. She recruited Lysara's mentor into
+  the Chorus and has complicated feelings about the Chorus's destruction —
+  she knew the purge was coming and chose not to warn them, judging that
+  the Keepers' secrecy was more important than the Chorus's survival. She
+  has never told Lysara this.
+notes: >
+  Strategically cold in ways that can read as warmth when your interests
+  align with hers. Has resources — the Keepers' archive contains information
+  about the Iron Compact's true backers that would be explosive if released.
+  She's waiting for the right moment, which means holding information the PCs
+  urgently want.
+bonds:
+  - name: Head of Order
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: Forty-year tenure. The archive and the fire are her life's work.
+  - name: Complicated Debt
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Knew the Chorus purge was coming and didn't warn them. Lysara doesn't
+      know. Vaela supports Lysara out of guilt and genuine respect.

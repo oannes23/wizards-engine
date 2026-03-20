@@ -1,0 +1,6 @@
+name: Rising Tension
+segments: 6
+progress: 2
+associated_with:
+  type: group
+  name: The Order

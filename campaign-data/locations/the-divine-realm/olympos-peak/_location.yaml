@@ -1,0 +1,25 @@
+name: Olympos Peak
+description: >
+  The formal seat of the Olympian Assembly — not a mountain but a divine
+  construct that resembles one, tiered into three rings: the outer receiving
+  court where mortals (rarely) are admitted, the middle deliberation hall
+  where the Assembly meets, and the inner sanctum accessible only to full
+  Olympian deities. The perpetual light here is warm bronze-gold. Everything
+  is enormous — the architecture is scaled to divine proportions. Mortals
+  admitted to the outer court feel the scale as a constant mild oppression.
+notes: >
+  Lysara has been here once, in trance, during an oracle episode. She
+  experienced the outer court and was not supposed to see what she saw.
+  The Moirai conduct their formal business here but maintain their own
+  separate spinning chamber that technically falls outside Olympian jurisdiction.
+features:
+  - name: Formal Court Structure
+    description: The Assembly meets in the deliberation hall. Votes are formal and binding on all Olympians.
+  - name: Moirai's Spinning Chamber
+    description: Technically outside Olympian jurisdiction. The Moirai sit at the center of a web of fate-threads here.
+bonds:
+  - name: Seat of Power
+    target:
+      type: group
+      name: Olympian Assembly
+    description: The Assembly convenes here. Herald Kassian departs from and returns to this location.

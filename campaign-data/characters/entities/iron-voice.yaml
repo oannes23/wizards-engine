@@ -1,0 +1,24 @@
+name: Iron Voice
+detail_level: simplified
+description: >
+  The divine patron or egregore of the Iron Compact — not a traditional Olympian
+  god but something created or summoned by the Compact's founders as a conceptual
+  entity embodying the principle of ordered expansion through superior technology.
+  Iron Voice speaks through Compact leadership in moments of formal declaration.
+  Its nature is disputed: the Keepers believe it was deliberately constructed;
+  the Moirai's visions suggest it grew from a genuine divine spark that has since
+  been bent to the Compact's purposes. Either way, it is real and dangerous.
+attributes:
+  classification: constructed divine entity (possible egregore)
+  domain: ordered expansion, iron metallurgy, subjugation of older divine compacts
+bonds:
+  - name: Patron Entity
+    target:
+      type: group
+      name: Iron Compact
+    description: Feeds on the Compact's expanding territory and political dominance.
+  - name: Suppression Target
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: The Keepers' archive threatens Iron Voice's legitimacy claims. It wants them silenced.

@@ -1,0 +1,30 @@
+name: The Scattered Chorus
+description: >
+  The surviving remnant of an oracular order of women that operated across
+  seven city-states before the Iron Compact-adjacent political purge two years
+  ago. The Chorus practiced collective oracle work — multiple seers entering
+  trance simultaneously to cross-reference visions — which produced unusually
+  reliable prophecy. This reliability made them threatening to the Compact's
+  preferred information control. Most members were killed or captured. About
+  a dozen survived, now hiding separately. Lysara is one of them.
+tier: 1
+traits:
+  - name: Collective Oracle Practice
+    description: >
+      The Chorus's distinctive technique of synchronized trance produces cleaner
+      prophecy than individual oracle work. Reassembling even three members
+      would dramatically increase Lysara's prophetic clarity. The Compact knows
+      this and is hunting survivors.
+  - name: Oath Network
+    description: >
+      All Chorus members swore binding oaths of mutual protection. These oaths
+      remain in force despite the dispersal — members feel the pull of obligation
+      to one another even when they can't act on it.
+relations:
+  - name: Protected By
+    target: Keepers of the Sacred Fire
+    description: Keepers sheltered some survivors. The protection is real but not unconditional.
+    bidirectional: true
+  - name: Hunted By
+    target: Iron Compact
+    description: The Compact actively hunts surviving Chorus members. Precision prophets are dangerous to their plans.

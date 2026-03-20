@@ -41,7 +41,8 @@ _SESSION_STATUSES = "('draft', 'active', 'ended')"
 _STORY_STATUSES = "('active', 'completed', 'abandoned')"
 _SLOT_TYPES = (
     "('core_trait', 'role_trait', 'pc_bond', 'npc_bond', "
-    "'group_relation', 'group_holding', 'location_bond')"
+    "'group_trait', 'group_relation', 'group_holding', "
+    "'feature_trait', 'location_bond')"
 )
 _SLOT_OWNER_TYPES = "('character', 'group', 'location')"
 

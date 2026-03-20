@@ -1,0 +1,31 @@
+name: Phila
+detail_level: simplified
+description: >
+  A former Troikas court philosopher who survived the oligarchic coup because
+  Enyo helped her escape. She is now running a resistance cell in the Troikas
+  underground using her network of academic contacts and the philosophers'
+  traditional access to the city's merchant-quarter gathering spaces. She and
+  Enyo had a personal relationship before the exile. She doesn't know Enyo
+  is with the larger group or that the group is approaching Troikas.
+notes: >
+  Organizationally effective in ways Enyo wasn't expecting — Phila turned out
+  to be a better resistance leader than a court philosopher. She has recruited
+  seven active members and maintains contact with three sympathetic guild
+  leaders. She is also in real danger: one of her contacts is an Iron Compact
+  informant and she doesn't know.
+bonds:
+  - name: Resistance Cell Leader
+    target:
+      type: group
+      name: Troikas Resistance
+    description: Organized and leads the underground network. More capable than anyone expected.
+  - name: Personal History
+    target:
+      type: character
+      name: Enyo
+    description: >
+      Enyo saved her life and left. The relationship is unresolved from both
+      directions. Phila doesn't know Enyo is coming back.
+    labels:
+      source: Hoping
+      target: Unknown

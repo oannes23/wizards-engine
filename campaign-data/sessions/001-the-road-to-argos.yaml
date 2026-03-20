@@ -1,0 +1,20 @@
+number: 1
+status: ended
+time_now: 1
+date: "2026-01-10"
+summary: >
+  The three PCs converge on the road to Argos, each drawn by different reasons.
+  Lysara receives an unsolicited oracle trance mid-journey — the Moirai speak
+  a verse about "iron threading through old bronze." Theron finds the Argos
+  river shockingly low at the seasonal ford crossing. Enyo, newly exiled from
+  Troikas, encounters the group while avoiding an Iron Compact patrol checking
+  papers. First meeting. They camp together outside Argos and discuss what they
+  each know. The Compact administrative compound's watchtower is visible against
+  the evening sky.
+participants:
+  - character: "Lysara"
+    additional_contribution: false
+  - character: "Theron"
+    additional_contribution: false
+  - character: "Enyo"
+    additional_contribution: true

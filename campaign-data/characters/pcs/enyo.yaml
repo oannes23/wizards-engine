@@ -1,0 +1,128 @@
+name: Enyo
+detail_level: full
+description: >
+  A former temple-guard from Troikas who was exiled after she refused an order
+  to execute political prisoners during the city's recent oligarchic coup.
+  She carries the techniques of the Troikas poison-tradition, which her order
+  maintained under the guise of "antidote scholarship." Enyo is calculating,
+  self-contained, and fiercely loyal to those who have earned it. She perceives
+  divine presences as a sharpening of all her senses simultaneously — the way
+  the air feels just before lightning.
+notes: >
+  Detection method: all senses sharpen simultaneously — pre-lightning clarity.
+  The exile from Troikas is recent (two months ago). The oligarchs who ordered
+  the executions are consolidating power and have apparently hired an assassin
+  to deal with "witnesses." Enyo suspects she is on that list. Her refusal to
+  obey the execution order cost the Troikas temple-guard order its political
+  independence — she carries guilt about this.
+secrets: >
+  Enyo did not simply refuse the execution order. She helped three of the
+  prisoners escape — including a woman named Phila who is now deep underground
+  in Troikas running a resistance cell. Enyo and Phila had a personal
+  relationship; Phila was the reason Enyo stayed in Troikas as long as she
+  did. She hasn't told Lysara or Theron about Phila, and if the party ever
+  reaches Troikas, the reunion will be complicated.
+
+  The poison craft: Two of the preparations Enyo knows are technically
+  capable of affecting full Olympian gods at reduced potency. She discovered
+  this by accident. She has told no one.
+attributes:
+  magic_detection: pre-lightning sense sharpening
+  former_role: Temple-guard, Troikas Order of Antidotes
+  notable_items:
+    - Poison kit (7 active preparations, 3 antidotes)
+    - Bronze short-sword
+    - Temple-guard sigil (kept hidden, technically incriminating)
+meters:
+  stress: 1
+  free_time: 5
+  plot: 2
+  gnosis: 4
+skills:
+  awareness: 3
+  composure: 3
+  influence: 1
+  finesse: 3
+  speed: 2
+  power: 2
+  knowledge: 2
+  technology: 1
+magic_stats:
+  being: {level: 0, xp: 0}
+  wyrding: {level: 1, xp: 0}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 2, xp: 3}
+  dreaming: {level: 0, xp: 0}
+core_traits:
+  - template: Oath-Keeper
+    charge: 5
+  - template: Seer
+    charge: 3
+    is_active: false
+role_traits:
+  - template: Poison-Crafter
+    charge: 5
+bonds:
+  - name: Recruited Into This
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Lysara's vision brought Enyo into the group. Enyo is grateful but
+      wary — she's still evaluating whether the cause justifies the exposure.
+    charges: 4
+  - name: Warrior Trust
+    target:
+      type: character
+      name: Theron
+    description: >
+      Competence-based bond. Enyo trusts Theron to do his job in a fight and
+      not ask questions she doesn't want to answer. This is high praise from her.
+    charges: 5
+  - name: Exile's Debt
+    target:
+      type: group
+      name: Troikas Resistance
+    description: >
+      The underground network that formed after the oligarchic coup, partly
+      enabled by Enyo's actions. She feels responsible for their safety even
+      from a distance.
+    charges: 4
+  - name: Adversarial
+    target:
+      type: group
+      name: Iron Compact
+    description: >
+      The Iron Compact's agents were present at the Troikas coup — possibly
+      orchestrated it. Enyo holds them responsible for her exile. Personal.
+    charges: 2
+    degradations: 2
+  - name: Professional Caution
+    target:
+      type: character
+      name: Myrtos
+    description: >
+      Myrtos of the Iron Compact's intelligence arm approached Enyo before she
+      left Troikas. She refused his offer but he didn't seem bothered. That
+      worries her more than anger would have.
+    charges: 2
+    degradations: 1
+magic_effects:
+  - name: Poison-Sense
+    description: >
+      Enyo can detect the presence of poisons and alchemical compounds by
+      taste and smell at concentrations that would be imperceptible to others.
+      She can identify the base components of most preparations she encounters
+      and estimate their potency. Divine-tier toxins appear to her as a
+      distinctive bitterness layered under the mundane signature.
+    effect_type: permanent
+    power_level: 2
+  - name: Antidote Synthesis
+    description: >
+      Given time and materials, Enyo can construct antidotes to most natural
+      poisons and a handful of magically enhanced ones. Two of her current
+      preparations also function as short-duration divine-suppression agents —
+      she doesn't fully understand how she synthesized them and hasn't done
+      so again.
+    effect_type: instant
+    power_level: 3

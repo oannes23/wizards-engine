@@ -1,0 +1,26 @@
+name: Argos
+description: >
+  A mid-sized city-state at the confluence of two rivers, historically famous
+  for its oracle traditions and its independence from larger power structures.
+  The Iron Compact has been applying economic pressure for two years, and
+  Drakos's arrival as regional administrator marked the beginning of formal
+  incorporation proceedings. The city's traditional council is still nominally
+  in power but increasingly rubber-stamps Compact decisions. The population
+  is divided between those who believe the Compact's order is genuinely
+  preferable to the old chaos, and those who sense something being lost.
+notes: >
+  The Argos river flows through the city center — Aelion's sacred boundary.
+  As the Iron Works divert more flow, the river is visibly lower than it
+  was two years ago. The city's oracle shrine is closed; the last independent
+  oracle died during the Chorus purge.
+features:
+  - name: River Confluence
+    description: The city's physical and spiritual heart. Aelion's diminishment shows here as shallow water and drought-stressed crops upstream.
+  - name: Compact Administrative Compound
+    description: Drakos's headquarters. Imposing, well-guarded, deliberately visible.
+bonds:
+  - name: Under Administration
+    target:
+      type: group
+      name: Iron Compact
+    description: Formal incorporation proceedings underway. The city's traditional council is a formality.

@@ -1,0 +1,15 @@
+name: The Investigation
+status: active
+summary: A string of mysterious disappearances leads to a deeper conspiracy.
+owners:
+  - type: character
+    name: Evelyn
+entries:
+  - text: The trail goes cold at the border of The District.
+    author: Fixture GM
+    character: Evelyn
+    session: 1
+children:
+  - name: The Missing Files
+    status: active
+    summary: Key documents have vanished from the archive.

@@ -1,0 +1,22 @@
+number: 2
+status: ended
+time_now: 3
+date: "2026-01-24"
+summary: >
+  The group makes contact with Magistra Vaela and is admitted to the Keepers'
+  outer sanctuary. Vaela briefs them on the divine contract dispute and
+  what the archive contains. She is guarded about specifics and declines to
+  share the archive directly. Theron pushes back; Lysara mediates. Vaela
+  agrees to share three documents in exchange for the group investigating
+  what happened to the Argos Ford's sacred marker stones. Enyo notices that
+  Vaela flinches slightly when Lysara mentions her dead mentor — and files
+  this away without saying anything. Herald Kassian appears briefly at the
+  sanctuary's threshold, delivers a formal message from the Olympian Assembly
+  acknowledging the Keepers' filed claims, then leaves without entering.
+participants:
+  - character: "Lysara"
+    additional_contribution: false
+  - character: "Theron"
+    additional_contribution: false
+  - character: "Enyo"
+    additional_contribution: false

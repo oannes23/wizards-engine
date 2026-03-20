@@ -1,0 +1,26 @@
+name: Myrtos
+detail_level: simplified
+description: >
+  Intelligence arm operative of the Iron Compact, specializing in asset
+  recruitment and what his colleagues diplomatically call "consequence
+  management." Small, soft-spoken, unnervingly patient. He approached Enyo
+  before her exile and offered her a position — poison crafters who understand
+  divine-tier preparations are rare. When she refused he said only "keep the
+  offer in mind." He has appeared twice since in cities the party has passed
+  through. He always seems to know where they are.
+notes: >
+  May have a divine intelligence contact — his information is too precise
+  for mortal networks alone. Not personally hostile to Enyo; he operates on
+  a long timeline and believes she'll eventually come around. The offer is
+  still technically open.
+bonds:
+  - name: Operative
+    target:
+      type: group
+      name: Iron Compact
+    description: Intelligence arm. Handles recruitment, surveillance, and elimination.
+  - name: Patient Recruiter
+    target:
+      type: character
+      name: Enyo
+    description: Views Enyo as an eventual asset. The offer remains open.

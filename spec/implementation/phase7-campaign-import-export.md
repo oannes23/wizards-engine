@@ -84,15 +84,16 @@ Phase 6: sessions (need characters for participants), stories (need users+charac
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 7.1.1 — YAML Schemas & Directory Scaffold | 🔴 Not started | — |
-| 7.1.2 — Name Resolver & Validation | 🔴 Not started | — |
-| 7.1.3 — Campaign Exporter | 🔴 Not started | — |
-| 7.1.4 — Campaign Importer | 🔴 Not started | — |
-| 7.1.5 — CLI & Round-Trip Tests | 🔴 Not started | — |
-| 7.1.6 — Notes Ingestion & Campaign Data | 🔴 Not started | — |
-| 7.1.7 — Documentation | 🔴 Not started | — |
+| 7.1.1 — YAML Schemas & Directory Scaffold | 🟢 Complete | 2026-03-19 |
+| 7.1.2 — Name Resolver & Validation | 🟢 Complete | 2026-03-19 |
+| 7.1.3 — Campaign Exporter | 🟢 Complete | 2026-03-19 |
+| 7.1.4 — Campaign Importer | 🟢 Complete | 2026-03-19 |
+| 7.1.5 — CLI & Round-Trip Tests | 🟢 Complete | 2026-03-20 |
+| 7.1.6 — Notes Ingestion & Campaign Data | 🟢 Complete | 2026-03-19 |
+| 7.1.7 — Documentation | 🟢 Complete | 2026-03-20 |
+| 7.1.8 — Anonymized Example Campaign | 🟢 Complete | 2026-03-20 |
 
-**Parallelism**: 7.1.1 → 7.1.2 → {7.1.3, 7.1.4} parallel → 7.1.5. Story 7.1.6 can start after 7.1.1 (needs schemas). Story 7.1.7 can start after 7.1.5.
+**Parallelism**: 7.1.1 → 7.1.2 → {7.1.3, 7.1.4} parallel → 7.1.5. Story 7.1.6 can start after 7.1.1 (needs schemas). Story 7.1.7 can start after 7.1.5. Story 7.1.8 can start after 7.1.6 (needs real data as template).
 
 ```
 7.1.1 Schemas ──> 7.1.2 Resolver ──┬──> 7.1.3 Exporter ──┐
@@ -352,7 +353,7 @@ uv run wizards-campaign validate --input ./campaign-data/
 **Files to create**:
 - `docs/campaign-format.md` — complete YAML format reference (all fields, all entity types)
 - `campaign-data/README.md` — quick-start guide for editing campaign data
-- `campaign-data/examples/` — minimal valid campaign (2-3 entities per type) for reference
+- `campaign-data/` — example campaign (anonymized, committed to repo)
 
 **Acceptance criteria**:
 - Format reference documents every YAML field for every entity type
@@ -363,6 +364,44 @@ uv run wizards-campaign validate --input ./campaign-data/
 - Documents secrets handling
 - README explains how to edit/extend campaign data files
 - Example campaign passes validation and imports successfully
+
+---
+
+### Story 7.1.8 — Anonymized Example Campaign
+
+**Depends on**: 7.1.6 (real campaign data as structural template)
+
+**Files to create**:
+- `campaign-data/` — complete anonymized campaign (committed to repo)
+  - Full directory structure for all entity types
+  - All entity types represented (PCs, NPCs, entities, groups, locations, sessions, stories, etc.)
+
+**Approach**:
+Take the real campaign data from `wizards-campaign-data/` (gitignored) as a structural template. Creatively re-skin the entire campaign into an extremely different fictional world while preserving the same game object entity structure. All identifiable information about the PCs and real-world players must be heavily anonymized and creatively replaced.
+
+The goal is a fully functional example campaign that:
+- Validates against all schemas
+- Imports successfully into a fresh database
+- Demonstrates every entity type and relationship
+- Is interesting and flavorful in its own right (not generic placeholder data)
+- Has NO resemblance to the real campaign or its players
+
+**Key rules**:
+- Different genre/setting entirely (e.g., if the real campaign is urban fantasy, the example might be sci-fi, steampunk, or mythological)
+- All character names, descriptions, and personality traits replaced
+- All location names and geography changed
+- All faction/group names and purposes transformed
+- Session summaries rewritten to tell a different story
+- Story arcs reimagined for the new setting
+- Mechanical values can stay similar (they're just numbers)
+- Bond structures preserved (same graph shape, different narrative)
+
+**Acceptance criteria**:
+- `wizards-campaign validate --input ./campaign-data/` passes with zero errors
+- `wizards-campaign import --input ./campaign-data/` succeeds into an empty database
+- No identifiable connection to the real campaign data
+- All entity types represented with at least 2-3 examples each
+- Cross-references consistent across all files
 
 ---
 

@@ -1,0 +1,25 @@
+name: The Dream Road
+description: >
+  Hypnos's territory — the landscape that connects all sleeping minds. It
+  appears as an endless plain of soft grey light with paths between glowing
+  nodes (each node is a sleeping person). Dream walkers navigate it like
+  a physical landscape, moving from node to node. The paths between distant
+  dreamers are longer and darker. The border with the Undermarsh is marked
+  by a line of black water; crossing it requires specific preparation. The
+  Dream Hound patrols this border.
+notes: >
+  Lysara's Dream Passage ability uses the Dream Road as transit. She can
+  navigate it, but the Road has its own geography that shifts as sleepers
+  wake and sleep. The Dream Hound seems to have marked Enyo's dream-node
+  and follows it.
+features:
+  - name: Node Navigation
+    description: Each sleeping person is a glowing node. Lysara can move between known nodes as if walking a path.
+  - name: Undermarsh Border
+    description: The line of black water separating dream territory from the dead realm. The Dream Hound patrols here.
+bonds:
+  - name: Patrols
+    target:
+      type: character
+      name: The Dream Hound
+    description: The Dream Hound maintains the border between dream and death.

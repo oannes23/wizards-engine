@@ -14,8 +14,12 @@ dependencies = [
     "alembic>=1.13,<2.0",
     "pydantic>=2.7,<3.0",
     "python-ulid>=2.2,<3.0",
+    "pyyaml>=6.0,<7.0",
     "pytest-cov>=7.0.0",
 ]
+
+[project.scripts]
+wizards-campaign = "wizards_engine.campaign.cli:main"
 
 [project.optional-dependencies]
 dev = [

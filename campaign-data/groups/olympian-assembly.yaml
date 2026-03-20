@@ -1,0 +1,30 @@
+name: Olympian Assembly
+description: >
+  The divine governing body of the Olympian pantheon — not a unified entity
+  but a messy divine court with internal factions, competing interests, and
+  a procedural commitment to formal process that frequently prevents it from
+  acting even when action is clearly needed. Currently reviewing the Iron
+  Compact's filed claims about water rights and divine contract supersession.
+  Themis has ordered the Assembly to observe before acting, which frustrates
+  the gods who want to intervene. Herald Kassian is their official mortal-
+  realm observer.
+tier: 5
+traits:
+  - name: Procedural Paralysis
+    description: >
+      The Assembly cannot act unilaterally on mortal-realm matters without a
+      formal vote, and no vote can occur while Themis's observation order is
+      active. This is by design — Themis's order prevents divine intervention
+      from muddying the evidence she's gathering.
+  - name: Divided Opinion
+    description: >
+      Several gods want to crush the Iron Compact immediately. Several others
+      find the Compact's "organized approach" sympathetic. The divine court
+      is not monolithic on this question.
+relations:
+  - name: Formal Claims Filed By
+    target: Iron Compact
+    description: The Compact has submitted divine-legitimacy claims. The Assembly is formally required to consider them.
+  - name: Counter-Claims Filed By
+    target: Keepers of the Sacred Fire
+    description: The Keepers have submitted counter-documentation. The competing claims are what's keeping Themis's observation order active.

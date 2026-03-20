@@ -1,0 +1,8 @@
+number: 1
+status: ended
+time_now: 8
+date: "2026-01-10"
+summary: The investigators are hired and meet for the first time.
+participants:
+  - character: Evelyn
+    additional_contribution: false

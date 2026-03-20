@@ -1,0 +1,41 @@
+name: Aelion and the River
+summary: >
+  Theron's divine father is dying by slow dissolution as the Iron Compact
+  diverts his watershed for industrial use. Aelion is trying to communicate
+  through dreams but Theron lacks the dreaming skill to receive clear messages.
+  Aelion also made a secret bargain with the Compact years ago — granting water
+  rights in exchange for protection — and is too ashamed to confess this.
+  Theron doesn't know the full picture and likely won't until the story forces
+  the revelation.
+status: active
+tags: ["theron", "aelion", "river", "divine-dissolution", "secrets"]
+owners:
+  - type: character
+    name: Theron
+  - type: character
+    name: Aelion
+entries:
+  - text: >
+      At the seasonal ford, the river is ankle-deep where it should be knee-deep.
+      Theron notices immediately. The seasonal timing is wrong — this is drought-
+      level flow during the rainy season.
+    author: "GM"
+    character: "Theron"
+    session: 1
+  - text: >
+      Theron's uncontrolled rage at Argos Ford when he saw the sacred stones used
+      as counterweights. He remembers approaching the sluice; he does not remember
+      what happened next. Lysara and Enyo pulled him back and have said only that
+      it was "a difficult moment."
+    author: "Player Brom"
+    character: "Theron"
+    session: 3
+  - text: >
+      Theron attempts to reach his father through intentional sleep that night.
+      He gets fragments — water-sound, a broad-shouldered figure standing in shallow
+      water, a sense of shame — but no coherent message. He wakes more worried
+      than before.
+    author: "Player Brom"
+    character: "Theron"
+    session: 4
+children: []

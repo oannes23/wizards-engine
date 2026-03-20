@@ -1,0 +1,31 @@
+name: Drakos
+detail_level: simplified
+description: >
+  A tall, deliberate man in his late thirties who serves as the Iron Compact's
+  regional administrator for the Argos territory. He was once a genuine
+  protector of the disenfranchised — sheltered Lysara and three other Chorus
+  survivors when the purge happened — but has since rationalized himself into
+  serving the Compact's interests. He presents the Compact's expansionism as
+  necessary order-making: someone has to consolidate power, better disciplined
+  administrators than warring petty kings. Lysara's rejection of his marriage
+  proposal was also a rejection of this worldview.
+notes: >
+  Not a villain in his own mind. He genuinely believed the Chorus purge was
+  unfortunate but necessary political hygiene, and that Lysara's gift would
+  be safer under Compact protection. He was wrong but not malicious. Now
+  that she's actively working against the Compact, he faces a real dilemma —
+  his orders if he encounters her are not good.
+bonds:
+  - name: Regional Administrator
+    target:
+      type: group
+      name: Iron Compact
+    description: Enforces Compact interests in the Argos region. True believer in ordered expansion.
+  - name: Complicated History
+    target:
+      type: character
+      name: Lysara
+    description: Former protector, rejected suitor. His orders regarding her are now adversarial.
+    labels:
+      source: Conflicted duty
+      target: Unresolved betrayal

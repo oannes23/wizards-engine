@@ -1,0 +1,25 @@
+name: Argos Ford
+description: >
+  A shallow river crossing two hours upstream from Argos city where the Iron
+  Compact has constructed its primary smelting operation. The ford was
+  traditionally a sacred site — oaths sworn at the ford were considered
+  doubly binding because Aelion witnessed them. Now it is an industrial zone:
+  charcoal smoke, controlled sluice gates, and the constant hammer-ring of
+  the foundry. The sacred marker stones have been removed; their current
+  location is unknown.
+notes: >
+  The sluice gates here are the physical mechanism of Aelion's diminishment.
+  Sabotaging them would immediately begin restoring the river flow — and
+  immediately draw Compact military response. The sacred stones were taken
+  somewhere; finding them may matter for oath-magic working.
+features:
+  - name: Iron Foundry
+    description: The primary Compact smelting operation. Heavily guarded, operating continuously.
+  - name: Sacred Ford (Former)
+    description: The original oath-site. The river is only ankle-deep here now; the ford markers are gone.
+bonds:
+  - name: Industrial Claim
+    target:
+      type: group
+      name: Iron Compact
+    description: The Compact holds formal water rights to this location. Contested by Keepers' archive.

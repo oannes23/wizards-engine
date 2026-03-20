@@ -1,0 +1,45 @@
+name: Iron Compact
+description: >
+  A confederation of city-states, merchant guilds, and military councils united
+  by a shared commitment to iron metallurgy as the basis of civilization — and
+  the belief that older divine compacts, oracle traditions, and river-worship
+  cults represent obstacles to rational expansion. The Compact is not overtly
+  anti-divine; it positions itself as aligning with "the gods of progress"
+  (their Iron Voice patron) while delegitimizing older, decentralized divine
+  relationships. They control water rights and road access across three
+  river valleys, and are currently moving into the Argos region.
+tier: 4
+traits:
+  - name: Iron Discipline
+    description: >
+      Compact soldiers and administrators undergo rigorous standardized training.
+      Their forces are predictable, effective, and bound by a military code that
+      functions as a genuine constraint on individual action.
+  - name: Divine Legitimacy Claim
+    description: >
+      The Compact claims divine sanction through Iron Voice. This gives them
+      theological cover for displacing older cults and renegotiating divine-
+      mortal contracts unilaterally — which is theologically contested but
+      politically effective.
+  - name: Intelligence Network
+    description: >
+      Myrtos's intelligence arm maintains contacts in most major cities through
+      the merchant guild system. Information travels faster through Compact
+      networks than through traditional oracle channels.
+relations:
+  - name: Target for Elimination
+    target: Keepers of the Sacred Fire
+    description: The Keepers' archive threatens Compact legitimacy claims. Active suppression ongoing.
+  - name: Diverting Resources
+    target: Troikas Resistance
+    description: The Troikas coup was Compact-adjacent. They're monitoring the resistance network.
+  - name: Exploiting Bargain
+    target: Olympian Assembly
+    description: The Compact has filed formal claims with the Olympian court. The divine court is considering them.
+holdings:
+  - name: Iron Works at Argos Ford
+    target: Argos Ford
+    description: The primary smelting operation that is diverting river water from Aelion's watershed.
+  - name: Administrative Compound
+    target: Argos
+    description: Drakos's regional headquarters. Contains records, intelligence archives, holding cells.

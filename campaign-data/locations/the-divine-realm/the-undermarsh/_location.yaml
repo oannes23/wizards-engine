@@ -1,0 +1,19 @@
+name: The Undermarsh
+description: >
+  The chthonic realm where shades of the dead drift in a grey fog that smells
+  of cold water. The Undermarsh is not hellfire and punishment — it is the
+  quiet accumulation of everything that was and is no longer. Shades retain
+  personality and memory but have no desire, no hunger, no forward motion.
+  They answer questions honestly because honesty and deception are equally
+  effort, and effort is beyond them. The living can enter through ritual
+  approaches or, more commonly, through the deep end of the Dream Road.
+notes: >
+  The Dream Road borders the Undermarsh at its eastern edge. The Dream Hound
+  was encountered here in Enyo's nightmare — the border it patrols is the
+  membrane between the Undermarsh edge and the dream territory. Lysara's
+  dead mentor is a shade here. She has not attempted contact yet.
+features:
+  - name: Shade Community
+    description: Shades of everyone who has ever died cluster in loose non-groupings. Finding a specific shade requires knowing where to look.
+  - name: Dream Road Border
+    description: The eastern edge where dream and death meet. The Dream Hound's patrol territory.

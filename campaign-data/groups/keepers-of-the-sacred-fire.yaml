@@ -1,0 +1,37 @@
+name: Keepers of the Sacred Fire
+description: >
+  An ancient custodial order dedicated to preserving pre-Compact divine
+  traditions, contracts, and the archive of "original bargains" — the
+  historical record of how divine-mortal relationships were established before
+  the Iron Age rewrote the terms. They maintain a perpetual fire in a hidden
+  sanctuary and operate through a cell structure that keeps any one member from
+  knowing the full extent of the network. Magistra Vaela has led them for
+  forty years. They are scholars first and activists only when necessary.
+tier: 2
+traits:
+  - name: The Archive
+    description: >
+      Centuries of documented divine-mortal contracts, oracle records, and
+      theological scholarship. The Compact cannot make certain legitimacy claims
+      if this archive can be produced as counter-evidence. Vaela is protecting
+      it at enormous cost.
+  - name: Cell Network
+    description: >
+      No single Keeper knows more than their immediate cell. This protects the
+      archive but makes coordinated action difficult. Lysara's oath of reporting
+      makes her an unusual bridge between cells.
+relations:
+  - name: Protected by Obligation
+    target: The Scattered Chorus
+    description: The Keepers sheltered some Chorus survivors. Complicated by the fact that Vaela knew the purge was coming.
+    bidirectional: true
+  - name: Adversarial
+    target: Iron Compact
+    description: Active suppression by the Compact. The Keepers' archive is their primary target.
+  - name: Formal Observer
+    target: Olympian Assembly
+    description: The Keepers have filed competing divine-contract claims with the Olympian court.
+holdings:
+  - name: The Hidden Sanctuary
+    target: Olympos Peak
+    description: The sacred fire and archive are hidden in a location near the divine realm's accessible edge.

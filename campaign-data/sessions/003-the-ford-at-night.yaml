@@ -1,0 +1,23 @@
+number: 3
+status: ended
+time_now: 4
+date: "2026-02-07"
+summary: >
+  Night reconnaissance at Argos Ford. Enyo infiltrates the Iron Foundry
+  perimeter and finds the sacred marker stones being used as counterweights
+  in the sluice mechanism — deliberate desecration. Theron witnesses this
+  and experiences the first instance of uncontrolled divine rage; he nearly
+  destroys the sluice gate before Lysara and Enyo pull him back. He has no
+  memory of it afterward. They escape before the guards fully respond.
+  Drakos is seen directing the response — confirming he is aware of the
+  sacred stone placement and does not object to it. Enyo poisons a guard's
+  drink as distraction, demonstrating her craft to the group for the first
+  time. Lysara has a brief oracle trance during the retreat: "the stones
+  remember what the river forgets."
+participants:
+  - character: "Lysara"
+    additional_contribution: false
+  - character: "Theron"
+    additional_contribution: false
+  - character: "Enyo"
+    additional_contribution: false

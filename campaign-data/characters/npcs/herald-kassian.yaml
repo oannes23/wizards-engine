@@ -1,0 +1,28 @@
+name: Herald Kassian
+detail_level: simplified
+description: >
+  Official messenger of the Olympian court, currently stationed in the mortal
+  realm to observe the Iron Compact situation at divine behest. Kassian is
+  neither enemy nor ally of the players — he is a neutral observer with
+  explicit divine authority not to intervene directly. He passes messages
+  between the divine and mortal realms, transmits divine edicts, and maintains
+  careful official non-involvement in the conflict while clearly sympathizing
+  with the anti-Compact faction. He shows up in odd places and always has
+  information.
+notes: >
+  The divine authority maintaining his neutrality is Themis (divine law and
+  order), who is watching the Iron Compact situation to determine if it
+  violates cosmic law. Kassian's private opinion is that it clearly does. He
+  cannot say this officially. He is very good at saying things in technically
+  neutral ways that convey exactly his private opinion.
+bonds:
+  - name: Official Observer
+    target:
+      type: group
+      name: Olympian Assembly
+    description: Stationed in mortal realm to observe. Bound by Themis's neutrality order.
+  - name: Sympathetic Non-Helper
+    target:
+      type: character
+      name: Lysara
+    description: Officially neutral. Privately rooting for her. Very helpful with technically-neutral information.

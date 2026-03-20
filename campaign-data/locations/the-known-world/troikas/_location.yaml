@@ -1,0 +1,30 @@
+name: Troikas
+description: >
+  A larger city-state a week's travel from Argos, historically a center of
+  philosophical and academic culture. Two months ago its governing council was
+  replaced by an oligarchic coup with apparent Iron Compact backing. The surface
+  of the city looks normal — markets operate, the academies are open — but the
+  change in atmosphere is palpable to those who knew it before. Former council
+  members are under house arrest or have disappeared. Phila's resistance
+  operates out of the middle-district academies.
+notes: >
+  Enyo's exile city. She cannot re-enter openly; the temple-guard order has
+  orders regarding her. Phila's cell is in the Academic Quarter. The Iron
+  Compact's local administrator is a man named Polykrates — less subtle than
+  Drakos, more concerned with visible power.
+features:
+  - name: Academic Quarter
+    description: Troikas's traditional intellectual hub. Phila's resistance uses the gathering spaces here.
+  - name: Harbor District
+    description: The city's commercial engine. Merchant guild contacts here are the resistance's supply network.
+bonds:
+  - name: Coup Administration
+    target:
+      type: group
+      name: Iron Compact
+    description: The oligarchic council is a Compact proxy. Polykrates administers directly.
+  - name: Underground Presence
+    target:
+      type: group
+      name: Troikas Resistance
+    description: Phila's cell operates here. The resistance is the only organized opposition remaining.

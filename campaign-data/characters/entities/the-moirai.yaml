@@ -1,0 +1,28 @@
+name: The Moirai
+detail_level: simplified
+description: >
+  The three Fates — Clotho who spins the thread of life, Lachesis who measures
+  it, and Atropos who cuts it — operating here as a single tripartite entity
+  that communicates through Lysara's oracle trances. They are not gods in the
+  Olympian sense but a fundamental cosmic mechanism: the machinery by which
+  fate is not predetermined but rather continuously negotiated within certain
+  structural constraints. The Iron Compact's activities are creating unusual
+  thread tangles that have brought the Moirai's attention to this region.
+  They speak in plural, in verse, and only address questions relevant to their
+  function.
+attributes:
+  classification: primordial cosmic entity (tripartite)
+  communication_method: oracle trance possession of Lysara
+bonds:
+  - name: Oracle Channel
+    target:
+      type: character
+      name: Lysara
+    description: Use Lysara as their mortal voice. The relationship is not consent-based.
+  - name: Monitoring
+    target:
+      type: group
+      name: Iron Compact
+    description: >
+      The Compact's interference with divine-mortal contracts is creating
+      structural fate-tangles. The Moirai are watching but not yet acting.

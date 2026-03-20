@@ -1,0 +1,7 @@
+name: The Warden
+detail_level: simplified
+description: Keeper of regional records and gatekeeper to old knowledge.
+bonds:
+  - name: Custodian of The Region
+    target: {type: location, name: The Region}
+    description: Watches over regional archives along the old trade routes.

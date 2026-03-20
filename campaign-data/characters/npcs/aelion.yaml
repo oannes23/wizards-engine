@@ -1,0 +1,30 @@
+name: Aelion
+detail_level: simplified
+description: >
+  A minor river deity of the Argos watershed — the kind of god who exists in
+  local cult and seasonal ritual rather than Olympian grandeur. He appears to
+  Theron only in dreams, always as a broad-shouldered man with river-weeds in
+  his hair standing knee-deep in running water. Aelion is diminishing: the
+  Iron Compact has diverted significant portions of the Argos river to power
+  their smelting operation, and as the water is controlled rather than free,
+  his essential nature weakens. He is trying to warn Theron through dreams
+  but his communication is degraded by his weakening.
+notes: >
+  Made a secret bargain with the Iron Compact years ago out of fear — granted
+  water rights in exchange for protection from a rival deity. The bargain
+  seemed reasonable at the time and now it is killing him. He is ashamed and
+  cannot bring himself to confess to Theron directly.
+bonds:
+  - name: Divine Father
+    target:
+      type: character
+      name: Theron
+    description: Theron's divine parent. Communicates only through dreams, currently degraded.
+  - name: Bound By Agreement
+    target:
+      type: group
+      name: Iron Compact
+    description: Secret water-rights bargain. The Compact is enforcing it as he weakens.
+    labels:
+      source: Shameful obligation
+      target: Legal claim

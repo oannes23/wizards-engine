@@ -1,0 +1,23 @@
+number: 5
+status: active
+time_now: 6
+date: "2026-03-07"
+summary: >
+  Lysara attempts the Dream Passage ability for the first time, aiming to reach
+  a specific surviving Chorus member named Sondra who is hiding in a fishing
+  village east of Troikas. She enters the Dream Road and navigates it — the
+  landscape is described: endless grey light, glowing nodes, the distant black
+  line of the Undermarsh border. She reaches Sondra's dream and makes contact.
+  Sondra reveals that two more Chorus members have been captured in the past
+  month and that the Compact is specifically looking for a "primary oracle" —
+  presumably Lysara. During the return transit, Enyo (who is sleeping nearby)
+  sees the Dream Hound in her own dream for the first time: enormous dark hound,
+  eyes reflecting her past. It does not approach but watches. Session ends with
+  Enyo waking in a cold sweat and Lysara returning successfully.
+participants:
+  - character: "Lysara"
+    additional_contribution: false
+  - character: "Theron"
+    additional_contribution: false
+  - character: "Enyo"
+    additional_contribution: false

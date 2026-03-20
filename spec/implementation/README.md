@@ -99,6 +99,18 @@ Backend API additions required before the Web UI. Six independent stories: two n
 
 ---
 
+## Phase 7: Campaign Data
+
+| Epic | File | Stories | Depends On | Blocks |
+|------|------|---------|------------|--------|
+| **7.1** — Campaign Import/Export & Notes Ingestion | [phase7-campaign-import-export.md](phase7-campaign-import-export.md) | 7 | Phases 1–6 | — |
+
+YAML-based campaign import/export system (CLI-only tool, no new API endpoints). Converts game notes into importable YAML data files for campaign portability.
+
+**Parallelism**: 7.1.1 → 7.1.2 → {7.1.3, 7.1.4} parallel → 7.1.5. Story 7.1.6 starts after 7.1.1. Story 7.1.7 after 7.1.5.
+
+---
+
 ## Dependency Graph
 
 ```
@@ -140,18 +152,25 @@ Phase 6 (3 parallel tracks, then merge)
                        ┌──────┘                             │
                        ▼                                    │
                     6.6 Polish <────────────────────────────┘
+
+Phase 7 (sequential, depends on all prior phases)
+  7.1 Campaign Import/Export & Notes Ingestion
+    7.1.1 Schemas ──> 7.1.2 Resolver ──┬──> 7.1.3 Exporter ──┐
+                                        └──> 7.1.4 Importer ──┼──> 7.1.5 CLI + Round-Trip
+                                                               │
+    7.1.1 Schemas ──────────────────────> 7.1.6 Notes Data ───┘
+    7.1.5 CLI ──> 7.1.7 Documentation
 ```
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Phases | 5 complete + Phase 5.5 complete + Phase 6 |
-| Epics | 14 complete + 6 new (6 frontend) |
-| Stories | 52 complete + 26 new (26 frontend) |
-| Max parallel tracks | 3 (Epics 6.2, 6.3, 6.4 after 6.1) |
-| Estimated new backend tests | ~73 (across Phase 5.5) |
-| Frontend test approach | Manual + browser dev tools (per spec) |
+| Phases | 6 complete (1–6) + Phase 7 |
+| Epics | 20 complete + 1 new (campaign tooling) |
+| Stories | 52 complete + 7 new (campaign tooling) |
+| Max parallel tracks | 2 (7.1.3 + 7.1.4 after 7.1.2) |
+| Estimated new backend tests | ~120 (across Phase 7) |
 
 ---
 
@@ -179,3 +198,4 @@ Phase 6 (3 parallel tracks, then merge)
 | 6.4 — World Browser & Feed | 🟢 Complete | 4/4 |
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
+| 7.1 — Campaign Import/Export & Notes Ingestion | 🔴 Not started | 0/7 |

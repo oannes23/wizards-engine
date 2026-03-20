@@ -1,7 +1,7 @@
 """Route handler for POST /api/v1/characters/{id}/maintain-bond.
 
 Player direct action that spends 1 Free Time to restore a bond's charges to
-its effective maximum (5 - stress_degradations).
+its effective maximum (5 - degradations).
 
 Endpoint
 --------
@@ -59,7 +59,7 @@ class MaintainBondRequest(BaseModel):
     summary="Maintain Bond — spend 1 Free Time to restore a bond to its effective maximum charges",
     description=(
         "Player direct action.  Spends 1 Free Time to set a PC bond's charges "
-        "back to its effective maximum (5 - stress_degradations).  "
+        "back to its effective maximum (5 - degradations).  "
         "Only full (PC-level) characters may use this action.  "
         "The owning player may call this endpoint; the GM may call it on behalf of "
         "any character.  "
@@ -234,10 +234,10 @@ def maintain_bond(
     # ------------------------------------------------------------------
     # 10. Compute effective max and validate charges < effective_max
     # ------------------------------------------------------------------
-    effective_max: int = 5 - (slot.stress_degradations or 0)
-    stress_before: int = slot.stress if slot.stress is not None else 0
+    effective_max: int = 5 - (slot.degradations or 0)
+    charges_before: int = slot.charges if slot.charges is not None else 0
 
-    if stress_before >= effective_max:
+    if charges_before >= effective_max:
         raise HTTPException(
             status_code=409,
             detail={
@@ -268,7 +268,7 @@ def maintain_bond(
     # ------------------------------------------------------------------
     ft_after = ft_before - 1
 
-    slot.stress = effective_max
+    slot.charges = effective_max
     character.free_time = ft_after
     db.flush()
 
@@ -283,9 +283,9 @@ def maintain_bond(
         visibility="private",
         narrative=body.narrative,
         changes={
-            f"slot.{body.bond_instance_id}.stress": {
+            f"slot.{body.bond_instance_id}.charges": {
                 "op": "meter.set",
-                "before": stress_before,
+                "before": charges_before,
                 "after": effective_max,
             },
             f"character.{character_id}.free_time": {

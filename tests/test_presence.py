@@ -127,8 +127,8 @@ def _make_bond(
         is_active=is_active,
     )
     if slot_type == "pc_bond":
-        slot.stress = 0
-        slot.stress_degradations = 0
+        slot.charges = 0
+        slot.degradations = 0
         slot.is_trauma = False
     db.add(slot)
     db.flush()
@@ -517,8 +517,8 @@ class TestTraversalExclusions:
             name="Trauma",
             is_active=True,
             is_trauma=True,
-            stress=5,
-            stress_degradations=0,
+            charges=5,
+            degradations=0,
             bidirectional=False,
         )
         db.add(trauma_slot)
@@ -809,8 +809,8 @@ class TestLocationDetailAPIWithPresence:
             name="Home Region",
             is_active=True,
             bidirectional=True,
-            stress=0,
-            stress_degradations=0,
+            charges=0,
+            degradations=0,
             is_trauma=False,
         )
         db.add(bond)

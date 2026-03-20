@@ -34,7 +34,7 @@ class Slot(TimestampMixin, Base):
     Slot types:
     - ``core_trait``: Character (full) — uses ``template_id``, ``charge``
     - ``role_trait``: Character (full) — uses ``template_id``, ``charge``
-    - ``pc_bond``: Character (full) — uses ``stress``, ``stress_degradations``,
+    - ``pc_bond``: Character (full) — uses ``charges``, ``degradations``,
       ``is_trauma``, plus label/bidirectional columns
     - ``npc_bond``: Character (simplified) — label/bidirectional columns only
     - ``group_trait``: Group — descriptive only
@@ -43,7 +43,7 @@ class Slot(TimestampMixin, Base):
     - ``feature_trait``: Location — descriptive only
     - ``location_bond``: Location → any — label columns only (directional)
 
-    Note: ``stress`` and ``stress_degradations`` are the physical column names
+    Note: ``charges`` and ``degradations`` are the physical column names
     for what bonds.md calls "bond charges" and "degradation count".
     """
 
@@ -84,9 +84,8 @@ class Slot(TimestampMixin, Base):
     charge: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Bond mechanical fields (pc_bond only).
-    # Physical names kept as-is; bonds.md terms them "bond charges" and "degradation count".
-    stress: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    stress_degradations: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    charges: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    degradations: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_trauma: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # Relationship to template.

@@ -118,35 +118,22 @@ def batch_gm_actions(
     """
     events = []
 
-    # Temporarily replace db.commit with db.flush so that the individual
-    # handler commits do not issue real COMMIT statements.  This keeps all
-    # writes inside the current transaction so the outer get_db dependency
-    # can commit or roll back the entire batch atomically.
-    _real_commit = db.commit
-    db.commit = db.flush  # type: ignore[method-assign]
-
-    try:
-        for idx, action in enumerate(body.actions):
-            try:
-                event = dispatch_gm_action(db, gm, action.action_type, action)
-                # After each handler's flush, refresh the event to ensure
-                # all fields (including auto-generated ones) are loaded.
-                db.refresh(event)
-                events.append(event)
-            except ValueError as exc:
-                raise HTTPException(
-                    status_code=422,
-                    detail={
-                        "error": {
-                            "code": "batch_failed",
-                            "failed_index": idx,
-                            "detail": str(exc),
-                        }
-                    },
-                )
-    finally:
-        # Always restore the real commit method.
-        db.commit = _real_commit  # type: ignore[method-assign]
+    for idx, action in enumerate(body.actions):
+        try:
+            event = dispatch_gm_action(db, gm, action.action_type, action)
+            db.refresh(event)
+            events.append(event)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": {
+                        "code": "batch_failed",
+                        "failed_index": idx,
+                        "detail": str(exc),
+                    }
+                },
+            )
 
     return BatchGmActionsResponse(
         events=[EventResponse.model_validate(e) for e in events]

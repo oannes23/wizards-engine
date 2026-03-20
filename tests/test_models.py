@@ -168,7 +168,7 @@ def test_slots_columns(insp):
     assert {
         "id", "slot_type", "owner_type", "owner_id", "name", "description",
         "is_active", "target_type", "target_id", "source_label", "target_label",
-        "bidirectional", "template_id", "charge", "stress", "stress_degradations",
+        "bidirectional", "template_id", "charge", "charges", "degradations",
         "is_trauma", "created_at", "updated_at",
     }.issubset(cols)
 

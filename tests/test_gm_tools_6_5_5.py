@@ -672,9 +672,9 @@ class TestClocksDetailView:
         )
 
     def test_progress_patch_uses_correct_payload(self, clocks_src: str):
-        """gm-clocks.js PATCH progress sends { progress: newValue }."""
-        assert "progress: newProgress" in clocks_src, (
-            "gm-clocks.js must send { progress: newValue } in the PATCH payload "
+        """gm-clocks.js POST progress sends { value: newValue } via GM action."""
+        assert "value: newProgress" in clocks_src, (
+            "gm-clocks.js must send { value: newValue } in the GM action POST payload "
             "for inline progress updates"
         )
 

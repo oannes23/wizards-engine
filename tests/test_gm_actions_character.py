@@ -634,8 +634,8 @@ class TestGmActionsStressBoundary:
             name="Trauma Bond",
             is_active=True,
             is_trauma=True,
-            stress=0,
-            stress_degradations=0,
+            charges=0,
+            degradations=0,
             bidirectional=False,
         )
         db.add(trauma_bond)

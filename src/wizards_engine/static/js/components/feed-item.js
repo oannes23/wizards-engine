@@ -56,7 +56,7 @@ window.components.feedItem = (function () {
     "clock.resolve_generated":            "clock resolution pending",
     // Bond events
     "bond.created":                       "bond created",
-    "bond.stress_changed":                "bond stress changed",
+    "bond.charges_changed":               "bond charges changed",
     "bond.updated":                       "bond updated",
     "bond.retired":                       "bond retired",
     // Trait events

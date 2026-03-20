@@ -184,8 +184,8 @@ def seed_data(db: Session) -> dict:
         target_id=group.id,
         name="Syndicate Contact",
         description="A reliable back-channel to the inner circle.",
-        stress=5,
-        stress_degradations=0,
+        charges=5,
+        degradations=0,
         is_trauma=False,
         bidirectional=True,
     )
@@ -197,8 +197,8 @@ def seed_data(db: Session) -> dict:
         target_id=group.id,
         name="Old Debt",
         description="They once pulled me out of a very deep hole.",
-        stress=5,
-        stress_degradations=0,
+        charges=5,
+        degradations=0,
         is_trauma=False,
         bidirectional=True,
     )

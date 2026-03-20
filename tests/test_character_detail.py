@@ -22,8 +22,8 @@ GET /api/v1/characters/{id} — simplified character:
   - Does NOT return meters, skills, magic_stats, traits, effects, session_ids
 
 Per-bond computed value:
-  - BondDisplayResponse.stress and stress_degradations present on pc_bonds
-  - effective_bond_stress_max = 5 - stress_degradations (via stress_degradations field)
+  - BondDisplayResponse.charges and degradations present on pc_bonds
+  - effective_charges_max = 5 - degradations (via degradations field)
 """
 
 import pytest
@@ -121,8 +121,8 @@ def _add_trauma_bond(
         owner_id=character_id,
         name=name,
         description=description,
-        stress=0,
-        stress_degradations=2,
+        charges=0,
+        degradations=2,
         is_trauma=True,
         is_active=True,
         bidirectional=False,
@@ -760,10 +760,10 @@ class TestSimplifiedCharacterResponse:
 
 
 class TestBondDisplayEffectiveStressMax:
-    def test_pc_bond_has_stress_and_stress_degradations(
+    def test_pc_bond_has_charges_and_degradations(
         self, client: TestClient, seed_data: dict
     ):
-        """PC bond in response includes stress and stress_degradations fields."""
+        """PC bond in response includes charges and degradations fields."""
         auth_as(client, seed_data["gm"])
         pc_id = seed_data["pc1"].id
         response = client.get(f"/api/v1/characters/{pc_id}")
@@ -775,24 +775,24 @@ class TestBondDisplayEffectiveStressMax:
         assert len(pc_bonds) >= 1
 
         bond = pc_bonds[0]
-        # stress_degradations = 0 → effective_bond_stress_max = 5 - 0 = 5
-        assert bond["stress"] == 5
-        assert bond["stress_degradations"] == 0
+        # degradations = 0 → effective_charges_max = 5 - 0 = 5
+        assert bond["charges"] == 5
+        assert bond["degradations"] == 0
 
-    def test_pc_bond_degraded_stress_degradations(
+    def test_pc_bond_degraded_degradations(
         self, client: TestClient, seed_data: dict, db: DBSession
     ):
-        """PC bond with stress_degradations=2 reflects effective_bond_stress_max = 3."""
+        """PC bond with degradations=2 reflects effective_charges_max = 3."""
         pc_id = seed_data["pc3"].id
-        # Add a pc_bond with stress_degradations=2 for pc3
+        # Add a pc_bond with degradations=2 for pc3
         bond_slot = Slot(
             slot_type="pc_bond",
             owner_type="character",
             owner_id=pc_id,
             name="Strained Bond",
             description="Has been degraded.",
-            stress=3,
-            stress_degradations=2,
+            charges=3,
+            degradations=2,
             is_trauma=False,
             is_active=True,
             bidirectional=False,
@@ -810,13 +810,13 @@ class TestBondDisplayEffectiveStressMax:
         assert len(pc_bonds) == 1
 
         bond = pc_bonds[0]
-        assert bond["stress_degradations"] == 2
-        # Client computes: effective_bond_stress_max = 5 - stress_degradations = 3
+        assert bond["degradations"] == 2
+        # Client computes: effective_charges_max = 5 - degradations = 3
         # We verify the raw field is present and correct; the formula is documented
-        assert bond["stress"] == 3
+        assert bond["charges"] == 3
 
-    def test_npc_bond_has_null_stress_fields(self, client: TestClient, seed_data: dict):
-        """NPC bond (npc_bond slot_type) has null stress and stress_degradations."""
+    def test_npc_bond_has_null_charges_fields(self, client: TestClient, seed_data: dict):
+        """NPC bond (npc_bond slot_type) has null charges and degradations."""
         auth_as(client, seed_data["gm"])
         npc_id = seed_data["npc1"].id
         response = client.get(f"/api/v1/characters/{npc_id}")
@@ -827,5 +827,5 @@ class TestBondDisplayEffectiveStressMax:
         assert len(npc_bonds) >= 1
 
         bond = npc_bonds[0]
-        assert bond["stress"] is None
-        assert bond["stress_degradations"] is None
+        assert bond["charges"] is None
+        assert bond["degradations"] is None

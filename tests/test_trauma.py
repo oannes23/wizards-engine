@@ -69,8 +69,8 @@ def _pc_bond(
     is_active: bool = True,
     is_trauma: bool = False,
     name: str = "Test Bond",
-    stress: int = 5,
-    stress_degradations: int = 0,
+    charges: int = 5,
+    degradations: int = 0,
 ) -> Slot:
     """Create and flush a pc_bond owned by *owner*.
 
@@ -93,8 +93,8 @@ def _pc_bond(
         is_active=is_active,
         bidirectional=False,
         is_trauma=is_trauma,
-        stress=stress,
-        stress_degradations=stress_degradations,
+        charges=charges,
+        degradations=degradations,
     )
     db.add(slot)
     db.flush()
@@ -213,8 +213,8 @@ class TestApplyTrauma:
         assert tb.target_id is None
         assert tb.name == "Haunted by Loss"
         assert tb.description == "Cannot let go."
-        assert tb.stress == 5
-        assert tb.stress_degradations == 0
+        assert tb.charges == 5
+        assert tb.degradations == 0
         assert tb.is_active is True
         assert tb.bidirectional is False
 

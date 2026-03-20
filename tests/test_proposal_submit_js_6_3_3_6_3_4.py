@@ -130,7 +130,7 @@ def _pc_bond(
     character_id: str,
     target_id: str,
     name: str = "Bond with test target",
-    stress: int = 3,
+    charges: int = 3,
 ) -> Slot:
     slot = Slot(
         slot_type="pc_bond",
@@ -139,7 +139,7 @@ def _pc_bond(
         name=name,
         target_type="character",
         target_id=target_id,
-        stress=stress,
+        charges=charges,
         is_active=True,
     )
     db.add(slot)

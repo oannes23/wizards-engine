@@ -5,6 +5,8 @@ persistent) so that every route that touches the auth cookie uses consistent
 settings.
 """
 
+import os
+
 from fastapi import Response
 
 COOKIE_NAME = "login_code"
@@ -13,6 +15,12 @@ COOKIE_NAME = "login_code"
 # (spec: "permanent until refreshed"), so the cookie should survive browser
 # restarts.
 _MAX_AGE = 365 * 24 * 60 * 60
+
+# Controls the Secure flag on the auth cookie. Default ``True`` (HTTPS-only).
+# Set ``WIZARDS_COOKIE_SECURE=false`` in the environment for local HTTP dev.
+_COOKIE_SECURE = os.environ.get("WIZARDS_COOKIE_SECURE", "true").lower() in (
+    "true", "1", "yes",
+)
 
 
 def set_auth_cookie(response: Response, login_code: str) -> None:
@@ -33,7 +41,7 @@ def set_auth_cookie(response: Response, login_code: str) -> None:
         key=COOKIE_NAME,
         value=login_code,
         httponly=True,
-        secure=True,
+        secure=_COOKIE_SECURE,
         samesite="lax",
         max_age=_MAX_AGE,
     )
@@ -50,6 +58,6 @@ def clear_auth_cookie(response: Response) -> None:
     response.delete_cookie(
         key=COOKIE_NAME,
         httponly=True,
-        secure=True,
+        secure=_COOKIE_SECURE,
         samesite="lax",
     )

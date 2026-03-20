@@ -107,8 +107,8 @@ def _create_bond_slot(
     character_id: str,
     target_id: str,
     target_type: str = "group",
-    stress: int = 2,
-    stress_degradations: int = 0,
+    charges: int = 2,
+    degradations: int = 0,
     is_trauma: bool = False,
     is_active: bool = True,
 ) -> Slot:
@@ -121,8 +121,8 @@ def _create_bond_slot(
         target_id=target_id,
         name="Test Bond",
         description="A test bond slot.",
-        stress=stress,
-        stress_degradations=stress_degradations,
+        charges=charges,
+        degradations=degradations,
         is_trauma=is_trauma,
         is_active=is_active,
         bidirectional=True,
@@ -461,7 +461,7 @@ class TestMaintainBondContract:
         """Frontend sends bond_instance_id and narrative — backend accepts both."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
 
@@ -482,7 +482,7 @@ class TestMaintainBondContract:
         pc = seed_data["pc1"]
         group = seed_data["group"]
         # Bond with 1 degradation: effective max = 4, charges currently 2
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2, stress_degradations=1)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2, degradations=1)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
 
@@ -492,7 +492,7 @@ class TestMaintainBondContract:
         )
 
         db.refresh(bond)
-        assert bond.stress == 4  # effective max = 5 - 1 = 4
+        assert bond.charges == 4  # effective max = 5 - 1 = 4
 
     def test_maintain_bond_ft_decrements_by_1(
         self, client: TestClient, seed_data: dict, db: Session
@@ -500,7 +500,7 @@ class TestMaintainBondContract:
         """Free Time decrements by exactly 1 after maintaining a bond."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=5)
         auth_as(client, seed_data["player1"])
 
@@ -518,7 +518,7 @@ class TestMaintainBondContract:
         """AC 6.2.3-6: narrative required — empty string returns 422."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
 
@@ -536,7 +536,7 @@ class TestMaintainBondContract:
         pc = seed_data["pc1"]
         group = seed_data["group"]
         trauma_bond = _create_bond_slot(
-            db, pc.id, group.id, stress=2, is_trauma=True
+            db, pc.id, group.id, charges=2, is_trauma=True
         )
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
@@ -554,8 +554,8 @@ class TestMaintainBondContract:
         """Bond at effective max charges returns 409 bond_already_maintained."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        # Full bond: stress=5, degradations=0 → already at effective max 5
-        bond = _create_bond_slot(db, pc.id, group.id, stress=5, stress_degradations=0)
+        # Full bond: charges=5, degradations=0 → already at effective max 5
+        bond = _create_bond_slot(db, pc.id, group.id, charges=5, degradations=0)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
 
@@ -572,7 +572,7 @@ class TestMaintainBondContract:
         """FT = 0 returns 409 insufficient_free_time."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=0)
         auth_as(client, seed_data["player1"])
 
@@ -588,7 +588,7 @@ class TestMaintainBondContract:
     ) -> None:
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
 
         response = client.post(
             f"/api/v1/characters/{pc.id}/maintain-bond",
@@ -602,7 +602,7 @@ class TestMaintainBondContract:
         """player2 cannot maintain a bond for pc1."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player2"])
 
@@ -618,7 +618,7 @@ class TestMaintainBondContract:
         """GM may maintain any character's bond."""
         pc = seed_data["pc2"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["gm"])
 
@@ -634,7 +634,7 @@ class TestMaintainBondContract:
         """Response is a CharacterResponse (contains id, name)."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=3)
         auth_as(client, seed_data["player1"])
 
@@ -976,13 +976,13 @@ class TestOptimisticRollbackContract:
         db.refresh(slot)
         assert slot.charge == 2
 
-    def test_maintain_bond_with_no_ft_leaves_stress_unchanged(
+    def test_maintain_bond_with_no_ft_leaves_charges_unchanged(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """When maintain-bond fails (FT=0), the bond stress is unchanged."""
+        """When maintain-bond fails (FT=0), the bond charges are unchanged."""
         pc = seed_data["pc1"]
         group = seed_data["group"]
-        bond = _create_bond_slot(db, pc.id, group.id, stress=2)
+        bond = _create_bond_slot(db, pc.id, group.id, charges=2)
         _set_meters(db, pc, free_time=0)
         auth_as(client, seed_data["player1"])
 
@@ -993,7 +993,7 @@ class TestOptimisticRollbackContract:
         assert response.status_code == 409
 
         db.refresh(bond)
-        assert bond.stress == 2
+        assert bond.charges == 2
 
 
 # ===========================================================================

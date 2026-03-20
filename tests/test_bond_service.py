@@ -275,8 +275,8 @@ class TestSourceSlotLimits:
                 name=f"Bond {i}",
                 is_active=True,
                 bidirectional=False,
-                stress=0,
-                stress_degradations=0,
+                charges=0,
+                degradations=0,
                 is_trauma=False,
             )
             db.add(slot)
@@ -387,8 +387,8 @@ class TestSourceSlotLimits:
                 name=f"Past Bond {i}",
                 is_active=False,  # retired
                 bidirectional=False,
-                stress=0,
-                stress_degradations=0,
+                charges=0,
+                degradations=0,
                 is_trauma=False,
             )
             db.add(slot)
@@ -428,8 +428,8 @@ class TestTargetSoftLimitWarnings:
                 name="Fan Bond",
                 is_active=True,
                 bidirectional=True,
-                stress=0,
-                stress_degradations=0,
+                charges=0,
+                degradations=0,
                 is_trauma=False,
             )
             db.add(slot)
@@ -457,8 +457,8 @@ class TestTargetSoftLimitWarnings:
                 name="Fan Bond",
                 is_active=True,
                 bidirectional=True,
-                stress=0,
-                stress_degradations=0,
+                charges=0,
+                degradations=0,
                 is_trauma=False,
             )
             db.add(slot)
@@ -615,23 +615,23 @@ class TestBondCreationFields:
         assert bond.description == "We go way back."
 
     def test_pc_bond_mechanical_fields_initialised(self, db: Session) -> None:
-        """PC bonds start with stress=5 (full charges) and stress_degradations=0."""
+        """PC bonds start with charges=5 (full charges) and degradations=0."""
         pc = _full_pc(db)
         target = _full_pc(db, "T")
         result = create_bond(db, "character", pc.id, "character", target.id)
         bond = result.bond
-        assert bond.stress == 5  # Full charges (base max)
-        assert bond.stress_degradations == 0
+        assert bond.charges == 5  # Full charges (base max)
+        assert bond.degradations == 0
         assert bond.is_trauma is False
 
     def test_npc_bond_has_no_mechanical_fields(self, db: Session) -> None:
-        """NPC bonds do not set stress/degradation/is_trauma."""
+        """NPC bonds do not set charges/degradations/is_trauma."""
         npc = _npc(db)
         target = _full_pc(db, "T")
         result = create_bond(db, "character", npc.id, "character", target.id)
         bond = result.bond
-        assert bond.stress is None
-        assert bond.stress_degradations is None
+        assert bond.charges is None
+        assert bond.degradations is None
         assert bond.is_trauma is None
 
     def test_owner_and_target_ids_stored(self, db: Session) -> None:

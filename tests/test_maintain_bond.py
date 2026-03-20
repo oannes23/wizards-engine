@@ -5,7 +5,7 @@ Covers:
 - Happy path: bond with 0 charges → restored to effective max
 - Happy path: degraded bond (2 degradations → effective max 3 → charges restored to 3)
 - Happy path: GM can maintain on behalf of any character
-- Happy path: bond with NULL stress → treated as 0, restored to effective max
+- Happy path: bond with NULL charges → treated as 0, restored to effective max
 - Auth: unauthenticated → 401
 - Auth: wrong player → 403
 - Character not found → 404
@@ -22,7 +22,7 @@ Covers:
 - Bond already at effective max → 409 bond_already_maintained
 - Insufficient FT (FT=0) → 409 insufficient_free_time
 - Proposal with action_type maintain_bond → 422 (rejected)
-- Event created with correct changes dict (including correct stress before/after)
+- Event created with correct changes dict (including correct charges before/after)
 - Event includes narrative
 - GM as actor sets actor_type to "gm"
 """
@@ -62,8 +62,8 @@ def _maintain_bond(
 def _create_pc_bond_slot(
     db: Session,
     character_id: str,
-    stress: int | None = 2,
-    stress_degradations: int = 0,
+    charges: int | None = 2,
+    degradations: int = 0,
     is_active: bool = True,
     is_trauma: bool = False,
 ) -> Slot:
@@ -74,8 +74,8 @@ def _create_pc_bond_slot(
         owner_id=character_id,
         name="Test Bond",
         description="A test bond slot.",
-        stress=stress,
-        stress_degradations=stress_degradations,
+        charges=charges,
+        degradations=degradations,
         is_active=is_active,
         is_trauma=is_trauma,
         bidirectional=True,
@@ -104,7 +104,7 @@ class TestMaintainBondAuth:
     def test_unauthenticated_returns_401(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
         assert response.status_code == 401
@@ -113,7 +113,7 @@ class TestMaintainBondAuth:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """player2 cannot call maintain-bond for pc1 (owned by player1)."""
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player2"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -123,7 +123,7 @@ class TestMaintainBondAuth:
     def test_owner_can_maintain_own_bond(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -133,7 +133,7 @@ class TestMaintainBondAuth:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """GM may call maintain-bond on behalf of any character."""
-        slot = _create_pc_bond_slot(db, seed_data["pc2"].id, stress=1)
+        slot = _create_pc_bond_slot(db, seed_data["pc2"].id, charges=1)
         _set_free_time(db, seed_data["pc2"], free_time=2)
         auth_as(client, seed_data["gm"])
         response = _maintain_bond(client, seed_data["pc2"].id, slot.id)
@@ -160,7 +160,7 @@ class TestMaintainBondNotFound:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         pc = seed_data["pc3"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=2)
+        slot = _create_pc_bond_slot(db, pc.id, charges=2)
         pc.is_deleted = True
         db.commit()
         db.refresh(pc)
@@ -195,7 +195,7 @@ class TestMaintainBondValidation:
         npc = seed_data["npc1"]
         # npc1_bond is an npc_bond type but we need to test not_a_pc
         # so we check that a simplified character is rejected before slot checks
-        slot = _create_pc_bond_slot(db, npc.id, stress=2)
+        slot = _create_pc_bond_slot(db, npc.id, charges=2)
         auth_as(client, seed_data["gm"])
         response = _maintain_bond(client, npc.id, slot.id)
         assert response.status_code == 422
@@ -204,7 +204,7 @@ class TestMaintainBondValidation:
     def test_empty_narrative_returns_422(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id, narrative="")
@@ -214,7 +214,7 @@ class TestMaintainBondValidation:
     def test_whitespace_only_narrative_returns_422(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id, narrative="   ")
@@ -225,7 +225,7 @@ class TestMaintainBondValidation:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """Pydantic rejects a body missing the required narrative field."""
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = client.post(
@@ -238,7 +238,7 @@ class TestMaintainBondValidation:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """A bond belonging to pc2 cannot be maintained via pc1's endpoint."""
-        pc2_slot = _create_pc_bond_slot(db, seed_data["pc2"].id, stress=2)
+        pc2_slot = _create_pc_bond_slot(db, seed_data["pc2"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["gm"])
         response = _maintain_bond(client, seed_data["pc1"].id, pc2_slot.id)
@@ -248,7 +248,7 @@ class TestMaintainBondValidation:
     def test_inactive_bond_returns_422(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2, is_active=False)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2, is_active=False)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -283,7 +283,7 @@ class TestMaintainBondValidation:
     ) -> None:
         """A trauma bond cannot be maintained."""
         trauma_slot = _create_pc_bond_slot(
-            db, seed_data["pc1"].id, stress=2, is_trauma=True
+            db, seed_data["pc1"].id, charges=2, is_trauma=True
         )
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
@@ -303,8 +303,8 @@ class TestMaintainBondBusinessErrors:
     def test_bond_already_at_effective_max_returns_409(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """Bond with stress == effective_max (5, no degradations) returns 409."""
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=5, stress_degradations=0)
+        """Bond with charges == effective_max (5, no degradations) returns 409."""
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=5, degradations=0)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -314,8 +314,8 @@ class TestMaintainBondBusinessErrors:
     def test_degraded_bond_already_at_effective_max_returns_409(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """Bond with 2 degradations and stress=3 (=effective_max) returns 409."""
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=3, stress_degradations=2)
+        """Bond with 2 degradations and charges=3 (=effective_max) returns 409."""
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=3, degradations=2)
         _set_free_time(db, seed_data["pc1"], free_time=3)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -325,7 +325,7 @@ class TestMaintainBondBusinessErrors:
     def test_insufficient_free_time_returns_409(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, stress=2)
+        slot = _create_pc_bond_slot(db, seed_data["pc1"].id, charges=2)
         _set_free_time(db, seed_data["pc1"], free_time=0)
         auth_as(client, seed_data["player1"])
         response = _maintain_bond(client, seed_data["pc1"].id, slot.id)
@@ -346,7 +346,7 @@ class TestMaintainBondHappyPath:
     ) -> None:
         """Bond with partial charges gets set to effective_max; FT decremented by 1."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=2, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=2, degradations=0)
         _set_free_time(db, pc, free_time=5)
 
         auth_as(client, seed_data["player1"])
@@ -360,16 +360,16 @@ class TestMaintainBondHappyPath:
         db.refresh(pc)
         assert pc.free_time == 4
 
-        # Verify slot stress updated in DB
+        # Verify slot charges updated in DB
         db.refresh(slot)
-        assert slot.stress == 5  # effective_max = 5 - 0 = 5
+        assert slot.charges == 5  # effective_max = 5 - 0 = 5
 
     def test_zero_charges_restored_to_effective_max(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """Bond with stress=0 is restored to effective_max (5)."""
+        """Bond with charges=0 is restored to effective_max (5)."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=0, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=0, degradations=0)
         _set_free_time(db, pc, free_time=2)
 
         auth_as(client, seed_data["player1"])
@@ -377,14 +377,14 @@ class TestMaintainBondHappyPath:
         assert response.status_code == 200
 
         db.refresh(slot)
-        assert slot.stress == 5
+        assert slot.charges == 5
 
     def test_degraded_bond_restored_to_reduced_effective_max(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """Bond with 2 degradations has effective_max=3; restored to 3, not 5."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=1, stress_degradations=2)
+        slot = _create_pc_bond_slot(db, pc.id, charges=1, degradations=2)
         _set_free_time(db, pc, free_time=3)
 
         auth_as(client, seed_data["player1"])
@@ -392,14 +392,14 @@ class TestMaintainBondHappyPath:
         assert response.status_code == 200
 
         db.refresh(slot)
-        assert slot.stress == 3  # effective_max = 5 - 2 = 3
+        assert slot.charges == 3  # effective_max = 5 - 2 = 3
 
     def test_gm_maintain_happy_path(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """GM successfully maintains a bond for pc2."""
         pc = seed_data["pc2"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=3, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=3, degradations=0)
         _set_free_time(db, pc, free_time=4)
 
         auth_as(client, seed_data["gm"])
@@ -407,17 +407,17 @@ class TestMaintainBondHappyPath:
         assert response.status_code == 200
 
         db.refresh(slot)
-        assert slot.stress == 5
+        assert slot.charges == 5
 
         db.refresh(pc)
         assert pc.free_time == 3
 
-    def test_null_stress_treated_as_zero_restored_to_effective_max(
+    def test_null_charges_treated_as_zero_restored_to_effective_max(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """Bond with stress=NULL is treated as 0 and restored to effective_max."""
+        """Bond with charges=NULL is treated as 0 and restored to effective_max."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=None, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=None, degradations=0)
         _set_free_time(db, pc, free_time=2)
 
         auth_as(client, seed_data["player1"])
@@ -425,7 +425,7 @@ class TestMaintainBondHappyPath:
         assert response.status_code == 200
 
         db.refresh(slot)
-        assert slot.stress == 5
+        assert slot.charges == 5
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +441,7 @@ class TestMaintainBondEvent:
     ) -> None:
         pc = seed_data["pc1"]
         player = seed_data["player1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=2, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=2, degradations=0)
         _set_free_time(db, pc, free_time=5)
 
         auth_as(client, player)
@@ -464,13 +464,13 @@ class TestMaintainBondEvent:
 
         # Changes dict
         changes = event.changes
-        assert f"slot.{slot.id}.stress" in changes
+        assert f"slot.{slot.id}.charges" in changes
         assert f"character.{pc.id}.free_time" in changes
 
-        stress_change = changes[f"slot.{slot.id}.stress"]
-        assert stress_change["op"] == "meter.set"
-        assert stress_change["before"] == 2
-        assert stress_change["after"] == 5
+        charges_change = changes[f"slot.{slot.id}.charges"]
+        assert charges_change["op"] == "meter.set"
+        assert charges_change["before"] == 2
+        assert charges_change["after"] == 5
 
         ft_change = changes[f"character.{pc.id}.free_time"]
         assert ft_change["op"] == "meter.delta"
@@ -481,7 +481,7 @@ class TestMaintainBondEvent:
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=1)
+        slot = _create_pc_bond_slot(db, pc.id, charges=1)
         _set_free_time(db, pc, free_time=2)
 
         auth_as(client, seed_data["player1"])
@@ -511,7 +511,7 @@ class TestMaintainBondEvent:
         """When GM calls the endpoint, actor_type is 'gm' and actor_id is the GM's id."""
         pc = seed_data["pc2"]
         gm = seed_data["gm"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=3)
+        slot = _create_pc_bond_slot(db, pc.id, charges=3)
         _set_free_time(db, pc, free_time=3)
 
         auth_as(client, gm)
@@ -527,12 +527,12 @@ class TestMaintainBondEvent:
         assert event.actor_type == "gm"
         assert event.actor_id == gm.id
 
-    def test_null_stress_event_records_before_as_zero(
+    def test_null_charges_event_records_before_as_zero(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """When stress is NULL, the event's 'before' value is recorded as 0."""
+        """When charges is NULL, the event's 'before' value is recorded as 0."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=None, stress_degradations=0)
+        slot = _create_pc_bond_slot(db, pc.id, charges=None, degradations=0)
         _set_free_time(db, pc, free_time=2)
 
         auth_as(client, seed_data["player1"])
@@ -545,16 +545,16 @@ class TestMaintainBondEvent:
             .first()
         )
         assert event is not None
-        stress_change = event.changes[f"slot.{slot.id}.stress"]
-        assert stress_change["before"] == 0
-        assert stress_change["after"] == 5
+        charges_change = event.changes[f"slot.{slot.id}.charges"]
+        assert charges_change["before"] == 0
+        assert charges_change["after"] == 5
 
     def test_degraded_bond_event_records_correct_effective_max(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
         """Event records after=3 (effective_max) when degradations=2."""
         pc = seed_data["pc1"]
-        slot = _create_pc_bond_slot(db, pc.id, stress=1, stress_degradations=2)
+        slot = _create_pc_bond_slot(db, pc.id, charges=1, degradations=2)
         _set_free_time(db, pc, free_time=3)
 
         auth_as(client, seed_data["player1"])
@@ -567,9 +567,9 @@ class TestMaintainBondEvent:
             .first()
         )
         assert event is not None
-        stress_change = event.changes[f"slot.{slot.id}.stress"]
-        assert stress_change["before"] == 1
-        assert stress_change["after"] == 3  # effective_max = 5 - 2 = 3
+        charges_change = event.changes[f"slot.{slot.id}.charges"]
+        assert charges_change["before"] == 1
+        assert charges_change["after"] == 3  # effective_max = 5 - 2 = 3
 
 
 # ---------------------------------------------------------------------------

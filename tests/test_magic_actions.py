@@ -112,7 +112,7 @@ def _pc_bond_slot(
     *,
     owner_id: str,
     name: str = "A Bond",
-    stress: int = 0,
+    charges: int = 0,
     is_trauma: bool = False,
 ) -> Slot:
     slot = Slot(
@@ -120,8 +120,8 @@ def _pc_bond_slot(
         owner_type="character",
         owner_id=owner_id,
         name=name,
-        stress=stress,
-        stress_degradations=0,
+        charges=charges,
+        degradations=0,
         is_trauma=is_trauma,
         is_active=True,
     )
@@ -1833,12 +1833,12 @@ class TestUseMagicPlotSpend:
 class TestUseMagicBondStrained:
     """bond_strained GM override strains the modifier bond on use_magic approval."""
 
-    def test_bond_stress_incremented_on_use_magic_with_bond_strained(
+    def test_bond_charges_decremented_on_use_magic_with_bond_strained(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """bond_strained=True adds stress to the modifier bond."""
+        """bond_strained=True decrements charges on the modifier bond."""
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, name="My Bond", stress=0)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, name="My Bond", charges=5)
         db.flush()
 
         effect = _use_magic_effect(
@@ -1865,7 +1865,7 @@ class TestUseMagicBondStrained:
 
         db.expire_all()
         db.refresh(bond)
-        assert bond.stress == 1
+        assert bond.charges == 4
 
     def test_bond_strained_no_modifier_bond_does_nothing(
         self, client: TestClient, db: Session, seed_data: dict
@@ -1884,13 +1884,13 @@ class TestUseMagicBondStrained:
         )
         assert response.status_code == 200
 
-    def test_bond_strained_at_max_triggers_degradation_on_use_magic(
+    def test_bond_strained_at_zero_triggers_degradation_on_use_magic(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """bond_strained fires degradation when stress hits effective_max."""
+        """bond_strained fires degradation when charges hit 0."""
         pc1 = seed_data["pc1"]
-        # stress=4 means one more increment (to 5) hits effective_max=5.
-        bond = _pc_bond_slot(db, owner_id=pc1.id, name="Strained Bond", stress=4)
+        # charges=1 means one more decrement (to 0) triggers degradation.
+        bond = _pc_bond_slot(db, owner_id=pc1.id, name="Strained Bond", charges=1)
         db.flush()
 
         effect = _use_magic_effect(
@@ -1917,16 +1917,16 @@ class TestUseMagicBondStrained:
 
         db.expire_all()
         db.refresh(bond)
-        # Degradation fired: stress reset to 0, degradations incremented.
-        assert bond.stress == 0
-        assert bond.stress_degradations == 1
+        # Degradation fired: charges reset to new effective max (4), degradations incremented.
+        assert bond.charges == 4
+        assert bond.degradations == 1
 
-    def test_charge_magic_bond_strained_increments_stress(
+    def test_charge_magic_bond_strained_decrements_charges(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         """bond_strained also works for charge_magic approvals."""
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, name="My Bond", stress=1)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, name="My Bond", charges=3)
         eff = _magic_effect(
             db, character_id=pc1.id, effect_type="charged", charges_current=1, charges_max=5
         )
@@ -1972,4 +1972,4 @@ class TestUseMagicBondStrained:
 
         db.expire_all()
         db.refresh(bond)
-        assert bond.stress == 2
+        assert bond.charges == 2

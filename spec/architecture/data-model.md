@@ -190,8 +190,8 @@ starred_objects ──> users + Game Object (user_id + object_type + object_id)
 | bidirectional | BOOLEAN | no | Whether both sides see this bond. Bonds only. |
 | template_id | TEXT | no | FK → `trait_templates`. Core/Role traits only. |
 | charge | INTEGER | no | 0–5. Core/Role traits only. |
-| stress | INTEGER | no | 0–5 (effective max = `5 - stress_degradations`). PC bonds only. Conceptually "bond charges" in bonds.md terminology — the physical column name `stress` is kept for simplicity. |
-| stress_degradations | INTEGER | no | Count of max reductions. PC bonds only. Conceptually "degradation count" in bonds.md terminology — the physical column name `stress_degradations` is kept for simplicity. |
+| charges | INTEGER | no | 0–5 (effective max = `5 - degradations`). PC bonds only. Bond charges. |
+| degradations | INTEGER | no | Count of max reductions. PC bonds only. |
 | is_trauma | BOOLEAN | no | True if slot holds a Trauma. PC bonds only. |
 | created_at | DATETIME | yes | Auto |
 | updated_at | DATETIME | yes | Auto |
@@ -202,8 +202,8 @@ starred_objects ──> users + Game Object (user_id + object_type + object_id)
 |-----------|-------|-----------|---------|-------------------|
 | `core_trait` | Character (full) | 2 | No | `template_id`, `charge` |
 | `role_trait` | Character (full) | 3 | No | `template_id`, `charge` |
-| `pc_bond` | Character (full) | 8 | Yes | `stress`, `stress_degradations`, `is_trauma` + labels/bidirectional |
-| `npc_bond` | Character (simplified) | 7 | Yes | Labels/bidirectional only (no stress) |
+| `pc_bond` | Character (full) | 8 | Yes | `charges`, `degradations`, `is_trauma` + labels/bidirectional |
+| `npc_bond` | Character (simplified) | 7 | Yes | Labels/bidirectional only (no charges) |
 | `group_trait` | Group | 10 | No | None (descriptive only) |
 | `group_relation` | Group | 7 | Yes (Group) | Labels/bidirectional only |
 | `group_holding` | Group | Unlimited | Yes (Location) | None (directional, descriptive) |
@@ -558,4 +558,4 @@ _All resolved._
 
 ---
 
-_Last updated: 2026-03-15 (added `resolve_trauma` action type; updated action type count to 12; added bonds.md terminology note for `stress`/`stress_degradations` columns in `slots`)_
+_Last updated: 2026-03-19 (renamed `stress`/`stress_degradations` columns to `charges`/`degradations` in `slots` table)_

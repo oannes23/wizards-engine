@@ -354,6 +354,10 @@ def start_session(db: Session, session: SessionModel) -> SessionModel:
             "Session must have time_now set before it can be started."
         )
 
+    error = validate_time_now(db, session.time_now)
+    if error:
+        raise ValueError(error)
+
     # Ensure participants are loaded before we start mutating.
     participants = session.participants  # accesses the relationship
 

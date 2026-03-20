@@ -859,108 +859,6 @@ def calculate_regain_gnosis(
     }
 
 
-def calculate_recharge_trait(
-    db: Session,
-    character: Character,
-    selections: dict[str, Any],
-) -> dict[str, Any]:
-    """Validate and compute the ``calculated_effect`` for a ``recharge_trait`` proposal.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character: The character submitting the proposal.
-        selections: Expected key: ``trait_id`` (str, required).
-
-    Returns:
-        A ``calculated_effect`` dict::
-
-            {
-                "trait_id": str,
-                "charges_restored": 5,
-                "costs": {"free_time": 1}
-            }
-
-    Raises:
-        HTTPException(422): If FT is insufficient, trait_id is missing, the
-            trait is not found, not owned by this character, not a core/role
-            trait, or is inactive.
-    """
-    _check_free_time(character)
-
-    trait_id: str | None = selections.get("trait_id")
-    if not trait_id:
-        _raise_422("trait_id", "trait_id is required for recharge_trait proposals")
-
-    slot: Slot | None = db.get(Slot, trait_id)
-    if slot is None:
-        _raise_422("trait_id", f"Trait '{trait_id}' not found")
-    if slot.owner_id != character.id:
-        _raise_422("trait_id", f"Trait '{trait_id}' does not belong to this character")
-    if slot.slot_type not in ("core_trait", "role_trait"):
-        _raise_422(
-            "trait_id",
-            f"Trait '{trait_id}' is a {slot.slot_type}, expected core_trait or role_trait",
-        )
-    if not slot.is_active:
-        _raise_422("trait_id", f"Trait '{trait_id}' is not active")
-
-    return {
-        "trait_id": slot.id,
-        "charges_restored": 5,
-        "costs": {"free_time": 1},
-    }
-
-
-def calculate_maintain_bond(
-    db: Session,
-    character: Character,
-    selections: dict[str, Any],
-) -> dict[str, Any]:
-    """Validate and compute the ``calculated_effect`` for a ``maintain_bond`` proposal.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character: The character submitting the proposal.
-        selections: Expected key: ``bond_id`` (str, required).
-
-    Returns:
-        A ``calculated_effect`` dict::
-
-            {
-                "bond_id": str,
-                "stress_healed": int,
-                "costs": {"free_time": 1}
-            }
-
-    Raises:
-        HTTPException(422): If FT is insufficient, bond_id is missing, the
-            bond is not found, not owned by this character, not a pc_bond,
-            or is inactive.
-    """
-    _check_free_time(character)
-
-    bond_id: str | None = selections.get("bond_id")
-    if not bond_id:
-        _raise_422("bond_id", "bond_id is required for maintain_bond proposals")
-
-    slot: Slot | None = db.get(Slot, bond_id)
-    if slot is None:
-        _raise_422("bond_id", f"Bond '{bond_id}' not found")
-    if slot.owner_id != character.id:
-        _raise_422("bond_id", f"Bond '{bond_id}' does not belong to this character")
-    if slot.slot_type != "pc_bond":
-        _raise_422(
-            "bond_id",
-            f"Bond '{bond_id}' is a {slot.slot_type}, expected pc_bond",
-        )
-    if not slot.is_active:
-        _raise_422("bond_id", f"Bond '{bond_id}' is not active")
-
-    return {
-        "bond_id": slot.id,
-        "stress_healed": slot.stress or 0,
-        "costs": {"free_time": 1},
-    }
 
 
 def calculate_work_on_project(
@@ -1378,10 +1276,6 @@ def create_proposal(
         if character is not None:
             if action_type == "regain_gnosis":
                 calculated_effect = calculate_regain_gnosis(db, character, selections)
-            elif action_type == "recharge_trait":
-                calculated_effect = calculate_recharge_trait(db, character, selections)
-            elif action_type == "maintain_bond":
-                calculated_effect = calculate_maintain_bond(db, character, selections)
             elif action_type == "work_on_project":
                 calculated_effect = calculate_work_on_project(db, character, selections)
             elif action_type == "rest":
@@ -1535,14 +1429,6 @@ def update_proposal(
                 proposal.calculated_effect = calculate_regain_gnosis(
                     db, dt_character, proposal.selections
                 )
-            elif proposal.action_type == "recharge_trait":
-                proposal.calculated_effect = calculate_recharge_trait(
-                    db, dt_character, proposal.selections
-                )
-            elif proposal.action_type == "maintain_bond":
-                proposal.calculated_effect = calculate_maintain_bond(
-                    db, dt_character, proposal.selections
-                )
             elif proposal.action_type == "work_on_project":
                 proposal.calculated_effect = calculate_work_on_project(
                     db, dt_character, proposal.selections
@@ -1608,6 +1494,51 @@ def delete_proposal(db: Session, proposal: Proposal) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _apply_bond_strain_to_slot(
+    db: Session,
+    bond_slot: Slot,
+    changes: dict[str, Any],
+) -> None:
+    """Decrement a bond's charges by 1, applying degradation if charges hit 0.
+
+    Mutates *bond_slot* and *changes* in place.
+
+    Args:
+        db: Active SQLAlchemy session.
+        bond_slot: The PC bond slot to strain.
+        changes: The changes dict to populate with before/after records.
+    """
+    degradations: int = bond_slot.degradations or 0
+    effective_max: int = 5 - degradations
+    before_charges = bond_slot.charges or 0
+    new_charges = before_charges - 1
+
+    if new_charges <= 0:
+        # Hit the boundary: charges depleted — apply degradation and reset.
+        degradations += 1
+        bond_slot.degradations = degradations
+        new_effective_max = max(0, 5 - degradations)
+        bond_slot.charges = new_effective_max
+        changes[f"slot.{bond_slot.id}.charges"] = {
+            "op": "meter.set",
+            "before": before_charges,
+            "after": new_effective_max,
+        }
+        changes[f"slot.{bond_slot.id}.degradations"] = {
+            "op": "meter.delta",
+            "before": degradations - 1,
+            "after": degradations,
+        }
+    else:
+        bond_slot.charges = new_charges
+        changes[f"slot.{bond_slot.id}.charges"] = {
+            "op": "meter.delta",
+            "before": before_charges,
+            "after": new_charges,
+        }
+    db.flush()
+
+
 def _apply_use_skill(
     db: Session,
     character: Character,
@@ -1618,8 +1549,8 @@ def _apply_use_skill(
 
     Deducts trait charges for each trait modifier and deducts Plot if a
     ``plot_spend`` was recorded.  If ``gm_overrides["bond_strained"]`` is
-    ``True``, adds +1 stress to the modifier bond and handles the
-    stress-at-max boundary (reset + increment degradations).
+    ``True``, applies one strain to the modifier bond (decrement charge;
+    degrade at 0).
 
     Args:
         db: Active SQLAlchemy session.
@@ -1680,33 +1611,7 @@ def _apply_use_skill(
         if bond_mod is not None:
             bond_slot: Slot | None = db.get(Slot, bond_mod["id"])
             if bond_slot is not None:
-                degradations: int = bond_slot.stress_degradations or 0
-                max_stress: int = 5 - degradations
-                before_stress = bond_slot.stress or 0
-                new_stress = before_stress + 1
-
-                if new_stress >= max_stress:
-                    # Hit the boundary: reset stress, increment degradations.
-                    bond_slot.stress = 0
-                    bond_slot.stress_degradations = degradations + 1
-                    changes[f"slot.{bond_slot.id}.stress"] = {
-                        "op": "meter.set",
-                        "before": before_stress,
-                        "after": 0,
-                    }
-                    changes[f"slot.{bond_slot.id}.stress_degradations"] = {
-                        "op": "meter.delta",
-                        "before": degradations,
-                        "after": degradations + 1,
-                    }
-                else:
-                    bond_slot.stress = new_stress
-                    changes[f"slot.{bond_slot.id}.stress"] = {
-                        "op": "meter.delta",
-                        "before": before_stress,
-                        "after": new_stress,
-                    }
-                db.flush()
+                _apply_bond_strain_to_slot(db, bond_slot, changes)
 
     return changes
 
@@ -2043,32 +1948,7 @@ def _apply_use_magic(
         if bond_mod is not None:
             bond_slot_s: Slot | None = db.get(Slot, bond_mod["id"])
             if bond_slot_s is not None:
-                degradations_s: int = bond_slot_s.stress_degradations or 0
-                max_stress_s: int = 5 - degradations_s
-                before_stress_s = bond_slot_s.stress or 0
-                new_stress_s = before_stress_s + 1
-
-                if new_stress_s >= max_stress_s:
-                    bond_slot_s.stress = 0
-                    bond_slot_s.stress_degradations = degradations_s + 1
-                    changes[f"slot.{bond_slot_s.id}.stress"] = {
-                        "op": "meter.set",
-                        "before": before_stress_s,
-                        "after": 0,
-                    }
-                    changes[f"slot.{bond_slot_s.id}.stress_degradations"] = {
-                        "op": "meter.delta",
-                        "before": degradations_s,
-                        "after": degradations_s + 1,
-                    }
-                else:
-                    bond_slot_s.stress = new_stress_s
-                    changes[f"slot.{bond_slot_s.id}.stress"] = {
-                        "op": "meter.delta",
-                        "before": before_stress_s,
-                        "after": new_stress_s,
-                    }
-                db.flush()
+                _apply_bond_strain_to_slot(db, bond_slot_s, changes)
 
     # Bond sacrifices — retire
     for bond_sac in costs.get("bond_sacrifices") or []:
@@ -2261,32 +2141,7 @@ def _apply_charge_magic(
         if bond_mod_cm is not None:
             bond_slot_cm: Slot | None = db.get(Slot, bond_mod_cm["id"])
             if bond_slot_cm is not None:
-                degradations_cm: int = bond_slot_cm.stress_degradations or 0
-                max_stress_cm: int = 5 - degradations_cm
-                before_stress_cm = bond_slot_cm.stress or 0
-                new_stress_cm = before_stress_cm + 1
-
-                if new_stress_cm >= max_stress_cm:
-                    bond_slot_cm.stress = 0
-                    bond_slot_cm.stress_degradations = degradations_cm + 1
-                    changes[f"slot.{bond_slot_cm.id}.stress"] = {
-                        "op": "meter.set",
-                        "before": before_stress_cm,
-                        "after": 0,
-                    }
-                    changes[f"slot.{bond_slot_cm.id}.stress_degradations"] = {
-                        "op": "meter.delta",
-                        "before": degradations_cm,
-                        "after": degradations_cm + 1,
-                    }
-                else:
-                    bond_slot_cm.stress = new_stress_cm
-                    changes[f"slot.{bond_slot_cm.id}.stress"] = {
-                        "op": "meter.delta",
-                        "before": before_stress_cm,
-                        "after": new_stress_cm,
-                    }
-                db.flush()
+                _apply_bond_strain_to_slot(db, bond_slot_cm, changes)
 
     # Bond sacrifices — retire
     for bond_sac in costs.get("bond_sacrifices") or []:
@@ -2451,83 +2306,6 @@ def _apply_regain_gnosis(
 
     _apply_downtime_ft_cost(db, character, changes)
     _apply_downtime_trait_charges(db, effective_effect, changes)
-
-    return changes
-
-
-def _apply_recharge_trait(
-    db: Session,
-    character: Character,
-    effective_effect: dict[str, Any],
-    gm_overrides: dict[str, Any],
-) -> dict[str, Any]:
-    """Set a trait's charge to 5 and deduct 1 Free Time.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character: The character whose resources are changed.
-        effective_effect: The final ``calculated_effect`` after GM overrides.
-        gm_overrides: The raw GM overrides dict (unused for this action type).
-
-    Returns:
-        A ``changes`` dict keyed by fully-qualified change keys.
-    """
-    changes: dict[str, Any] = {}
-
-    trait_id: str | None = effective_effect.get("trait_id")
-    if trait_id:
-        slot: Slot | None = db.get(Slot, trait_id)
-        if slot is not None:
-            before_charge = slot.charge or 0
-            slot.charge = 5
-            changes[f"slot.{slot.id}.charge"] = {
-                "op": "meter.set",
-                "before": before_charge,
-                "after": 5,
-            }
-            db.flush()
-
-    _apply_downtime_ft_cost(db, character, changes)
-
-    return changes
-
-
-def _apply_maintain_bond(
-    db: Session,
-    character: Character,
-    effective_effect: dict[str, Any],
-    gm_overrides: dict[str, Any],
-) -> dict[str, Any]:
-    """Reset a bond's stress to 0 and deduct 1 Free Time.
-
-    Note: Only resets stress (bond charges); does not reverse degradations.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character: The character whose resources are changed.
-        effective_effect: The final ``calculated_effect`` after GM overrides.
-        gm_overrides: The raw GM overrides dict (unused for this action type).
-
-    Returns:
-        A ``changes`` dict keyed by fully-qualified change keys.
-    """
-    changes: dict[str, Any] = {}
-
-    bond_id: str | None = effective_effect.get("bond_id")
-    if bond_id:
-        bond_slot: Slot | None = db.get(Slot, bond_id)
-        if bond_slot is not None:
-            before_stress = bond_slot.stress or 0
-            if before_stress != 0:
-                bond_slot.stress = 0
-                changes[f"slot.{bond_slot.id}.stress"] = {
-                    "op": "meter.set",
-                    "before": before_stress,
-                    "after": 0,
-                }
-                db.flush()
-
-    _apply_downtime_ft_cost(db, character, changes)
 
     return changes
 
@@ -2778,8 +2556,6 @@ _APPLY_HANDLERS: dict = {
     "use_magic": _apply_use_magic,
     "charge_magic": _apply_charge_magic,
     "regain_gnosis": _apply_regain_gnosis,
-    "recharge_trait": _apply_recharge_trait,
-    "maintain_bond": _apply_maintain_bond,
     "work_on_project": _apply_work_on_project,
     "rest": _apply_rest,
     "new_trait": _apply_new_trait,

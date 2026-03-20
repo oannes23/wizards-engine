@@ -44,10 +44,9 @@ class BondDisplayResponse(BaseModel):
         ``True`` for current bonds; ``False`` for past/retired bonds.
     bidirectional:
         Whether the bond is visible from both sides.
-    stress:
+    charges:
         Current bond charges (PC bonds only; ``null`` for all other types).
-        Physical DB column name is ``stress``; conceptually "bond charges".
-    stress_degradations:
+    degradations:
         Degradation count (PC bonds only; ``null`` for all other types).
     is_trauma:
         ``True`` if this bond slot holds a Trauma rather than a relationship
@@ -66,10 +65,10 @@ class BondDisplayResponse(BaseModel):
     is_active: bool
     bidirectional: bool
     # PC bond mechanical fields — null for non-PC bonds.
-    stress: int | None
-    stress_degradations: int | None
+    charges: int | None
+    degradations: int | None
     is_trauma: bool | None
-    effective_bond_stress_max: int | None = None
+    effective_charges_max: int | None = None
 
 
 class BondGroups(BaseModel):

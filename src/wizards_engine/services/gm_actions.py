@@ -376,7 +376,7 @@ def handle_modify_character(
                     metadata={"proposal_id": proposal.id},
                 )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -514,7 +514,7 @@ def handle_modify_group(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -637,7 +637,7 @@ def handle_modify_location(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -793,7 +793,7 @@ def handle_modify_clock(
                 metadata={"proposal_id": proposal.id},
             )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -887,7 +887,7 @@ def handle_create_bond(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -904,11 +904,10 @@ def handle_modify_bond(
 ) -> Event:
     """Apply direct GM modifications to a bond slot and record an event.
 
-    Handles label and description changes as simple field sets.  Stress
-    (charge) changes follow meter semantics: delta adds to current, set
-    assigns absolute.  When stress reaches the effective max for a pc_bond
-    (5 - stress_degradations), the charges reset to 0 and a degradation is
-    applied automatically.
+    Handles label and description changes as simple field sets.  Charge
+    changes follow meter semantics: delta adds to current, set assigns
+    absolute.  When charges reach 0 for a pc_bond, a degradation is
+    applied automatically and charges reset to the new effective max.
 
     Args:
         db: Active SQLAlchemy session.
@@ -917,7 +916,7 @@ def handle_modify_bond(
             ``changes``.
 
     Returns:
-        A ``bond.stress_changed`` or ``bond.updated`` Event.
+        A ``bond.charges_changed`` or ``bond.updated`` Event.
 
     Raises:
         ValueError: If the bond slot does not exist or visibility is invalid.
@@ -934,7 +933,7 @@ def handle_modify_bond(
 
     changes: dict[str, Any] = {}
     ch = payload.changes
-    has_stress_change = False
+    has_charges_change = False
 
     # ------------------------------------------------------------------
     # Label / description changes (simple field sets)
@@ -951,86 +950,84 @@ def handle_modify_bond(
             }
 
     # ------------------------------------------------------------------
-    # stress_degradations change
+    # degradations change
     # ------------------------------------------------------------------
-    if ch.stress_degradations is not None:
-        op_obj = ch.stress_degradations
-        before_deg = bond.stress_degradations or 0
+    if ch.degradations is not None:
+        op_obj = ch.degradations
+        before_deg = bond.degradations or 0
         if op_obj.op == "delta":
             new_deg = before_deg + op_obj.value
         else:
             new_deg = op_obj.value
         new_deg = max(0, new_deg)
-        bond.stress_degradations = new_deg
-        changes[f"slot.{bond.id}.stress_degradations"] = {
+        bond.degradations = new_deg
+        changes[f"slot.{bond.id}.degradations"] = {
             "op": "meter.delta" if op_obj.op == "delta" else "meter.set",
             "before": before_deg,
             "after": new_deg,
         }
 
     # ------------------------------------------------------------------
-    # stress (bond charge) change — with degradation cascade on pc_bonds
+    # charges (bond charge) change — with degradation cascade on pc_bonds
     # ------------------------------------------------------------------
-    if ch.stress is not None:
-        op_obj = ch.stress
-        before_stress = bond.stress or 0
+    if ch.charges is not None:
+        op_obj = ch.charges
+        before_charges = bond.charges or 0
         if op_obj.op == "delta":
-            raw = before_stress + op_obj.value
+            raw = before_charges + op_obj.value
         else:
             raw = op_obj.value
 
-        has_stress_change = True
+        has_charges_change = True
 
         # For pc_bonds: apply charge depletion / degradation cascade.
         if bond.slot_type == "pc_bond":
-            degradations = bond.stress_degradations or 0
+            degradations = bond.degradations or 0
             effective_max = 5 - degradations
             degraded = False
 
-            if raw >= effective_max and effective_max > 0:
-                # Hit the max — apply a degradation.
+            if raw <= 0 and effective_max > 0:
+                # Charges depleted — apply a degradation.
                 degradations += 1
-                bond.stress_degradations = degradations
+                bond.degradations = degradations
                 new_effective_max = max(0, 5 - degradations)
-                new_stress = max(0, new_effective_max)
+                new_charges = max(0, new_effective_max)
                 degraded = True
 
                 # Record the degradation in the changes dict.
-                changes[f"slot.{bond.id}.stress_degradations"] = {
+                changes[f"slot.{bond.id}.degradations"] = {
                     "op": "meter.delta",
                     "before": degradations - 1,
                     "after": degradations,
                     "degraded": True,
                 }
             else:
-                new_stress = max(0, raw)
+                new_charges = max(0, raw)
 
-            bond.stress = new_stress
+            bond.charges = new_charges
             entry: dict[str, Any] = {
                 "op": "meter.delta" if op_obj.op == "delta" else "meter.set",
-                "before": before_stress,
-                "after": new_stress,
+                "before": before_charges,
+                "after": new_charges,
             }
             if degraded:
                 entry["degraded"] = True
-            changes[f"slot.{bond.id}.stress"] = entry
+            changes[f"slot.{bond.id}.charges"] = entry
         else:
             # Non-pc bonds: simple set/delta, no cascade.
-            new_stress = max(0, raw)
-            bond.stress = new_stress
-            changes[f"slot.{bond.id}.stress"] = {
+            new_charges = max(0, raw)
+            bond.charges = new_charges
+            changes[f"slot.{bond.id}.charges"] = {
                 "op": "meter.delta" if op_obj.op == "delta" else "meter.set",
-                "before": before_stress,
-                "after": new_stress,
+                "before": before_charges,
+                "after": new_charges,
             }
 
     db.flush()
 
     # Choose event type.
-    if has_stress_change and len(changes) == 1:
-        event_type = "bond.stress_changed"
-    elif has_stress_change:
-        event_type = "bond.stress_changed"
+    if has_charges_change:
+        event_type = "bond.charges_changed"
     else:
         event_type = "bond.updated"
 
@@ -1051,7 +1048,7 @@ def handle_modify_bond(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1116,7 +1113,7 @@ def handle_retire_bond(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1290,7 +1287,7 @@ def handle_create_trait(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1396,7 +1393,7 @@ def handle_modify_trait(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1461,7 +1458,7 @@ def handle_retire_trait(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1530,7 +1527,7 @@ def handle_create_effect(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1670,7 +1667,7 @@ def handle_modify_effect(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1735,7 +1732,7 @@ def handle_retire_effect(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 
@@ -1852,7 +1849,7 @@ def handle_award_xp(
         ],
     )
 
-    db.commit()
+    db.flush()
     db.refresh(event)
     return event
 

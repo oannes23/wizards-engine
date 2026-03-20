@@ -208,7 +208,7 @@ Always use `uv run` to execute project commands. This ensures the correct virtua
 ### Key Implementation Decisions
 - **Bond-graph traversal**: App-layer BFS in Python (load active bonds into memory, traverse with standard BFS). Not SQL recursive CTEs. See `spec/architecture/overview.md`.
 - **System proposals**: Two auto-generated proposal types — `resolve_clock` (on clock completion) and `resolve_trauma` (on Stress hitting max). Both follow the same pattern: system detects boundary → generates pending proposal → GM fills in details and approves.
-- **Bond charges**: Bonds use "charges" (0–5) conceptually identical to trait charges. Physical DB columns are named `stress`/`stress_degradations` for historical reasons. See `spec/domains/bonds.md`.
+- **Bond charges**: Bonds use "charges" (0–5) conceptually identical to trait charges. DB columns are `charges`/`degradations` on the `slots` table. See `spec/domains/bonds.md`.
 - **12 action types**: 3 session actions + 7 downtime actions + 2 system proposals. See `spec/domains/actions.md`.
 - **Magic Stat XP**: Resets to 0 on level-up. No overflow carry.
 

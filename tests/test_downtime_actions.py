@@ -148,8 +148,8 @@ def _pc_bond_slot(
         target_type=target_type,
         target_id=target_id or character_id,
         name=name,
-        stress=stress,
-        stress_degradations=0,
+        charges=stress,
+        degradations=0,
         is_trauma=False,
         is_active=is_active,
     )
@@ -1248,8 +1248,8 @@ class TestNewBondTraumaRetireGuard:
             target_type=None,
             target_id=None,
             name="The Weight of Loss",
-            stress=5,
-            stress_degradations=0,
+            charges=5,
+            degradations=0,
             is_trauma=True,
             is_active=True,
         )

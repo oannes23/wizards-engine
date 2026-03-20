@@ -149,8 +149,8 @@ def _bond(
         is_active=is_active,
     )
     if slot_type == "pc_bond":
-        slot.stress = 0
-        slot.stress_degradations = 0
+        slot.charges = 0
+        slot.degradations = 0
         slot.is_trauma = False
     db.add(slot)
     db.flush()

@@ -81,8 +81,8 @@ class TestCreateBond:
         assert bond.slot_type == "pc_bond"
         assert bond.source_label == "My ally"
         assert bond.is_active is True
-        # PC bonds start with stress=5.
-        assert bond.stress == 5
+        # PC bonds start with charges=5.
+        assert bond.charges == 5
 
     def test_create_bond_bidirectional_override(
         self, client: TestClient, db: Session, seed_data: dict
@@ -196,7 +196,7 @@ class TestModifyBond:
         db.refresh(bond)
         assert bond.source_label == "New Label"
 
-    def test_modify_bond_stress_delta(
+    def test_modify_bond_charges_delta(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         bond = seed_data["pc1_bond"]
@@ -206,18 +206,18 @@ class TestModifyBond:
             {
                 "action_type": "modify_bond",
                 "bond_id": bond.id,
-                "changes": {"stress": {"op": "delta", "value": -2}},
+                "changes": {"charges": {"op": "delta", "value": -2}},
                 "visibility": "bonded",
             },
         )
         assert response.status_code == 200
-        assert response.json()["type"] == "bond.stress_changed"
+        assert response.json()["type"] == "bond.charges_changed"
 
         db.expire(bond)
         db.refresh(bond)
-        assert bond.stress == 3  # 5 - 2
+        assert bond.charges == 3  # 5 - 2
 
-    def test_modify_bond_stress_set(
+    def test_modify_bond_charges_set(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         bond = seed_data["pc1_bond"]
@@ -227,27 +227,27 @@ class TestModifyBond:
             {
                 "action_type": "modify_bond",
                 "bond_id": bond.id,
-                "changes": {"stress": {"op": "set", "value": 3}},
+                "changes": {"charges": {"op": "set", "value": 3}},
                 "visibility": "bonded",
             },
         )
         db.expire(bond)
         db.refresh(bond)
-        assert bond.stress == 3
+        assert bond.charges == 3
 
-    def test_modify_bond_stress_at_max_triggers_degradation(
+    def test_modify_bond_charges_at_zero_triggers_degradation(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """Setting stress to effective_max on a pc_bond triggers a degradation."""
+        """Setting charges to 0 on a pc_bond triggers a degradation (depletion)."""
         bond = seed_data["pc1_bond"]
-        # bond starts at stress=5, degradations=0 -> effective_max=5.
+        # bond starts at charges=5, degradations=0.
         auth_as(client, seed_data["gm"])
         response = _post(
             client,
             {
                 "action_type": "modify_bond",
                 "bond_id": bond.id,
-                "changes": {"stress": {"op": "set", "value": 5}},
+                "changes": {"charges": {"op": "set", "value": 0}},
                 "visibility": "bonded",
             },
         )
@@ -255,13 +255,12 @@ class TestModifyBond:
 
         db.expire(bond)
         db.refresh(bond)
-        # Degradation applied: degradations=1, effective_max=4, stress reset to 4.
-        assert bond.stress_degradations == 1
-        assert bond.stress == 4
+        # Degradation applied: degradations=1, effective_max reduced by 1, charges reset to new max.
+        assert bond.degradations == 1
 
         changes = response.json()["changes"]
-        assert any("stress_degradations" in k for k in changes), (
-            "Expected stress_degradations in changes"
+        assert any("degradations" in k for k in changes), (
+            "Expected degradations in changes"
         )
 
     def test_modify_bond_missing_bond_returns_404(
@@ -289,12 +288,12 @@ class TestModifyBond:
             {
                 "action_type": "modify_bond",
                 "bond_id": bond.id,
-                "changes": {"stress": {"op": "set", "value": 2}},
+                "changes": {"charges": {"op": "set", "value": 2}},
                 "visibility": "bonded",
             },
         )
         changes = response.json()["changes"]
-        key = f"slot.{bond.id}.stress"
+        key = f"slot.{bond.id}.charges"
         assert changes[key]["before"] == 5
         assert changes[key]["after"] == 2
 

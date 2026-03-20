@@ -11,7 +11,7 @@ Implemented action types:
 - ``modify_clock``: Advance or set clock progress; auto-generates
   a ``resolve_clock`` proposal on completion.
 - ``create_bond``: Create a bond between two Game Objects.
-- ``modify_bond``: Change bond stress, labels, or description.
+- ``modify_bond``: Change bond charges, labels, or description.
 - ``retire_bond``: Deactivate a bond (set is_active = false).
 - ``create_trait``: Assign a trait (template-linked or freeform) to an owner.
 - ``modify_trait``: Change charges, name, or description on a trait.
@@ -350,18 +350,17 @@ class ModifyBondChanges(BaseModel):
         Replacement label for the target's perspective.
     description:
         Replacement description text.
-    stress:
-        Delta or set on the bond's charge count (``stress`` column).
-    stress_degradations:
-        Delta or set on the bond's degradation count
-        (``stress_degradations`` column).
+    charges:
+        Delta or set on the bond's charge count.
+    degradations:
+        Delta or set on the bond's degradation count.
     """
 
     source_label: str | None = None
     target_label: str | None = None
     description: str | None = None
-    stress: MeterChange | None = None
-    stress_degradations: MeterChange | None = None
+    charges: MeterChange | None = None
+    degradations: MeterChange | None = None
 
 
 class ModifyBondRequest(BaseModel):

@@ -372,12 +372,11 @@ window.views.character = (function () {
     var itemClass = "cs-bond-item" + (isTrauma ? " cs-bond-item--trauma" : "");
 
     // For PC bonds, show ChargeDots.
-    // stress = current charges, stress_degradations = degradation count
     var dotsHtml = "";
     var maintainBtn = "";
-    if (isPC && b.stress !== null && b.stress !== undefined) {
-      var charges = Number(b.stress) || 0;
-      var degradations = Number(b.stress_degradations) || 0;
+    if (isPC && b.charges !== null && b.charges !== undefined) {
+      var charges = Number(b.charges) || 0;
+      var degradations = Number(b.degradations) || 0;
       var effectiveMax = 5 - degradations;
 
       dotsHtml = window.components.chargeDots.render({

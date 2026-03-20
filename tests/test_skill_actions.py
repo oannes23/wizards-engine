@@ -115,8 +115,8 @@ def _pc_bond(
         target_id=character_id,  # self-target for testing purposes
         name=name,
         is_active=is_active,
-        stress=5,
-        stress_degradations=0,
+        charges=5,
+        degradations=0,
         is_trauma=False,
     )
     db.add(slot)

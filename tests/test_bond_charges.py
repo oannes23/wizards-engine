@@ -1,4 +1,4 @@
-"""Tests for PC bond stress and degradation mechanics (Story 3.3.1).
+"""Tests for PC bond charges and degradation mechanics (Story 3.3.1).
 
 Covers:
 - ``apply_bond_strain``: lose a charge, degradation trigger
@@ -6,7 +6,7 @@ Covers:
 - ``reverse_degradation``: GM action to heal a degradation
 - ``get_bond``: look up a bond by ID
 - Validation guards (non-pc_bond, inactive, trauma)
-- Null stress fields on non-PC bonds
+- Null charges fields on non-PC bonds
 """
 
 from __future__ import annotations
@@ -81,8 +81,8 @@ def _location(db: Session, name: str = "Test Location") -> Location:
 
 def _pc_bond(
     db: Session,
-    stress: int = 5,
-    stress_degradations: int = 0,
+    charges: int = 5,
+    degradations: int = 0,
     is_active: bool = True,
     is_trauma: bool = False,
 ) -> Slot:
@@ -98,8 +98,8 @@ def _pc_bond(
         name="Test Bond",
         is_active=is_active,
         bidirectional=True,
-        stress=stress,
-        stress_degradations=stress_degradations,
+        charges=charges,
+        degradations=degradations,
         is_trauma=is_trauma,
     )
     db.add(slot)
@@ -109,7 +109,7 @@ def _pc_bond(
 
 
 def _npc_bond(db: Session) -> Slot:
-    """Create and flush an npc_bond Slot (no mechanical stress fields)."""
+    """Create and flush an npc_bond Slot (no mechanical charges fields)."""
     owner = _npc(db, "NPC Owner")
     loc = _location(db)
     slot = Slot(
@@ -153,31 +153,31 @@ class TestGetBond:
 
 
 class TestPCBondInitialState:
-    """PC bonds start with stress=5 (full charges) and stress_degradations=0."""
+    """PC bonds start with charges=5 (full charges) and degradations=0."""
 
     def test_seed_data_pc1_bond_has_full_charges(self, db: Session) -> None:
         seed = _seed_data_fn(db)
         bond = seed["pc1_bond"]
-        assert bond.stress == 5
-        assert bond.stress_degradations == 0
+        assert bond.charges == 5
+        assert bond.degradations == 0
         assert bond.is_trauma is False
 
-    def test_npc_bond_has_null_stress_fields(self, db: Session) -> None:
-        """npc_bond should have null stress, stress_degradations, is_trauma."""
+    def test_npc_bond_has_null_charges_fields(self, db: Session) -> None:
+        """npc_bond should have null charges, degradations, is_trauma."""
         bond = _npc_bond(db)
-        assert bond.stress is None
-        assert bond.stress_degradations is None
+        assert bond.charges is None
+        assert bond.degradations is None
         assert bond.is_trauma is None
 
     def test_effective_max_formula(self, db: Session) -> None:
-        """Effective max = 5 - stress_degradations."""
-        # 0 degradations → effective max 5
-        b0 = _pc_bond(db, stress_degradations=0)
-        assert 5 - b0.stress_degradations == 5  # type: ignore[operator]
+        """Effective max = 5 - degradations."""
+        # 0 degradations -> effective max 5
+        b0 = _pc_bond(db, degradations=0)
+        assert 5 - b0.degradations == 5  # type: ignore[operator]
 
-        # 2 degradations → effective max 3
-        b2 = _pc_bond(db, stress=3, stress_degradations=2)
-        assert 5 - b2.stress_degradations == 3  # type: ignore[operator]
+        # 2 degradations -> effective max 3
+        b2 = _pc_bond(db, charges=3, degradations=2)
+        assert 5 - b2.degradations == 3  # type: ignore[operator]
 
 
 # ===========================================================================
@@ -189,80 +189,80 @@ class TestApplyBondStrain:
     """Applying strain decrements charges; at 0 triggers degradation."""
 
     def test_returns_apply_strain_result(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=5)
+        bond = _pc_bond(db, charges=5)
         result = apply_bond_strain(db, bond.id)
         assert isinstance(result, ApplyStrainResult)
         assert isinstance(result.bond, Slot)
         assert isinstance(result.degraded, bool)
 
     def test_decrements_charge_by_one(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=5)
+        bond = _pc_bond(db, charges=5)
         result = apply_bond_strain(db, bond.id)
-        assert result.bond.stress == 4
+        assert result.bond.charges == 4
         assert result.degraded is False
 
     def test_no_degradation_above_zero(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=3, stress_degradations=1)
+        bond = _pc_bond(db, charges=3, degradations=1)
         result = apply_bond_strain(db, bond.id)
-        assert result.bond.stress == 2
+        assert result.bond.charges == 2
         assert result.degraded is False
-        assert result.bond.stress_degradations == 1
+        assert result.bond.degradations == 1
 
     def test_at_one_charge_triggers_degradation(self, db: Session) -> None:
-        """Straining a bond at 1 charge: stress reaches 0, degradation fires."""
-        bond = _pc_bond(db, stress=1, stress_degradations=0)
+        """Straining a bond at 1 charge: charges reaches 0, degradation fires."""
+        bond = _pc_bond(db, charges=1, degradations=0)
         result = apply_bond_strain(db, bond.id)
         assert result.degraded is True
         # Degradations incremented
-        assert result.bond.stress_degradations == 1
+        assert result.bond.degradations == 1
         # Charges reset to new effective max = 5 - 1 = 4
-        assert result.bond.stress == 4
+        assert result.bond.charges == 4
 
     def test_degradation_reduces_effective_max(self, db: Session) -> None:
         """After degradation, the effective max is one lower than before."""
-        bond = _pc_bond(db, stress=1, stress_degradations=2)
+        bond = _pc_bond(db, charges=1, degradations=2)
         # Before: effective max = 5 - 2 = 3
         result = apply_bond_strain(db, bond.id)
-        # After degradation: stress_degradations = 3, effective max = 5 - 3 = 2
+        # After degradation: degradations = 3, effective max = 5 - 3 = 2
         assert result.degraded is True
-        assert result.bond.stress_degradations == 3
-        assert result.bond.stress == 2  # reset to new effective max
+        assert result.bond.degradations == 3
+        assert result.bond.charges == 2  # reset to new effective max
 
     def test_all_in_one_operation(self, db: Session) -> None:
         """The degradation and reset are committed in a single flush."""
-        bond = _pc_bond(db, stress=1, stress_degradations=0)
+        bond = _pc_bond(db, charges=1, degradations=0)
         result = apply_bond_strain(db, bond.id)
         # The object returned should already reflect the post-degradation state.
-        assert result.bond.stress_degradations == 1
-        assert result.bond.stress == 4
+        assert result.bond.degradations == 1
+        assert result.bond.charges == 4
 
-    def test_at_five_degradations_stress_resets_to_zero(self, db: Session) -> None:
+    def test_at_five_degradations_charges_resets_to_zero(self, db: Session) -> None:
         """At 5 degradations, effective max = 0, so charges reset to 0."""
-        bond = _pc_bond(db, stress=1, stress_degradations=4)
+        bond = _pc_bond(db, charges=1, degradations=4)
         result = apply_bond_strain(db, bond.id)
         assert result.degraded is True
-        assert result.bond.stress_degradations == 5
-        # Effective max = 5 - 5 = 0 → stress reset to 0 (clamped)
-        assert result.bond.stress == 0
+        assert result.bond.degradations == 5
+        # Effective max = 5 - 5 = 0 -> charges reset to 0 (clamped)
+        assert result.bond.charges == 0
 
     def test_sequential_strains_accumulate_correctly(self, db: Session) -> None:
         """Multiple strains properly decrement charges toward the next degradation."""
-        bond = _pc_bond(db, stress=3, stress_degradations=1)
-        # strain 1: stress 3 → 2 (no degradation)
+        bond = _pc_bond(db, charges=3, degradations=1)
+        # strain 1: charges 3 -> 2 (no degradation)
         r1 = apply_bond_strain(db, bond.id)
         assert r1.degraded is False
-        assert r1.bond.stress == 2
+        assert r1.bond.charges == 2
 
-        # strain 2: stress 2 → 1 (no degradation)
+        # strain 2: charges 2 -> 1 (no degradation)
         r2 = apply_bond_strain(db, bond.id)
         assert r2.degraded is False
-        assert r2.bond.stress == 1
+        assert r2.bond.charges == 1
 
-        # strain 3: stress 1 → 0 → degradation fires
+        # strain 3: charges 1 -> 0 -> degradation fires
         r3 = apply_bond_strain(db, bond.id)
         assert r3.degraded is True
-        assert r3.bond.stress_degradations == 2
-        assert r3.bond.stress == 3  # new effective max = 5 - 2
+        assert r3.bond.degradations == 2
+        assert r3.bond.charges == 3  # new effective max = 5 - 2
 
 
 # ===========================================================================
@@ -318,43 +318,43 @@ class TestApplyBondStrainValidation:
 
 
 class TestRestoreBondCharges:
-    """restore_bond_charges sets stress to effective max (Maintain Bond)."""
+    """restore_bond_charges sets charges to effective max (Maintain Bond)."""
 
     def test_restores_depleted_bond_to_full(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=0, stress_degradations=0)
-        # Apply a strain to move it off zero... but stress=0 means no degradations yet
+        bond = _pc_bond(db, charges=0, degradations=0)
+        # Apply a strain to move it off zero... but charges=0 means no degradations yet
         # So just test direct restore.
         # First strain it manually.
-        bond.stress = 2
+        bond.charges = 2
         db.flush()
         restored = restore_bond_charges(db, bond.id)
-        assert restored.stress == 5  # effective max = 5 - 0
+        assert restored.charges == 5  # effective max = 5 - 0
 
     def test_restores_to_degraded_effective_max(self, db: Session) -> None:
         """With 2 degradations, effective max = 3."""
-        bond = _pc_bond(db, stress=1, stress_degradations=2)
+        bond = _pc_bond(db, charges=1, degradations=2)
         restored = restore_bond_charges(db, bond.id)
-        assert restored.stress == 3
+        assert restored.charges == 3
 
     def test_restore_at_five_degradations_gives_zero(self, db: Session) -> None:
         """At 5 degradations, effective max = 0."""
-        bond = _pc_bond(db, stress=0, stress_degradations=5)
+        bond = _pc_bond(db, charges=0, degradations=5)
         restored = restore_bond_charges(db, bond.id)
-        assert restored.stress == 0
+        assert restored.charges == 0
 
     def test_restore_does_not_change_degradations(self, db: Session) -> None:
-        """restore_bond_charges never changes stress_degradations."""
-        bond = _pc_bond(db, stress=1, stress_degradations=3)
+        """restore_bond_charges never changes degradations."""
+        bond = _pc_bond(db, charges=1, degradations=3)
         restored = restore_bond_charges(db, bond.id)
-        assert restored.stress_degradations == 3
+        assert restored.degradations == 3
 
     def test_restore_already_full_is_idempotent(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=5, stress_degradations=0)
+        bond = _pc_bond(db, charges=5, degradations=0)
         restored = restore_bond_charges(db, bond.id)
-        assert restored.stress == 5
+        assert restored.charges == 5
 
     def test_restore_returns_slot_instance(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=3)
+        bond = _pc_bond(db, charges=3)
         result = restore_bond_charges(db, bond.id)
         assert isinstance(result, Slot)
 
@@ -393,36 +393,36 @@ class TestRestoreBondChargesValidation:
 
 
 class TestReverseDegradation:
-    """reverse_degradation decrements stress_degradations (GM action)."""
+    """reverse_degradation decrements degradations (GM action)."""
 
     def test_decrements_degradation_count(self, db: Session) -> None:
-        bond = _pc_bond(db, stress=3, stress_degradations=2)
+        bond = _pc_bond(db, charges=3, degradations=2)
         result = reverse_degradation(db, bond.id)
-        assert result.stress_degradations == 1
+        assert result.degradations == 1
 
     def test_floor_at_zero(self, db: Session) -> None:
         """Degradations cannot go below 0."""
-        bond = _pc_bond(db, stress=5, stress_degradations=0)
+        bond = _pc_bond(db, charges=5, degradations=0)
         result = reverse_degradation(db, bond.id)
-        assert result.stress_degradations == 0
+        assert result.degradations == 0
 
-    def test_does_not_adjust_current_stress(self, db: Session) -> None:
+    def test_does_not_adjust_current_charges(self, db: Session) -> None:
         """reverse_degradation does not change the current charge level."""
-        bond = _pc_bond(db, stress=2, stress_degradations=3)
+        bond = _pc_bond(db, charges=2, degradations=3)
         result = reverse_degradation(db, bond.id)
-        assert result.stress == 2  # unchanged
-        assert result.stress_degradations == 2
+        assert result.charges == 2  # unchanged
+        assert result.degradations == 2
 
     def test_returns_slot_instance(self, db: Session) -> None:
-        bond = _pc_bond(db, stress_degradations=1)
+        bond = _pc_bond(db, degradations=1)
         result = reverse_degradation(db, bond.id)
         assert isinstance(result, Slot)
 
     def test_reduces_from_five_to_four(self, db: Session) -> None:
         """Starting from max degradations (5), reversing gives 4."""
-        bond = _pc_bond(db, stress=0, stress_degradations=5)
+        bond = _pc_bond(db, charges=0, degradations=5)
         result = reverse_degradation(db, bond.id)
-        assert result.stress_degradations == 4
+        assert result.degradations == 4
 
 
 # ===========================================================================
@@ -459,21 +459,21 @@ class TestReverseDegradationValidation:
 
 
 class TestNonPCBondFieldNullity:
-    """Stress fields are null on non-PC bond types."""
+    """Charges fields are null on non-PC bond types."""
 
-    def test_npc_bond_stress_is_null(self, db: Session) -> None:
+    def test_npc_bond_charges_is_null(self, db: Session) -> None:
         bond = _npc_bond(db)
-        assert bond.stress is None
+        assert bond.charges is None
 
-    def test_npc_bond_stress_degradations_is_null(self, db: Session) -> None:
+    def test_npc_bond_degradations_is_null(self, db: Session) -> None:
         bond = _npc_bond(db)
-        assert bond.stress_degradations is None
+        assert bond.degradations is None
 
     def test_npc_bond_is_trauma_is_null(self, db: Session) -> None:
         bond = _npc_bond(db)
         assert bond.is_trauma is None
 
-    def test_group_relation_has_null_stress_fields(self, db: Session) -> None:
+    def test_group_relation_has_null_charges_fields(self, db: Session) -> None:
         g1 = _group(db, "G1")
         g2 = _group(db, "G2")
         slot = Slot(
@@ -489,11 +489,11 @@ class TestNonPCBondFieldNullity:
         db.add(slot)
         db.flush()
         db.refresh(slot)
-        assert slot.stress is None
-        assert slot.stress_degradations is None
+        assert slot.charges is None
+        assert slot.degradations is None
         assert slot.is_trauma is None
 
-    def test_location_bond_has_null_stress_fields(self, db: Session) -> None:
+    def test_location_bond_has_null_charges_fields(self, db: Session) -> None:
         loc = _location(db)
         pc = _full_pc(db)
         slot = Slot(
@@ -509,8 +509,8 @@ class TestNonPCBondFieldNullity:
         db.add(slot)
         db.flush()
         db.refresh(slot)
-        assert slot.stress is None
-        assert slot.stress_degradations is None
+        assert slot.charges is None
+        assert slot.degradations is None
         assert slot.is_trauma is None
 
 
@@ -524,30 +524,30 @@ class TestEdgeCases:
 
     def test_at_zero_effective_max_no_mechanical_rule(self, db: Session) -> None:
         """At 5 degradations (effective max 0), state is returned as-is; GM handles."""
-        bond = _pc_bond(db, stress=0, stress_degradations=5)
-        # Verify the state — no exception, no forced mechanics.
-        assert bond.stress == 0
-        assert bond.stress_degradations == 5
-        assert (5 - bond.stress_degradations) == 0  # effective max is 0
+        bond = _pc_bond(db, charges=0, degradations=5)
+        # Verify the state - no exception, no forced mechanics.
+        assert bond.charges == 0
+        assert bond.degradations == 5
+        assert (5 - bond.degradations) == 0  # effective max is 0
 
     def test_strain_cycle_produces_correct_state(self, db: Session) -> None:
         """Full strain cycle: start at 5 charges, exhaust, verify post-degradation state."""
-        bond = _pc_bond(db, stress=5, stress_degradations=0)
-        # Strain 4 times — no degradation yet.
+        bond = _pc_bond(db, charges=5, degradations=0)
+        # Strain 4 times - no degradation yet.
         for _ in range(4):
             result = apply_bond_strain(db, bond.id)
             assert result.degraded is False
-        assert bond.stress == 1
+        assert bond.charges == 1
 
         # 5th strain triggers degradation.
         final = apply_bond_strain(db, bond.id)
         assert final.degraded is True
-        assert final.bond.stress_degradations == 1
-        assert final.bond.stress == 4  # new effective max = 5 - 1
+        assert final.bond.degradations == 1
+        assert final.bond.charges == 4  # new effective max = 5 - 1
 
     def test_full_degradation_path(self, db: Session) -> None:
         """Bond degrades through all 5 degradation levels correctly."""
-        bond = _pc_bond(db, stress=5, stress_degradations=0)
+        bond = _pc_bond(db, charges=5, degradations=0)
         expected_max_after = [4, 3, 2, 1, 0]
 
         for i, expected_charges in enumerate(expected_max_after):
@@ -560,5 +560,5 @@ class TestEdgeCases:
             # Final strain triggers degradation.
             r = apply_bond_strain(db, bond.id)
             assert r.degraded is True
-            assert r.bond.stress_degradations == i + 1
-            assert r.bond.stress == expected_charges
+            assert r.bond.degradations == i + 1
+            assert r.bond.charges == expected_charges

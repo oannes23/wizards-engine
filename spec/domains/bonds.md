@@ -46,8 +46,8 @@ All bonds, regardless of type, have:
 ### PC Bond Additional Fields
 
 Full (PC) Characters' bonds additionally have:
-- `charges`: integer (0 to effective max) — current bond charges. Conceptually the same as trait charges — a measure of how much the bond can be drawn upon before it strains. Physical DB column: `stress`.
-- `degradation_count`: integer — count of times charges have hit 0 (effective max charges = `5 - degradation_count`). Physical DB column: `stress_degradations`.
+- `charges`: integer (0 to effective max) — current bond charges. Conceptually the same as trait charges — a measure of how much the bond can be drawn upon before it strains. DB column: `charges`.
+- `degradation_count`: integer — count of times charges have hit 0 (effective max charges = `5 - degradation_count`). DB column: `degradations`.
 - `is_trauma`: boolean — true if this slot holds a Trauma instead of a relationship
 
 These fields are null/absent on all non-PC bonds.
@@ -154,7 +154,7 @@ Bond charges are the bond equivalent of trait charges — a measure of how much 
 - **Degradation reversal**: GM can reverse a degradation via direct action (decrement degradation count). Does **not** automatically adjust the current charge value — a follow-up "Maintain Bond" or direct charge set is needed to restore charges after reversal.
 - **At 0 effective max** (5 degradations): GM handles narratively — no additional mechanical rule
 
-> **Physical DB columns**: Bond charges map to the `stress` column and degradations to `stress_degradations` in the `slots` table. The column names reflect the original "bond stress" terminology; the conceptual reframe to "charges" aligns bonds with traits without requiring a schema change.
+> **DB columns**: Bond charges map to the `charges` column and degradations to `degradations` in the `slots` table.
 
 ### +1d Bonus on Proposals
 
@@ -306,7 +306,7 @@ The complete slot_type catalog and column details are specified in [data-model.m
 
 - **Decision**: Bond charges range from 0 to effective max (base 5, minus degradation count). At 0 charges: charges reset to full, degradation count increments, GM narrates consequence. At 0 effective max (5 degradations): GM handles narratively.
 - **Rationale**: Mirrors the trait charge pattern — bonds and traits share the "charges" concept. Bonds add a degradation penalty at 0 that traits lack, making bond depletion more consequential.
-- **Implications**: Bond model uses `stress` and `stress_degradations` columns (PC bonds only). Conceptually "charges" and "degradation count."
+- **Implications**: Bond model uses `charges` and `degradations` columns (PC bonds only).
 
 ### Bond Charge Sources
 
@@ -464,7 +464,7 @@ No dedicated bond CRUD endpoints for players — all player-initiated bond chang
 | [feed](feed.md) | ✅ **Updated 2026-03-10**: Renamed "NPC-intermediary" to "Character-intermediary" throughout. PCs are valid intermediaries noted. |
 | [events](events.md) | Bond changes logged as events. Visibility references feed.md. |
 | [glossary](../glossary.md) | ✅ **Updated 2026-03-07**: Character-intermediary rename done. Action/GM Action/Player Direct Action terms added. Bond charges terminology should be reviewed for alignment with trait charges entry. |
-| [architecture/data-model](../architecture/data-model.md) | Unified `slots` table with 9 slot_types. `pc_bond` (8 max), `npc_bond` (7 max). Nullable mechanical fields. Physical columns `stress` and `stress_degradations` store bond charges and degradation count respectively. See [data-model.md](../architecture/data-model.md). |
+| [architecture/data-model](../architecture/data-model.md) | Unified `slots` table with 9 slot_types. `pc_bond` (8 max), `npc_bond` (7 max). Nullable mechanical fields. Columns `charges` and `degradations` store bond charges and degradation count respectively. See [data-model.md](../architecture/data-model.md). |
 
 ---
 

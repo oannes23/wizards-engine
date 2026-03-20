@@ -12,7 +12,7 @@ Key decisions reflected here (see spec/domains/bonds.md):
 - ``bidirectional`` is auto-inferred from pairing type (GM may override).
 - Source slot limits are hard-enforced; target limits produce a soft warning.
 - Duplicate active bonds per (source, target) pair are prevented.
-- PC bonds start with stress=5 (full charges, base max) and stress_degradations=0.
+- PC bonds start with charges=5 (full charges, base max) and degradations=0.
 """
 
 from __future__ import annotations
@@ -351,8 +351,8 @@ def create_bond(
     ``bidirectional`` default, enforces source hard slot limits, checks
     target soft limits, and prevents duplicate active bonds.
 
-    PC bonds (``pc_bond``) are initialised with ``stress = 5`` (full charges)
-    and ``stress_degradations = 0``.
+    PC bonds (``pc_bond``) are initialised with ``charges = 5`` (full charges)
+    and ``degradations = 0``.
 
     Args:
         db: Active SQLAlchemy session.
@@ -439,8 +439,8 @@ def create_bond(
 
     # PC bonds get mechanical fields initialised.
     if slot_type == "pc_bond":
-        slot_kwargs["stress"] = 5  # Full charges (base max)
-        slot_kwargs["stress_degradations"] = 0
+        slot_kwargs["charges"] = 5  # Full charges (base max)
+        slot_kwargs["degradations"] = 0
         slot_kwargs["is_trauma"] = False
 
     bond = Slot(**slot_kwargs)
@@ -700,10 +700,10 @@ def build_bond_display(
 
     target_name = _resolve_name(db, other_type, other_id) if other_id else ""
 
-    # Compute effective_bond_stress_max for PC bonds.
-    effective_bond_stress_max = None
-    if bond.slot_type == "pc_bond" and bond.stress_degradations is not None:
-        effective_bond_stress_max = 5 - bond.stress_degradations
+    # Compute effective_charges_max for PC bonds.
+    effective_charges_max = None
+    if bond.slot_type == "pc_bond" and bond.degradations is not None:
+        effective_charges_max = 5 - bond.degradations
 
     return BondDisplayResponse(
         id=bond.id,
@@ -715,15 +715,15 @@ def build_bond_display(
         description=bond.description,
         is_active=bond.is_active,
         bidirectional=bool(bond.bidirectional),
-        stress=bond.stress,
-        stress_degradations=bond.stress_degradations,
+        charges=bond.charges,
+        degradations=bond.degradations,
         is_trauma=bond.is_trauma,
-        effective_bond_stress_max=effective_bond_stress_max,
+        effective_charges_max=effective_charges_max,
     )
 
 
 # ---------------------------------------------------------------------------
-# PC bond stress mechanics
+# PC bond charge mechanics
 # ---------------------------------------------------------------------------
 
 
@@ -773,15 +773,15 @@ def _validate_pc_bond(bond: Slot | None, bond_id: str) -> Slot:
     if bond.slot_type != "pc_bond":
         raise ValueError(
             f"Bond '{bond_id}' is a '{bond.slot_type}', not a 'pc_bond'. "
-            "Stress mechanics apply to PC bonds only."
+            "Charge mechanics apply to PC bonds only."
         )
     if not bond.is_active:
         raise ValueError(
-            f"Bond '{bond_id}' is inactive. Stress mechanics require an active bond."
+            f"Bond '{bond_id}' is inactive. Charge mechanics require an active bond."
         )
     if bond.is_trauma:
         raise ValueError(
-            f"Bond '{bond_id}' is a trauma bond. Stress mechanics do not apply to "
+            f"Bond '{bond_id}' is a trauma bond. Charge mechanics do not apply to "
             "trauma bonds."
         )
     return bond
@@ -790,13 +790,13 @@ def _validate_pc_bond(bond: Slot | None, bond_id: str) -> Slot:
 def apply_bond_strain(db: Session, bond_id: str) -> ApplyStrainResult:
     """Apply one strain to a PC bond (lose one charge).
 
-    Decrements the bond's charge count (``stress`` column) by 1.  If the
-    charge reaches 0 after decrement, a degradation is applied in the same
-    operation: ``stress_degradations`` increments by 1 and charges reset to
-    the new effective maximum (``5 - stress_degradations``).
+    Decrements the bond's charge count by 1.  If the charge reaches 0 after
+    decrement, a degradation is applied in the same operation:
+    ``degradations`` increments by 1 and charges reset to the new effective
+    maximum (``5 - degradations``).
 
-    The effective maximum BEFORE this call is ``5 - stress_degradations``.
-    After degradation it becomes ``5 - (stress_degradations + 1)``.
+    The effective maximum BEFORE this call is ``5 - degradations``.
+    After degradation it becomes ``5 - (degradations + 1)``.
 
     Args:
         db: Active SQLAlchemy session.
@@ -812,16 +812,16 @@ def apply_bond_strain(db: Session, bond_id: str) -> ApplyStrainResult:
     """
     bond = _validate_pc_bond(db.get(Slot, bond_id), bond_id)
 
-    bond.stress -= 1
+    bond.charges -= 1
 
     degraded = False
-    if bond.stress <= 0:
+    if bond.charges <= 0:
         # Charges depleted — apply degradation in the same operation.
-        bond.stress = 0  # clamp (shouldn't go below 0 in practice)
-        bond.stress_degradations = (bond.stress_degradations or 0) + 1
-        new_effective_max = 5 - bond.stress_degradations
+        bond.charges = 0  # clamp (shouldn't go below 0 in practice)
+        bond.degradations = (bond.degradations or 0) + 1
+        new_effective_max = 5 - bond.degradations
         # Reset charges to the new effective max (may be 0 if at 5 degradations).
-        bond.stress = max(0, new_effective_max)
+        bond.charges = max(0, new_effective_max)
         degraded = True
 
     db.flush()
@@ -832,7 +832,7 @@ def apply_bond_strain(db: Session, bond_id: str) -> ApplyStrainResult:
 def restore_bond_charges(db: Session, bond_id: str) -> Slot:
     """Restore a PC bond's charges to its effective maximum (Maintain Bond).
 
-    Sets ``stress`` to ``5 - stress_degradations``.  This is the service
+    Sets ``charges`` to ``5 - degradations``.  This is the service
     implementation of the *Maintain Bond* downtime action.
 
     Args:
@@ -848,8 +848,8 @@ def restore_bond_charges(db: Session, bond_id: str) -> Slot:
     """
     bond = _validate_pc_bond(db.get(Slot, bond_id), bond_id)
 
-    effective_max = 5 - (bond.stress_degradations or 0)
-    bond.stress = max(0, effective_max)
+    effective_max = 5 - (bond.degradations or 0)
+    bond.charges = max(0, effective_max)
 
     db.flush()
     db.refresh(bond)
@@ -859,8 +859,8 @@ def restore_bond_charges(db: Session, bond_id: str) -> Slot:
 def reverse_degradation(db: Session, bond_id: str) -> Slot:
     """Decrement a PC bond's degradation count by 1 (GM action).
 
-    ``stress_degradations`` is decremented to a minimum of 0.  Charges
-    (``stress``) are NOT automatically adjusted — the GM may follow up with
+    ``degradations`` is decremented to a minimum of 0.  Charges are NOT
+    automatically adjusted — the GM may follow up with
     :func:`restore_bond_charges` if desired.
 
     Args:
@@ -876,8 +876,8 @@ def reverse_degradation(db: Session, bond_id: str) -> Slot:
     """
     bond = _validate_pc_bond(db.get(Slot, bond_id), bond_id)
 
-    current_degradations = bond.stress_degradations or 0
-    bond.stress_degradations = max(0, current_degradations - 1)
+    current_degradations = bond.degradations or 0
+    bond.degradations = max(0, current_degradations - 1)
 
     db.flush()
     db.refresh(bond)
@@ -1010,8 +1010,8 @@ def apply_trauma(
         is_active=True,
         bidirectional=False,
         is_trauma=True,
-        stress=5,
-        stress_degradations=0,
+        charges=5,
+        degradations=0,
     )
     db.add(trauma_bond)
 

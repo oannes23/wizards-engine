@@ -192,25 +192,25 @@ class TestBuildBondDisplay:
         assert display.label == ""
 
     def test_pc_bond_includes_mechanical_fields(self, db: Session) -> None:
-        """PC bonds include stress/stress_degradations/is_trauma (stress starts at 5)."""
+        """PC bonds include charges/degradations/is_trauma (charges starts at 5)."""
         pc = _full_pc(db)
         target = _full_pc(db, "T")
         bond = create_bond(db, "character", pc.id, "character", target.id).bond
 
         display = build_bond_display(db, bond, "character", pc.id)
-        assert display.stress == 5  # PC bonds start at full charges (5)
-        assert display.stress_degradations == 0
+        assert display.charges == 5  # PC bonds start at full charges (5)
+        assert display.degradations == 0
         assert display.is_trauma is False
 
     def test_npc_bond_has_null_mechanical_fields(self, db: Session) -> None:
-        """NPC bonds have stress/stress_degradations/is_trauma = None."""
+        """NPC bonds have charges/degradations/is_trauma = None."""
         npc = _npc(db)
         target = _full_pc(db, "T")
         bond = create_bond(db, "character", npc.id, "character", target.id).bond
 
         display = build_bond_display(db, bond, "character", npc.id)
-        assert display.stress is None
-        assert display.stress_degradations is None
+        assert display.charges is None
+        assert display.degradations is None
         assert display.is_trauma is None
 
     def test_group_bond_inbound_from_character(self, db: Session) -> None:
@@ -463,7 +463,7 @@ class TestCharacterDetailBonds:
         required_fields = {
             "id", "slot_type", "target_type", "target_id", "target_name",
             "label", "description", "is_active", "bidirectional",
-            "stress", "stress_degradations", "is_trauma",
+            "charges", "degradations", "is_trauma",
         }
         assert required_fields.issubset(set(bond.keys()))
 

@@ -663,10 +663,10 @@ window.views.gmActions = (function () {
           payload.bond_id = self.selectedBondSlotId;
           var bond_changes = {};
           if (self.bond_stress_op === "set" || parseInt(self.bond_stress_value, 10) !== 0) {
-            bond_changes.stress = { op: self.bond_stress_op, value: parseInt(self.bond_stress_value, 10) || 0 };
+            bond_changes.charges = { op: self.bond_stress_op, value: parseInt(self.bond_stress_value, 10) || 0 };
           }
           if (self.bond_degradations_op === "set" || parseInt(self.bond_degradations_value, 10) !== 0) {
-            bond_changes.stress_degradations = { op: self.bond_degradations_op, value: parseInt(self.bond_degradations_value, 10) || 0 };
+            bond_changes.degradations = { op: self.bond_degradations_op, value: parseInt(self.bond_degradations_value, 10) || 0 };
           }
           if (self.bond_source_label.trim()) {
             bond_changes.source_label = self.bond_source_label.trim();
@@ -1127,7 +1127,7 @@ window.views.gmActions = (function () {
       '    <option value="" disabled>Select bond...</option>',
       '    <template x-for="b in characterBonds()" :key="b.id">',
       '      <option :value="b.id"',
-      '              x-text="(b.source_label || b.slot_type) + (b.target_name ? \' \u2192 \' + b.target_name : \'\') + \' (charges: \' + (b.stress || 0) + \')\'">',
+      '              x-text="(b.source_label || b.slot_type) + (b.target_name ? \' \u2192 \' + b.target_name : \'\') + \' (charges: \' + (b.charges || 0) + \')\'">',
       '      </option>',
       '    </template>',
       '  </select>',
@@ -1359,7 +1359,7 @@ window.views.gmActions = (function () {
     return [
       '<fieldset class="gm-actions__changes" x-show="selectedType === \'modify_bond\'">',
       '  <legend>Modify Bond</legend>',
-      _buildMeterChangeHtml("bond_stress",        "Charges (stress)",       "bond-stress"),
+      _buildMeterChangeHtml("bond_stress",        "Charges",                "bond-stress"),
       _buildMeterChangeHtml("bond_degradations",  "Degradations",           "bond-degrad"),
       _buildBondFieldsHtml(),
       '</fieldset>',

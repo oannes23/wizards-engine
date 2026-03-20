@@ -190,7 +190,7 @@ window.views.proposalSubmit = (function () {
       bonds: function () {
         var active = (this.character && this.character.bonds && this.character.bonds.active) || [];
         return active.filter(function (b) {
-          return b.slot_type && b.slot_type.indexOf("bond") !== -1 && b.stress > 0;
+          return b.slot_type && b.slot_type.indexOf("bond") !== -1 && b.charges > 0;
         });
       },
 
@@ -992,7 +992,7 @@ window.views.proposalSubmit = (function () {
       '    <select id="bond-select" name="bond" x-model="selectedBond">',
       '      <option value="">None</option>',
       '      <template x-for="b in bonds()" :key="b.id">',
-      '        <option :value="b.id" x-text="b.label + (b.target_name ? \' (with \' + b.target_name + \', stress: \' + b.stress + \')\' : \' (stress: \' + b.stress + \')\')" ></option>',
+      '        <option :value="b.id" x-text="b.label + (b.target_name ? \' (with \' + b.target_name + \', charges: \' + b.charges + \')\' : \' (charges: \' + b.charges + \')\')" ></option>',
       '      </template>',
       '    </select>',
       '  </fieldset>',
@@ -1319,7 +1319,7 @@ window.views.proposalSubmit = (function () {
       '    <select id="dt-bond-select' + suffix + '" name="bond" x-model="selectedBond">',
       '      <option value="">None</option>',
       '      <template x-for="b in bonds()" :key="b.id">',
-      '        <option :value="b.id" x-text="b.label + (b.target_name ? \' (with \' + b.target_name + \', stress: \' + b.stress + \')\' : \' (stress: \' + b.stress + \')\')" ></option>',
+      '        <option :value="b.id" x-text="b.label + (b.target_name ? \' (with \' + b.target_name + \', charges: \' + b.charges + \')\' : \' (charges: \' + b.charges + \')\')" ></option>',
       '      </template>',
       '    </select>',
       '  </fieldset>',

@@ -105,7 +105,7 @@ window.components.sacrificeBuilder = (function () {
       activeBonds: function () {
         var active = (this._character && this._character.bonds && this._character.bonds.active) || [];
         return active.filter(function (b) {
-          return b.slot_type && b.slot_type.indexOf("bond") !== -1 && b.stress > 0;
+          return b.slot_type && b.slot_type.indexOf("bond") !== -1 && b.charges > 0;
         });
       },
 

@@ -101,8 +101,8 @@ def _pc_bond_slot(
     *,
     owner_id: str,
     name: str = "Test Bond",
-    stress: int = 2,
-    stress_degradations: int = 0,
+    charges: int = 2,
+    degradations: int = 0,
 ) -> Slot:
     """Create and flush a pc_bond slot for a character."""
     slot = Slot(
@@ -110,8 +110,8 @@ def _pc_bond_slot(
         owner_type="character",
         owner_id=owner_id,
         name=name,
-        stress=stress,
-        stress_degradations=stress_degradations,
+        charges=charges,
+        degradations=degradations,
         is_trauma=False,
         is_active=True,
     )
@@ -477,13 +477,13 @@ class TestApproveProposalPlotDeduction:
 
 
 class TestApproveProposalBondStrain:
-    """Bond stress is applied when gm_overrides.bond_strained = true."""
+    """Bond charges are decremented when gm_overrides.bond_strained = true."""
 
-    def test_bond_stress_incremented_on_strain(
+    def test_bond_charges_decremented_on_strain(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, stress=2, stress_degradations=0)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, charges=2, degradations=0)
 
         effect = _use_skill_effect(bond_id=bond.id)
         p = _pending_proposal(
@@ -503,13 +503,13 @@ class TestApproveProposalBondStrain:
 
         db.expire_all()
         db.refresh(bond)
-        assert bond.stress == 3
+        assert bond.charges == 1
 
     def test_bond_strain_change_recorded_in_event(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, stress=2, stress_degradations=0)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, charges=2, degradations=0)
 
         effect = _use_skill_effect(bond_id=bond.id)
         p = _pending_proposal(
@@ -528,19 +528,20 @@ class TestApproveProposalBondStrain:
 
         db.expire_all()
         event = db.query(Event).filter(Event.proposal_id == p.id).first()
-        change_key = f"slot.{bond.id}.stress"
+        change_key = f"slot.{bond.id}.charges"
         assert change_key in event.changes
         assert event.changes[change_key]["before"] == 2
-        assert event.changes[change_key]["after"] == 3
+        assert event.changes[change_key]["after"] == 1
 
-    def test_bond_stress_hits_max_resets_and_increments_degradations(
+    def test_bond_charges_hits_zero_resets_and_increments_degradations(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
-        """When bond stress reaches max (5 - degradations), it resets to 0
-        and degradations increments by 1."""
+        """When bond charges reach 0 on strain, degradations increments by 1
+        and charges reset to the new effective max (5 - degradations)."""
         pc1 = seed_data["pc1"]
-        # With 0 degradations, max = 5.  stress=4, so +1 hits max.
-        bond = _pc_bond_slot(db, owner_id=pc1.id, stress=4, stress_degradations=0)
+        # charges=1, so -1 hits 0 → degradation triggered.
+        # After: degradations=1, charges resets to 5-1=4.
+        bond = _pc_bond_slot(db, owner_id=pc1.id, charges=1, degradations=0)
 
         effect = _use_skill_effect(bond_id=bond.id)
         p = _pending_proposal(
@@ -560,14 +561,14 @@ class TestApproveProposalBondStrain:
 
         db.expire_all()
         db.refresh(bond)
-        assert bond.stress == 0
-        assert bond.stress_degradations == 1
+        assert bond.degradations == 1
+        assert bond.charges == 4  # reset to 5 - 1 degradation
 
-    def test_bond_strain_at_max_recorded_as_reset_in_event(
+    def test_bond_strain_at_zero_recorded_as_reset_in_event(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, stress=4, stress_degradations=0)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, charges=1, degradations=0)
 
         effect = _use_skill_effect(bond_id=bond.id)
         p = _pending_proposal(
@@ -586,17 +587,17 @@ class TestApproveProposalBondStrain:
 
         db.expire_all()
         event = db.query(Event).filter(Event.proposal_id == p.id).first()
-        stress_key = f"slot.{bond.id}.stress"
-        deg_key = f"slot.{bond.id}.stress_degradations"
-        assert event.changes[stress_key]["after"] == 0
+        charges_key = f"slot.{bond.id}.charges"
+        deg_key = f"slot.{bond.id}.degradations"
+        assert event.changes[charges_key]["after"] == 4  # reset to 5-1
         assert event.changes[deg_key]["before"] == 0
         assert event.changes[deg_key]["after"] == 1
 
-    def test_bond_strain_false_does_not_add_stress(
+    def test_bond_strain_false_does_not_change_charges(
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         pc1 = seed_data["pc1"]
-        bond = _pc_bond_slot(db, owner_id=pc1.id, stress=2, stress_degradations=0)
+        bond = _pc_bond_slot(db, owner_id=pc1.id, charges=2, degradations=0)
 
         effect = _use_skill_effect(bond_id=bond.id)
         p = _pending_proposal(
@@ -616,7 +617,7 @@ class TestApproveProposalBondStrain:
 
         db.expire_all()
         db.refresh(bond)
-        assert bond.stress == 2  # unchanged
+        assert bond.charges == 2  # unchanged
 
 
 # ===========================================================================

@@ -33,6 +33,24 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.session import Session as SessionModel, SessionParticipant
 
+__all__ = [
+    "validate_time_now",
+    "create_session",
+    "get_session",
+    "list_sessions_query",
+    "update_session",
+    "delete_session",
+    "get_character",
+    "get_participant",
+    "add_participant",
+    "remove_participant",
+    "get_active_session",
+    "start_session",
+    "distribute_to_participant",
+    "end_session",
+    "update_participant_contribution",
+]
+
 # FT cap constant — free_time cannot exceed this value.
 _FT_CAP = 20
 

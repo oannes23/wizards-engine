@@ -184,7 +184,7 @@ class TestApproveProposalAuth:
     ) -> None:
         auth_as(client, seed_data["gm"])
         response = client.post(
-            "/api/v1/proposals/01FAKEPROPOSALID000000001/approve", json={}
+            "/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ/approve", json={}
         )
         assert response.status_code == 404
 
@@ -927,7 +927,7 @@ class TestRejectProposalAuth:
     ) -> None:
         auth_as(client, seed_data["gm"])
         response = client.post(
-            "/api/v1/proposals/01FAKEPROPOSALID000000001/reject", json={}
+            "/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ/reject", json={}
         )
         assert response.status_code == 404
 

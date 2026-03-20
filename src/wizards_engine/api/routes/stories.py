@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
+from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.story import Story
 from wizards_engine.models.user import User
@@ -49,30 +50,14 @@ _VALID_OWNER_TYPES = {"character", "group", "location"}
 # ---------------------------------------------------------------------------
 
 
-def _story_not_found(story_id: str) -> HTTPException:
-    """Return a 404 HTTPException for a missing Story."""
-    return HTTPException(
-        status_code=404,
-        detail={
-            "error": {
-                "code": "not_found",
-                "message": f"Story '{story_id}' not found.",
-            }
-        },
-    )
+def _story_not_found(story_id: str) -> None:
+    """Raise a 404 HTTPException for a missing Story."""
+    raise_not_found("Story", story_id)
 
 
-def _entry_not_found(entry_id: str) -> HTTPException:
-    """Return a 404 HTTPException for a missing StoryEntry."""
-    return HTTPException(
-        status_code=404,
-        detail={
-            "error": {
-                "code": "not_found",
-                "message": f"Story entry '{entry_id}' not found.",
-            }
-        },
-    )
+def _entry_not_found(entry_id: str) -> None:
+    """Raise a 404 HTTPException for a missing StoryEntry."""
+    raise_not_found("Story entry", entry_id)
 
 
 def _build_detail_response(db: Session, story: Story) -> StoryDetailResponse:
@@ -456,15 +441,7 @@ def add_owner(
 
     game_object = story_svc.get_game_object(db, body.type, body.id)
     if game_object is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"{body.type.capitalize()} '{body.id}' not found.",
-                }
-            },
-        )
+        raise_not_found(body.type.capitalize(), body.id)
 
     try:
         owner_record = story_svc.add_owner(db, story, owner_type=body.type, owner_id=body.id)
@@ -672,15 +649,7 @@ def update_entry(
         raise _entry_not_found(entry_id)
 
     if current_user.role != "gm" and entry.author_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "You can only edit your own story entries.",
-                }
-            },
-        )
+        raise_forbidden("You can only edit your own story entries.")
 
     entry = story_svc.update_story_entry(
         db,
@@ -741,14 +710,6 @@ def delete_entry(
         raise _entry_not_found(entry_id)
 
     if current_user.role != "gm" and entry.author_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "You can only delete your own story entries.",
-                }
-            },
-        )
+        raise_forbidden("You can only delete your own story entries.")
 
     story_svc.delete_story_entry(db, entry, deleted_by=current_user.id)

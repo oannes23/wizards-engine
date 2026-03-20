@@ -149,7 +149,9 @@ def setup():
 def test_get_current_user_returns_user_for_valid_gm_cookie(setup):
     """Valid GM login_code cookie returns the matching user."""
     client = setup["client"]
-    response = client.get("/probe/me", cookies={COOKIE_NAME: setup["gm_code"]})
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.get("/probe/me")
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == setup["gm_id"]
@@ -159,7 +161,9 @@ def test_get_current_user_returns_user_for_valid_gm_cookie(setup):
 def test_get_current_user_returns_user_for_valid_player_cookie(setup):
     """Valid player cookie is also accepted."""
     client = setup["client"]
-    response = client.get("/probe/me", cookies={COOKIE_NAME: setup["player_code"]})
+    client.cookies.set(COOKIE_NAME, setup["player_code"])
+    response = client.get("/probe/me")
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == setup["player_id"]
@@ -181,9 +185,10 @@ def test_get_current_user_returns_401_when_no_cookie(setup):
 
 def test_get_current_user_returns_401_for_unknown_code(setup):
     """Cookie value that does not match any user yields 401 with cookie_invalid."""
-    response = setup["client"].get(
-        "/probe/me", cookies={COOKIE_NAME: "totally-unknown-code-xyz"}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, "totally-unknown-code-xyz")
+    response = client.get("/probe/me")
+    client.cookies.clear()
     assert response.status_code == 401
     body = response.json()
     assert body["error"]["code"] == "cookie_invalid"
@@ -191,9 +196,10 @@ def test_get_current_user_returns_401_for_unknown_code(setup):
 
 def test_get_current_user_returns_401_for_inactive_user(setup):
     """Cookie belonging to an inactive user yields 401 with account_inactive."""
-    response = setup["client"].get(
-        "/probe/me", cookies={COOKIE_NAME: setup["inactive_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["inactive_code"])
+    response = client.get("/probe/me")
+    client.cookies.clear()
     assert response.status_code == 401
     body = response.json()
     assert body["error"]["code"] == "account_inactive"
@@ -206,9 +212,10 @@ def test_get_current_user_returns_401_for_inactive_user(setup):
 
 def test_require_gm_allows_gm_through(setup):
     """require_gm passes for a GM user."""
-    response = setup["client"].get(
-        "/probe/gm-only", cookies={COOKIE_NAME: setup["gm_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.get("/probe/gm-only")
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["role"] == "gm"
@@ -216,9 +223,10 @@ def test_require_gm_allows_gm_through(setup):
 
 def test_require_gm_rejects_player_with_403(setup):
     """require_gm raises 403 insufficient_role for a player."""
-    response = setup["client"].get(
-        "/probe/gm-only", cookies={COOKIE_NAME: setup["player_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["player_code"])
+    response = client.get("/probe/gm-only")
+    client.cookies.clear()
     assert response.status_code == 403
     body = response.json()
     assert body["error"]["code"] == "insufficient_role"

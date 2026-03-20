@@ -29,6 +29,16 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.slot import Slot, TraitTemplate
 
+__all__ = [
+    "create_trait_instance",
+    "retire_trait_instance",
+    "replace_trait_instance",
+    "decrement_charge",
+    "recharge_trait",
+    "get_trait_instance",
+    "get_active_traits",
+]
+
 
 # ---------------------------------------------------------------------------
 # Constants

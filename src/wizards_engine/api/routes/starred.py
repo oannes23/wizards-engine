@@ -11,11 +11,12 @@ POST   /me/starred             — Authenticated.  Star a Game Object.
 DELETE /me/starred/{type}/{id} — Authenticated.  Unstar a Game Object.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.group import Group
@@ -160,15 +161,7 @@ def star_object(
     """
     name = _resolve_name(db, body.type, body.id)
     if name is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"{body.type.capitalize()} '{body.id}' not found.",
-                }
-            },
-        )
+        raise_not_found(body.type.capitalize(), body.id)
 
     # Check for existing star (idempotent: return 200 if already starred).
     existing = db.get(

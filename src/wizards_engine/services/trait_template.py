@@ -17,6 +17,14 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.slot import TraitTemplate
 
+__all__ = [
+    "create_trait_template",
+    "get_trait_template",
+    "list_trait_templates_query",
+    "update_trait_template",
+    "delete_trait_template",
+]
+
 
 def create_trait_template(
     db: Session,

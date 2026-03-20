@@ -17,6 +17,14 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.group import Group
 
+__all__ = [
+    "create_group",
+    "get_group",
+    "list_groups_query",
+    "update_group",
+    "delete_group",
+]
+
 
 def create_group(
     db: Session,

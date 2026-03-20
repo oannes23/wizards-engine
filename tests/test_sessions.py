@@ -346,7 +346,7 @@ class TestGetSession:
     ):
         """GET /sessions/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
-        response = client.get("/api/v1/sessions/01DOESNOTEXIST0000000000000")
+        response = client.get("/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "not_found"
 
@@ -368,14 +368,17 @@ class TestGetSession:
         assert response.status_code == 200
         assert response.json()["id"] == session.id
 
-    def test_get_malformed_id_returns_404(
+    def test_get_malformed_id_returns_422(
         self, client: TestClient, seed_data: dict
     ):
-        """GET with a non-ULID path segment returns 404."""
+        """GET with a non-ULID path segment returns 422.
+
+        The route validates session_id as a ULID before any database lookup.
+        A syntactically invalid ID is rejected immediately with 422.
+        """
         auth_as(client, seed_data["gm"])
         response = client.get("/api/v1/sessions/not-a-valid-ulid")
-        assert response.status_code == 404
-        assert response.json()["error"]["code"] == "not_found"
+        assert response.status_code == 422
 
 
 # ---------------------------------------------------------------------------
@@ -528,7 +531,7 @@ class TestUpdateSession:
         """PATCH /sessions/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
         response = client.patch(
-            "/api/v1/sessions/01DOESNOTEXIST0000000000000",
+            "/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ",
             json={"summary": "Ghost"},
         )
         assert response.status_code == 404
@@ -648,7 +651,7 @@ class TestDeleteSession:
     ):
         """DELETE /sessions/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
-        response = client.delete("/api/v1/sessions/01DOESNOTEXIST0000000000000")
+        response = client.delete("/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "not_found"
 
@@ -670,11 +673,14 @@ class TestDeleteSession:
         response = client.delete(f"/api/v1/sessions/{session.id}")
         assert response.status_code == 401
 
-    def test_delete_malformed_id_returns_404(
+    def test_delete_malformed_id_returns_422(
         self, client: TestClient, seed_data: dict
     ):
-        """DELETE with a non-ULID path segment returns 404."""
+        """DELETE with a non-ULID path segment returns 422.
+
+        The route validates session_id as a ULID before any database lookup.
+        A syntactically invalid ID is rejected immediately with 422.
+        """
         auth_as(client, seed_data["gm"])
         response = client.delete("/api/v1/sessions/not-a-valid-ulid")
-        assert response.status_code == 404
-        assert response.json()["error"]["code"] == "not_found"
+        assert response.status_code == 422

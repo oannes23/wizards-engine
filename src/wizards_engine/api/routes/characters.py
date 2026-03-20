@@ -14,14 +14,15 @@ PATCH  /characters/{id}     — Owner or GM.  Update name/description/notes.
 DELETE /characters/{id}     — GM only.  Soft delete.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
-from wizards_engine.api.responses import validation_error_response
+from wizards_engine.api.responses import raise_forbidden, raise_not_found, validation_error_response
+from wizards_engine.api.types import UlidStr
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.magic_effect import MagicEffect
@@ -260,7 +261,7 @@ def characters_summary(
     ),
 )
 def get_character(
-    character_id: str,
+    character_id: UlidStr,
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CharacterDetailResponse:
@@ -285,15 +286,7 @@ def get_character(
     """
     character = character_svc.get_character(db, character_id)
     if character is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", character_id)
 
     bonds_raw = get_bonds_display_for_entity(db, "character", character_id)
     bonds = BondGroups(
@@ -468,7 +461,7 @@ def get_character(
     ),
 )
 def update_character(
-    character_id: str,
+    character_id: UlidStr,
     body: UpdateCharacterRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -491,27 +484,11 @@ def update_character(
     """
     character = character_svc.get_character(db, character_id)
     if character is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", character_id)
 
     # Authorization: GM can edit any character; a player can only edit their own.
     if current_user.role != "gm" and current_user.character_id != character_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "You do not have permission to edit this character.",
-                }
-            },
-        )
+        raise_forbidden("You do not have permission to edit this character.")
 
     # Build the updates dict from only the fields the caller explicitly provided.
     updates = body.model_dump(exclude_unset=True)
@@ -531,7 +508,7 @@ def update_character(
     ),
 )
 def delete_character(
-    character_id: str,
+    character_id: UlidStr,
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
 ) -> None:
@@ -550,14 +527,6 @@ def delete_character(
     """
     character = character_svc.get_character(db, character_id)
     if character is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", character_id)
 
     character_svc.delete_character(db, character)

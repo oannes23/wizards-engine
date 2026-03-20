@@ -37,6 +37,13 @@ from wizards_engine.models.user import User
 from wizards_engine.schemas.feed import EventFeedItem, FeedResponse, StoryEntryFeedItem
 from wizards_engine.services.visibility import can_user_see_event, can_user_see_story
 
+__all__ = [
+    "build_game_object_feed",
+    "build_personal_feed",
+    "build_starred_feed",
+    "build_silent_feed",
+]
+
 # ---------------------------------------------------------------------------
 # Internal helpers — Event feed items
 # ---------------------------------------------------------------------------

@@ -21,11 +21,13 @@ from wizards_engine.schemas.gm_dashboard import (
     NearCompletionClock,
     PCSummary,
     PendingProposalSummary,
+    StressProximityEntry,
 )
 from wizards_engine.services.gm_dashboard import (
     get_near_completion_clocks,
     get_pc_summaries,
     get_pending_proposals,
+    get_stress_proximity,
 )
 
 router = APIRouter()
@@ -37,10 +39,11 @@ router = APIRouter()
     status_code=200,
     summary="GM Dashboard — aggregated game state overview",
     description=(
-        "GM only.  Returns three aggregated lists: all pending proposals "
+        "GM only.  Returns four aggregated lists: all pending proposals "
         "(system-origin first, then oldest first), key meter summaries for "
-        "all active full characters (sorted by name), and clocks that are "
-        "one segment away from completion."
+        "all active full characters (sorted by name), clocks that are "
+        "one segment away from completion, and PCs within 2 stress of "
+        "their effective stress maximum."
     ),
 )
 def gm_dashboard(
@@ -64,6 +67,7 @@ def gm_dashboard(
     proposals = get_pending_proposals(db)
     characters = get_pc_summaries(db)
     clocks = get_near_completion_clocks(db)
+    stress_proximity_data = get_stress_proximity(db)
 
     return GmDashboardResponse(
         pending_proposals=[
@@ -82,5 +86,8 @@ def gm_dashboard(
         ],
         near_completion_clocks=[
             NearCompletionClock.model_validate(c) for c in clocks
+        ],
+        stress_proximity=[
+            StressProximityEntry(**entry) for entry in stress_proximity_data
         ],
     )

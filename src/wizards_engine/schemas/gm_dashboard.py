@@ -98,6 +98,31 @@ class NearCompletionClock(BaseModel):
     associated_id: str | None
 
 
+class StressProximityEntry(BaseModel):
+    """A PC that is within 2 stress of their effective stress maximum.
+
+    Attributes
+    ----------
+    character_id:
+        ULID of the character.
+    character_name:
+        Display name.
+    current_stress:
+        The character's current stress value.
+    effective_max:
+        Computed effective stress maximum (9 minus trauma bond count).
+    margin:
+        How many stress points remain before the character hits their
+        maximum (``effective_max - current_stress``).
+    """
+
+    character_id: str
+    character_name: str
+    current_stress: int
+    effective_max: int
+    margin: int
+
+
 class GmDashboardResponse(BaseModel):
     """Aggregated game-state overview for the GM dashboard.
 
@@ -110,8 +135,12 @@ class GmDashboardResponse(BaseModel):
     near_completion_clocks:
         Clocks currently one segment away from completion (not yet completed
         and not deleted).
+    stress_proximity:
+        PCs within 2 stress of their effective stress maximum (9 minus
+        trauma bond count).
     """
 
     pending_proposals: list[PendingProposalSummary]
     pc_summaries: list[PCSummary]
     near_completion_clocks: list[NearCompletionClock]
+    stress_proximity: list[StressProximityEntry]

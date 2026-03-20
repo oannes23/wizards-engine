@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.location import Location
 from wizards_engine.models.user import User
@@ -177,15 +178,7 @@ def get_location(
     """
     location = location_svc.get_location(db, location_id)
     if location is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Location '{location_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Location", location_id)
 
     trait_slots = get_traits_for_owner(db, "location", location_id, "feature_trait")
     traits = [TraitDisplayResponse.model_validate(t) for t in trait_slots]
@@ -238,15 +231,7 @@ def update_location(
     """
     location = location_svc.get_location(db, location_id)
     if location is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Location '{location_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Location", location_id)
 
     # Build the updates dict from only the fields the caller explicitly provided.
     updates = body.model_dump(exclude_unset=True)
@@ -285,14 +270,6 @@ def delete_location(
     """
     location = location_svc.get_location(db, location_id)
     if location is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Location '{location_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Location", location_id)
 
     location_svc.delete_location(db, location)

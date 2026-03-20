@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user
+from wizards_engine.api.responses import raise_forbidden
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
 from wizards_engine.schemas.character import MagicEffectResponse
@@ -43,15 +44,7 @@ def _check_effect_ownership(
     if current_user.role == "gm":
         return
     if current_user.character_id != character_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "You do not have permission to act on this character's effects.",
-                }
-            },
-        )
+        raise_forbidden("You do not have permission to act on this character's effects.")
 
 
 @router.post(

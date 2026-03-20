@@ -28,6 +28,7 @@ from wizards_engine.models.event import Event
 from wizards_engine.models.magic_effect import MagicEffect
 from wizards_engine.models.proposal import Proposal
 from wizards_engine.models.slot import Slot
+from wizards_engine.services.exceptions import BusinessRuleViolation
 from wizards_engine.services.proposal import (
     calculate_charge_magic,
     calculate_use_magic,
@@ -251,22 +252,18 @@ class TestCalculateUseMagicStatValidation:
     def test_missing_suggested_stat_raises_422(
         self, db: Session, seed_data: dict
     ) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_use_magic(db, character_id=pc1.id, selections={})
-        assert exc_info.value.status_code == 422
 
     def test_invalid_stat_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_use_magic(
                 db,
                 character_id=pc1.id,
                 selections={"suggested_stat": "fireball"},
             )
-        assert exc_info.value.status_code == 422
 
     def test_valid_stats_accepted(self, db: Session, seed_data: dict) -> None:
         pc1 = seed_data["pc1"]
@@ -446,9 +443,8 @@ class TestCalculateUseMagicSacrifice:
     def test_unknown_sacrifice_type_raises_422(
         self, db: Session, seed_data: dict
     ) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_use_magic(
                 db,
                 character_id=pc1.id,
@@ -457,13 +453,11 @@ class TestCalculateUseMagicSacrifice:
                     "sacrifice": [{"type": "gold_coin", "amount": 5}],
                 },
             )
-        assert exc_info.value.status_code == 422
 
     def test_bond_not_owned_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
         other_bond = seed_data["pc2_bond"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_use_magic(
                 db,
                 character_id=pc1.id,
@@ -472,7 +466,6 @@ class TestCalculateUseMagicSacrifice:
                     "sacrifice": [{"type": "bond", "target_id": other_bond.id}],
                 },
             )
-        assert exc_info.value.status_code == 422
 
 
 # ===========================================================================
@@ -584,20 +577,17 @@ class TestCalculateChargeMagic:
     """Validation and structure of calculate_charge_magic."""
 
     def test_missing_effect_id_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_charge_magic(
                 db,
                 character_id=pc1.id,
                 selections={"suggested_stat": "enchanting"},
             )
-        assert exc_info.value.status_code == 422
 
     def test_effect_not_found_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_charge_magic(
                 db,
                 character_id=pc1.id,
@@ -606,10 +596,8 @@ class TestCalculateChargeMagic:
                     "suggested_stat": "enchanting",
                 },
             )
-        assert exc_info.value.status_code == 422
 
     def test_instant_effect_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
         eff = _magic_effect(
             db,
@@ -619,7 +607,7 @@ class TestCalculateChargeMagic:
             charges_max=None,
         )
         db.commit()
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_charge_magic(
                 db,
                 character_id=pc1.id,
@@ -628,7 +616,6 @@ class TestCalculateChargeMagic:
                     "suggested_stat": "enchanting",
                 },
             )
-        assert exc_info.value.status_code == 422
 
     def test_charged_effect_accepted(self, db: Session, seed_data: dict) -> None:
         pc1 = seed_data["pc1"]
@@ -668,12 +655,11 @@ class TestCalculateChargeMagic:
     def test_effect_not_belonging_to_character_raises_422(
         self, db: Session, seed_data: dict
     ) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
         pc2 = seed_data["pc2"]
         eff = _magic_effect(db, character_id=pc2.id, effect_type="charged")
         db.commit()
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_charge_magic(
                 db,
                 character_id=pc1.id,
@@ -682,16 +668,14 @@ class TestCalculateChargeMagic:
                     "suggested_stat": "enchanting",
                 },
             )
-        assert exc_info.value.status_code == 422
 
     def test_inactive_effect_raises_422(self, db: Session, seed_data: dict) -> None:
-        from fastapi import HTTPException
         pc1 = seed_data["pc1"]
         eff = _magic_effect(
             db, character_id=pc1.id, effect_type="charged", is_active=False
         )
         db.commit()
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_charge_magic(
                 db,
                 character_id=pc1.id,
@@ -700,7 +684,6 @@ class TestCalculateChargeMagic:
                     "suggested_stat": "enchanting",
                 },
             )
-        assert exc_info.value.status_code == 422
 
 
 # ===========================================================================
@@ -1753,13 +1736,12 @@ class TestUseMagicPlotSpend:
         self, db: Session, seed_data: dict
     ) -> None:
         """Requesting more Plot than available raises 422."""
-        from fastapi import HTTPException  # noqa: PLC0415
 
         pc1 = seed_data["pc1"]
         pc1.plot = 1
         db.flush()
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessRuleViolation):
             calculate_use_magic(
                 db,
                 character_id=pc1.id,
@@ -1768,7 +1750,6 @@ class TestUseMagicPlotSpend:
                     "plot_spend": 5,
                 },
             )
-        assert exc_info.value.status_code == 422
 
     def test_charge_magic_plot_spend_deducted_on_approval(
         self, client: TestClient, db: Session, seed_data: dict

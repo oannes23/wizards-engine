@@ -20,7 +20,8 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
-from wizards_engine.api.responses import validation_error_response
+from wizards_engine.api.responses import raise_forbidden, raise_not_found, validation_error_response
+from wizards_engine.api.types import UlidStr
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.proposal import Proposal
@@ -59,15 +60,7 @@ def _get_proposal_or_404(db: Session, proposal_id: str) -> Proposal:
     """
     proposal = proposal_svc.get_proposal(db, proposal_id)
     if proposal is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Proposal '{proposal_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Proposal", proposal_id)
     return proposal
 
 
@@ -88,15 +81,7 @@ def _assert_can_read(proposal: Proposal, current_user: User) -> None:
     if current_user.role == "gm":
         return
     if proposal.character_id != current_user.character_id:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Proposal '{proposal.id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Proposal", proposal.id)
 
 
 def _assert_can_mutate(proposal: Proposal, current_user: User) -> None:
@@ -171,15 +156,7 @@ def create_proposal(
     """
     # GMs do not submit proposals.
     if current_user.role == "gm":
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "The GM cannot submit player proposals.",
-                }
-            },
-        )
+        raise_forbidden("The GM cannot submit player proposals.")
 
     # Validate that character_id belongs to this player.
     if current_user.character_id != body.character_id:
@@ -201,15 +178,7 @@ def create_proposal(
     # Verify the character actually exists.
     character = db.get(Character, body.character_id)
     if character is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{body.character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", body.character_id)
 
     proposal = proposal_svc.create_proposal(
         db,
@@ -309,7 +278,7 @@ def list_proposals(
     ),
 )
 def get_proposal(
-    proposal_id: str,
+    proposal_id: UlidStr,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProposalResponse:
@@ -351,7 +320,7 @@ def get_proposal(
     ),
 )
 def update_proposal(
-    proposal_id: str,
+    proposal_id: UlidStr,
     body: UpdateProposalRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -406,7 +375,7 @@ def update_proposal(
     ),
 )
 def delete_proposal(
-    proposal_id: str,
+    proposal_id: UlidStr,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
@@ -451,7 +420,7 @@ def delete_proposal(
     ),
 )
 def approve_proposal(
-    proposal_id: str,
+    proposal_id: UlidStr,
     body: ApproveProposalRequest,
     current_user: User = Depends(require_gm),
     db: Session = Depends(get_db),
@@ -509,7 +478,7 @@ def approve_proposal(
     ),
 )
 def reject_proposal(
-    proposal_id: str,
+    proposal_id: UlidStr,
     body: RejectProposalRequest,
     current_user: User = Depends(require_gm),
     db: Session = Depends(get_db),

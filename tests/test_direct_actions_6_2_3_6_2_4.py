@@ -1181,16 +1181,6 @@ class TestCharacterEditValidation:
         )
         assert response.status_code == 422
 
-    @pytest.mark.xfail(
-        reason=(
-            "BUG: UpdateCharacterRequest.validate_name does not enforce the "
-            "200-character maximum that CreateCharacterRequest enforces. "
-            "PATCH currently accepts a 201-character name and returns 200. "
-            "Fix: add `if len(v) > 200: raise ValueError(...)` to "
-            "UpdateCharacterRequest.validate_name in schemas/character.py."
-        ),
-        strict=True,
-    )
     def test_patch_name_too_long_returns_422(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
@@ -1268,7 +1258,7 @@ class TestCharacterEditAccessControl:
         auth_as(client, seed_data["gm"])
 
         response = client.patch(
-            "/api/v1/characters/01AAAAAAAAAAAAAAAAAAAAAA",
+            "/api/v1/characters/01JZZZZZZZZZZZZZZZZZZZZZZZ",
             json={"name": "Ghost Character"},
         )
         assert response.status_code == 404

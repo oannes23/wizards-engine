@@ -21,6 +21,24 @@ from wizards_engine.models.location import Location
 from wizards_engine.models.session import Session as GameSession
 from wizards_engine.models.story import Story, StoryEntry, StoryOwner
 
+__all__ = [
+    "create_story",
+    "get_story",
+    "list_stories_query",
+    "update_story",
+    "delete_story",
+    "get_game_object",
+    "add_owner",
+    "get_owner",
+    "remove_owner",
+    "get_story_entries",
+    "get_active_session_id",
+    "create_story_entry",
+    "get_story_entry",
+    "update_story_entry",
+    "delete_story_entry",
+]
+
 
 # ---------------------------------------------------------------------------
 # Owner type → model class mapping

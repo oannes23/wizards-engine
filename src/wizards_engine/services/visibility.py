@@ -18,7 +18,7 @@ is fine for 4–6 players.
 
 The bond-graph BFS traversal is shared with the presence service.  Rather
 than duplicating the algorithm, this module imports the low-level helpers
-``_load_active_bonds`` and ``_build_adjacency`` from
+``load_active_bonds`` and ``build_adjacency`` from
 ``wizards_engine.services.presence``.
 """
 
@@ -35,10 +35,19 @@ from wizards_engine.models.user import User
 from wizards_engine.services.presence import (
     AdjList,
     NodeKey,
-    _build_adjacency,
-    _is_deleted,
-    _load_active_bonds,
+    build_adjacency,
+    is_deleted,
+    load_active_bonds,
 )
+
+__all__ = [
+    "get_reachable_nodes",
+    "get_visible_character_ids",
+    "can_user_see_event",
+    "filter_events_for_user",
+    "can_user_see_story",
+    "filter_stories_for_user",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +70,7 @@ def get_reachable_nodes(
       go to a Character node.
     - After a Character node, the next hop can go to any type.
     - The first hop from the starting node can go to any type.
-    - Inactive and trauma bonds are excluded (via ``_load_active_bonds``).
+    - Inactive and trauma bonds are excluded (via ``load_active_bonds``).
     - Soft-deleted Game Objects are treated as dead ends.
 
     The starting node itself is **not** included in the result.
@@ -79,8 +88,8 @@ def get_reachable_nodes(
         at exactly that distance.  Keys present for each hop from 1 through
         *max_hops* (even if the set is empty).
     """
-    bonds = _load_active_bonds(db)
-    adj: AdjList = _build_adjacency(bonds)
+    bonds = load_active_bonds(db)
+    adj: AdjList = build_adjacency(bonds)
 
     start_node: NodeKey = (start_type, start_id)
 
@@ -91,7 +100,7 @@ def get_reachable_nodes(
     for neighbour in adj.get(start_node, []):
         if neighbour not in visited:
             nb_type, nb_id = neighbour
-            if not _is_deleted(db, nb_type, nb_id):
+            if not is_deleted(db, nb_type, nb_id):
                 visited.add(neighbour)
                 queue.append((neighbour, 1))
 
@@ -112,7 +121,7 @@ def get_reachable_nodes(
                     continue
                 nb_type, nb_id = neighbour
 
-                if _is_deleted(db, nb_type, nb_id):
+                if is_deleted(db, nb_type, nb_id):
                     continue
 
                 # Character-intermediary constraint: after a non-Character

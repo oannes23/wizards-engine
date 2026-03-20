@@ -8,6 +8,11 @@ Covers:
 - Approved/rejected proposals NOT included
 - PC summaries only include detail_level="full", not deleted
 - PC summaries handle nullable meters (return 0)
+- Stress proximity: PC within 2 of effective max is included
+- Stress proximity: PC not at risk is excluded
+- Stress proximity: trauma bonds reduce effective max
+- Stress proximity: deleted PCs excluded
+- Stress proximity: response shape
 - Near-completion clocks: clock at segments-1 included
 - Near-completion clocks: completed clock (progress >= segments) NOT included
 - Near-completion clocks: clock far from completion NOT included
@@ -32,6 +37,7 @@ from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.clock import Clock
 from wizards_engine.models.proposal import Proposal
+from wizards_engine.models.slot import Slot
 
 
 # ---------------------------------------------------------------------------
@@ -485,3 +491,146 @@ class TestGmDashboardNearCompletionClocks:
         assert clk_data["segments"] == 5
         assert clk_data["associated_type"] == "group"
         assert clk_data["associated_id"] == seed_data["group"].id
+
+
+# ===========================================================================
+# Stress proximity
+# ===========================================================================
+
+
+def _make_trauma_bond(db: Session, character_id: str) -> Slot:
+    """Create an active trauma pc_bond for *character_id*."""
+    slot = Slot(
+        slot_type="pc_bond",
+        owner_type="character",
+        owner_id=character_id,
+        name="Trauma Bond",
+        is_active=True,
+        is_trauma=True,
+    )
+    db.add(slot)
+    db.flush()
+    db.refresh(slot)
+    return slot
+
+
+class TestGmDashboardStressProximity:
+    """Stress proximity list filtering and content."""
+
+    def test_pc_within_2_of_effective_max_included(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        # pc1 has stress=7, no trauma bonds → effective_max=9, margin=2
+        seed_data["pc1"].stress = 7
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        ids = {e["character_id"] for e in response.json()["stress_proximity"]}
+        assert seed_data["pc1"].id in ids
+
+    def test_pc_not_at_risk_excluded(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        # pc1 has stress=5, no trauma bonds → effective_max=9, margin=4 → excluded
+        seed_data["pc1"].stress = 5
+        # make sure pc2, pc3 also have low stress so they don't interfere
+        seed_data["pc2"].stress = 0
+        seed_data["pc3"].stress = 0
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        ids = {e["character_id"] for e in response.json()["stress_proximity"]}
+        assert seed_data["pc1"].id not in ids
+
+    def test_trauma_bond_reduces_effective_max(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        # pc1 stress=6, 1 trauma bond → effective_max=8, margin=2 → included
+        seed_data["pc1"].stress = 6
+        seed_data["pc2"].stress = 0
+        seed_data["pc3"].stress = 0
+        db.commit()
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        entries = {e["character_id"]: e for e in response.json()["stress_proximity"]}
+        assert seed_data["pc1"].id in entries
+        entry = entries[seed_data["pc1"].id]
+        assert entry["effective_max"] == 8
+        assert entry["margin"] == 2
+
+    def test_trauma_bond_excluded_from_effective_max_when_not_at_risk(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        # pc1 stress=5, 1 trauma bond → effective_max=8, margin=3 → excluded
+        seed_data["pc1"].stress = 5
+        seed_data["pc2"].stress = 0
+        seed_data["pc3"].stress = 0
+        db.commit()
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        ids = {e["character_id"] for e in response.json()["stress_proximity"]}
+        assert seed_data["pc1"].id not in ids
+
+    def test_deleted_pc_excluded(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        deleted = _make_full_character(db, name="Ghost PC", stress=9, is_deleted=True)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        ids = {e["character_id"] for e in response.json()["stress_proximity"]}
+        assert deleted.id not in ids
+
+    def test_stress_proximity_response_shape(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        # pc1 stress=8, no trauma bonds → effective_max=9, margin=1
+        seed_data["pc1"].stress = 8
+        seed_data["pc2"].stress = 0
+        seed_data["pc3"].stress = 0
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        entries = {e["character_id"]: e for e in response.json()["stress_proximity"]}
+        assert seed_data["pc1"].id in entries
+        e = entries[seed_data["pc1"].id]
+        assert e["character_name"] == seed_data["pc1"].name
+        assert e["current_stress"] == 8
+        assert e["effective_max"] == 9
+        assert e["margin"] == 1
+
+    def test_empty_when_no_pcs_at_risk(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        seed_data["pc1"].stress = 0
+        seed_data["pc2"].stress = 0
+        seed_data["pc3"].stress = 0
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        assert response.json()["stress_proximity"] == []

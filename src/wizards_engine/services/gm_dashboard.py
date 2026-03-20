@@ -13,6 +13,14 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.clock import Clock
 from wizards_engine.models.proposal import Proposal
+from wizards_engine.services.shared import count_trauma_bonds
+
+__all__ = [
+    "get_pending_proposals",
+    "get_pc_summaries",
+    "get_near_completion_clocks",
+    "get_stress_proximity",
+]
 
 
 def get_pending_proposals(db: Session) -> list[Proposal]:
@@ -86,3 +94,47 @@ def get_near_completion_clocks(db: Session) -> list[Clock]:
         .order_by(Clock.id.asc())
     )
     return list(db.scalars(stmt).all())
+
+
+def get_stress_proximity(db: Session) -> list[dict]:
+    """Return PCs within 2 stress of their effective stress maximum.
+
+    The effective stress maximum for a character is ``9 - trauma_bond_count``,
+    where trauma bonds reduce the maximum stress a character can accumulate
+    before the ``resolve_trauma`` proposal is generated.
+
+    Args:
+        db: An open SQLAlchemy session.
+
+    Returns:
+        A list of dicts (one per at-risk character) with the following keys:
+
+        - ``character_id`` — ULID of the character.
+        - ``character_name`` — display name.
+        - ``current_stress`` — the character's current stress value.
+        - ``effective_max`` — computed effective stress maximum (9 minus
+          trauma bond count).
+        - ``margin`` — how many stress points remain before the character
+          hits their maximum (``effective_max - current_stress``).
+    """
+    characters = db.scalars(
+        select(Character).where(
+            Character.detail_level == "full",
+            Character.is_deleted.is_(False),
+        )
+    ).all()
+
+    results = []
+    for char in characters:
+        trauma_count = count_trauma_bonds(db, char.id)
+        effective_max = 9 - trauma_count
+        current_stress = char.stress or 0
+        if effective_max - current_stress <= 2:
+            results.append({
+                "character_id": char.id,
+                "character_name": char.name,
+                "current_stress": current_stress,
+                "effective_max": effective_max,
+                "margin": effective_max - current_stress,
+            })
+    return results

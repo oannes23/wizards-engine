@@ -24,7 +24,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
-from wizards_engine.api.pagination import paginate
+from wizards_engine.api.pagination import paginate, paginate_with_filter
+from wizards_engine.api.responses import raise_forbidden, raise_not_found
+from wizards_engine.api.types import UlidStr
 from wizards_engine.db import get_db
 from wizards_engine.models.event import Event
 from wizards_engine.models.session import Session as SessionModel
@@ -148,7 +150,7 @@ def list_sessions(
     ),
 )
 def get_session(
-    session_id: str,
+    session_id: UlidStr,
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SessionResponse:
@@ -167,15 +169,7 @@ def get_session(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
     return SessionResponse.model_validate(session)
 
 
@@ -192,7 +186,7 @@ def get_session(
     ),
 )
 def update_session(
-    session_id: str,
+    session_id: UlidStr,
     body: UpdateSessionRequest,
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
@@ -216,15 +210,7 @@ def update_session(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status == "ended":
         raise HTTPException(
@@ -269,7 +255,7 @@ def update_session(
     ),
 )
 def delete_session(
-    session_id: str,
+    session_id: UlidStr,
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
 ) -> None:
@@ -289,15 +275,7 @@ def delete_session(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status != "draft":
         raise HTTPException(
@@ -331,7 +309,7 @@ def delete_session(
     ),
 )
 def start_session(
-    session_id: str,
+    session_id: UlidStr,
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
 ) -> SessionResponse:
@@ -353,15 +331,7 @@ def start_session(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status != "draft":
         raise HTTPException(
@@ -424,7 +394,7 @@ def start_session(
     ),
 )
 def end_session(
-    session_id: str,
+    session_id: UlidStr,
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
 ) -> SessionResponse:
@@ -444,15 +414,7 @@ def end_session(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status != "active":
         raise HTTPException(
@@ -489,7 +451,7 @@ def end_session(
     ),
 )
 def get_session_timeline(
-    session_id: str,
+    session_id: UlidStr,
     after: str | None = None,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
@@ -516,27 +478,22 @@ def get_session_timeline(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     q = select(Event).where(
         Event.session_id == session_id,
         Event.visibility != "silent",
     )
 
-    page = paginate(db, q, model=Event, after=after, limit=limit)
+    def _visibility_filter(items: list) -> list:
+        return filter_events_for_user(db, current_user, items)
 
-    visible_items = filter_events_for_user(db, current_user, list(page.items))
+    page = paginate_with_filter(
+        db, q, model=Event, filter_fn=_visibility_filter, after=after, limit=limit
+    )
 
     return PaginatedResponse[EventResponse](
-        items=[EventResponse.model_validate(e) for e in visible_items],
+        items=[EventResponse.model_validate(e) for e in page.items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
     )
@@ -562,7 +519,7 @@ def get_session_timeline(
     ),
 )
 def add_participant(
-    session_id: str,
+    session_id: UlidStr,
     body: AddParticipantRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -589,15 +546,7 @@ def add_participant(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status == "ended":
         raise HTTPException(
@@ -613,28 +562,12 @@ def add_participant(
     # Player ownership check — GM bypasses.
     if current_user.role != "gm":
         if current_user.character_id != body.character_id:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": {
-                        "code": "character_not_owned",
-                        "message": "You can only register your own character.",
-                    }
-                },
-            )
+            raise_forbidden("You can only register your own character.", code="character_not_owned")
 
     # Validate character exists and is a full character.
     character = session_svc.get_character(db, body.character_id)
     if character is None or character.is_deleted:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{body.character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", body.character_id)
     if character.detail_level != "full":
         raise HTTPException(
             status_code=400,
@@ -701,8 +634,8 @@ def add_participant(
     ),
 )
 def remove_participant(
-    session_id: str,
-    character_id: str,
+    session_id: UlidStr,
+    character_id: UlidStr,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
@@ -724,15 +657,7 @@ def remove_participant(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status == "ended":
         raise HTTPException(
@@ -763,15 +688,7 @@ def remove_participant(
     # Player authorization — players can only remove themselves.
     if current_user.role != "gm":
         if current_user.character_id != character_id:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": {
-                        "code": "character_not_owned",
-                        "message": "You can only remove your own character from a session.",
-                    }
-                },
-            )
+            raise_forbidden("You can only remove your own character from a session.", code="character_not_owned")
 
     session_svc.remove_participant(db, participant)
 
@@ -789,8 +706,8 @@ def remove_participant(
     ),
 )
 def update_participant(
-    session_id: str,
-    character_id: str,
+    session_id: UlidStr,
+    character_id: UlidStr,
     body: UpdateParticipantRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -815,15 +732,7 @@ def update_participant(
     """
     session = session_svc.get_session(db, session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Session '{session_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Session", session_id)
 
     if session.status != "draft":
         raise HTTPException(
@@ -857,15 +766,7 @@ def update_participant(
     # Player authorization — players can only update their own record.
     if current_user.role != "gm":
         if current_user.character_id != character_id:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": {
-                        "code": "character_not_owned",
-                        "message": "You can only update your own participant record.",
-                    }
-                },
-            )
+            raise_forbidden("You can only update your own participant record.", code="character_not_owned")
 
     participant = session_svc.update_participant_contribution(
         db, participant, body.additional_contribution

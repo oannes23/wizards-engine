@@ -335,7 +335,7 @@ class TestGetCharacter:
     ):
         """GET /characters/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
-        response = client.get("/api/v1/characters/01DOESNOTEXIST0000000000000")
+        response = client.get("/api/v1/characters/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "not_found"
 
@@ -448,7 +448,7 @@ class TestUpdateCharacter:
         """PATCH /characters/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
         response = client.patch(
-            "/api/v1/characters/01DOESNOTEXIST0000000000000",
+            "/api/v1/characters/01JZZZZZZZZZZZZZZZZZZZZZZZ",
             json={"name": "Ghost"},
         )
         assert response.status_code == 404
@@ -549,7 +549,7 @@ class TestDeleteCharacter:
     ):
         """DELETE /characters/{id} returns 404 for a non-existent ID."""
         auth_as(client, seed_data["gm"])
-        response = client.delete("/api/v1/characters/01DOESNOTEXIST0000000000000")
+        response = client.delete("/api/v1/characters/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "not_found"
 
@@ -566,33 +566,30 @@ class TestDeleteCharacter:
 
 
 class TestEdgeCases:
-    def test_get_malformed_id_returns_404(self, client: TestClient, seed_data: dict):
-        """GET with a non-ULID path segment treats it as a missing resource (404).
+    def test_get_malformed_id_returns_422(self, client: TestClient, seed_data: dict):
+        """GET with a non-ULID path segment returns 422.
 
-        The route accepts character_id as a plain str and delegates lookup to
-        the service.  A string that cannot possibly match any ULID in the DB
-        should result in a 404, not a 500 or 422.
+        The route validates character_id as a ULID before performing any
+        database lookup.  A syntactically invalid ID is rejected immediately
+        with 422 Unprocessable Entity.
         """
         auth_as(client, seed_data["gm"])
         response = client.get("/api/v1/characters/not-a-valid-ulid")
-        assert response.status_code == 404
-        assert response.json()["error"]["code"] == "not_found"
+        assert response.status_code == 422
 
-    def test_patch_malformed_id_returns_404(self, client: TestClient, seed_data: dict):
-        """PATCH with a non-ULID path segment returns 404."""
+    def test_patch_malformed_id_returns_422(self, client: TestClient, seed_data: dict):
+        """PATCH with a non-ULID path segment returns 422."""
         auth_as(client, seed_data["gm"])
         response = client.patch(
             "/api/v1/characters/not-a-valid-ulid", json={"name": "Ghost"}
         )
-        assert response.status_code == 404
-        assert response.json()["error"]["code"] == "not_found"
+        assert response.status_code == 422
 
-    def test_delete_malformed_id_returns_404(self, client: TestClient, seed_data: dict):
-        """DELETE with a non-ULID path segment returns 404."""
+    def test_delete_malformed_id_returns_422(self, client: TestClient, seed_data: dict):
+        """DELETE with a non-ULID path segment returns 422."""
         auth_as(client, seed_data["gm"])
         response = client.delete("/api/v1/characters/not-a-valid-ulid")
-        assert response.status_code == 404
-        assert response.json()["error"]["code"] == "not_found"
+        assert response.status_code == 422
 
     def test_patch_empty_body_is_noop(self, client: TestClient, seed_data: dict):
         """PATCH with an empty JSON object {} is valid; no fields are changed.

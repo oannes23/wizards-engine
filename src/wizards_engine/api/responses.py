@@ -5,6 +5,9 @@ that the ``{"error": {"code": ..., "message": ..., "details": ...}}``
 shape is applied uniformly regardless of which route raises the error.
 """
 
+from typing import Never
+
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 
@@ -37,6 +40,56 @@ def error_response(
     if details is not None:
         body["error"]["details"] = details
     return JSONResponse(status_code=status_code, content=body)
+
+
+def raise_not_found(entity: str, entity_id: str) -> Never:
+    """Raise HTTPException(404) with the standard not_found error envelope.
+
+    Parameters
+    ----------
+    entity:
+        Human-readable entity type name (e.g. ``"Character"``).
+    entity_id:
+        The ID that was looked up (used in the error message).
+
+    Raises
+    ------
+    HTTPException
+        Always raises with status 404 and the standard error envelope.
+    """
+    raise HTTPException(
+        status_code=404,
+        detail={
+            "error": {
+                "code": "not_found",
+                "message": f"{entity} '{entity_id}' not found.",
+            }
+        },
+    )
+
+
+def raise_forbidden(message: str = "You do not have permission to perform this action.", *, code: str = "forbidden") -> Never:
+    """Raise HTTPException(403) with the standard forbidden error envelope.
+
+    Parameters
+    ----------
+    message:
+        Human-readable description of the denial reason.
+
+    Raises
+    ------
+    HTTPException
+        Always raises with status 403 and the standard error envelope.
+    """
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "error": {
+                "code": code,
+                "message": message,
+            }
+        },
+    )
 
 
 def validation_error_response(fields: dict) -> JSONResponse:

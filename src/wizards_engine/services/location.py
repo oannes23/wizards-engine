@@ -17,6 +17,14 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.location import Location
 
+__all__ = [
+    "create_location",
+    "get_location",
+    "list_locations_query",
+    "update_location",
+    "delete_location",
+]
+
 
 def create_location(
     db: Session,

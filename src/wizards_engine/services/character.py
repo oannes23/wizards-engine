@@ -18,6 +18,15 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.user import User
 
+__all__ = [
+    "create_character",
+    "get_character",
+    "list_characters_query",
+    "update_character",
+    "delete_character",
+    "reset_stress",
+]
+
 
 def create_character(
     db: Session,

@@ -31,6 +31,17 @@ from wizards_engine.models.group import Group
 from wizards_engine.models.location import Location
 from wizards_engine.models.slot import Slot
 
+__all__ = [
+    "NodeKey",
+    "AdjList",
+    "load_active_bonds",
+    "build_adjacency",
+    "is_deleted",
+    "compute_presence",
+    "get_locations_for_character",
+    "get_presence_for_location",
+]
+
 
 # ---------------------------------------------------------------------------
 # Type aliases
@@ -51,7 +62,7 @@ _TIER_NAMES = ["common", "familiar", "known"]
 # ---------------------------------------------------------------------------
 
 
-def _load_active_bonds(db: Session) -> list[Slot]:
+def load_active_bonds(db: Session) -> list[Slot]:
     """Load all active, non-trauma bonds where neither endpoint is deleted.
 
     This is the full bond graph used for traversal.  We load it entirely into
@@ -85,7 +96,7 @@ def _load_active_bonds(db: Session) -> list[Slot]:
     return list(db.execute(stmt).scalars().all())
 
 
-def _is_deleted(db: Session, node_type: str, node_id: str) -> bool:
+def is_deleted(db: Session, node_type: str, node_id: str) -> bool:
     """Return True if the Game Object is soft-deleted (or doesn't exist).
 
     Args:
@@ -110,7 +121,7 @@ def _is_deleted(db: Session, node_type: str, node_id: str) -> bool:
     return bool(obj.is_deleted)
 
 
-def _build_adjacency(bonds: list[Slot]) -> AdjList:
+def build_adjacency(bonds: list[Slot]) -> AdjList:
     """Build an adjacency list from the loaded bond list.
 
     Directional bonds create one directed edge (source → target).
@@ -175,8 +186,8 @@ def compute_presence(
         reachable at multiple distances are placed in the closest tier only.
     """
     # Load the full bond graph once.
-    bonds = _load_active_bonds(db)
-    adj = _build_adjacency(bonds)
+    bonds = load_active_bonds(db)
+    adj = build_adjacency(bonds)
 
     start_node: NodeKey = (start_type, start_id)
 
@@ -191,7 +202,7 @@ def compute_presence(
         if neighbour not in visited:
             n_type, n_id = neighbour
             # Skip deleted nodes immediately.
-            if not _is_deleted(db, n_type, n_id):
+            if not is_deleted(db, n_type, n_id):
                 visited.add(neighbour)
                 queue.append((neighbour, 1))
 
@@ -239,7 +250,7 @@ def compute_presence(
                 nb_type, nb_id = neighbour
 
                 # Skip deleted nodes.
-                if _is_deleted(db, nb_type, nb_id):
+                if is_deleted(db, nb_type, nb_id):
                     continue
 
                 # Character-intermediary constraint:

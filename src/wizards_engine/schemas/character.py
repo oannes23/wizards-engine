@@ -215,9 +215,11 @@ class UpdateCharacterRequest(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str | None) -> str | None:
-        """Ensure name is non-empty after stripping if provided."""
+        """Ensure name is non-empty and at most 200 characters if provided."""
         if v is not None and not v:
             raise ValueError("name must not be empty")
+        if v is not None and len(v) > 200:
+            raise ValueError("name must be 200 characters or fewer")
         return v
 
 

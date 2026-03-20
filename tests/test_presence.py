@@ -748,7 +748,7 @@ class TestCharacterDetailAPIWithLocations:
     ) -> None:
         """Non-existent character still returns 404."""
         auth_as(client, seed_data["gm"])
-        resp = client.get("/api/v1/characters/DOESNOTEXIST12345678901")
+        resp = client.get("/api/v1/characters/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert resp.status_code == 404
 
 

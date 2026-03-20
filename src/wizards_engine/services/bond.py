@@ -27,9 +27,30 @@ from wizards_engine.models.character import Character
 from wizards_engine.models.group import Group
 from wizards_engine.models.location import Location
 from wizards_engine.models.slot import Slot
+from wizards_engine.services.shared import GAME_OBJECT_MODEL_MAP
 
 if TYPE_CHECKING:
     from wizards_engine.schemas.bond import BondDisplayResponse
+
+__all__ = [
+    "CreateBondResult",
+    "ApplyStrainResult",
+    "ApplyTraumaResult",
+    "create_bond",
+    "get_bonds_for_owner",
+    "get_inbound_bonds",
+    "get_traits_for_owner",
+    "get_group_members",
+    "build_bond_display",
+    "get_bond",
+    "apply_bond_strain",
+    "restore_bond_charges",
+    "reverse_degradation",
+    "count_active_traumas",
+    "apply_trauma",
+    "fix_trauma",
+    "get_bonds_display_for_entity",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -97,18 +118,8 @@ def _get_game_object(
     Returns:
         The ORM instance if found and not soft-deleted, else ``None``.
     """
-    model_map: dict[str, type] = {
-        "character": Character,
-        "group": Group,
-        "location": Location,
-    }
-    model = model_map.get(object_type)
-    if model is None:
-        return None
-    obj = db.get(model, object_id)
-    if obj is None or obj.is_deleted:
-        return None
-    return obj
+    from wizards_engine.services.shared import get_game_object  # noqa: PLC0415
+    return get_game_object(db, object_type, object_id)
 
 
 def _infer_slot_type(
@@ -643,12 +654,7 @@ def _resolve_name(
     Returns:
         The object's name, or ``"[deleted]"`` if not found.
     """
-    model_map: dict[str, type] = {
-        "character": Character,
-        "group": Group,
-        "location": Location,
-    }
-    model = model_map.get(object_type)
+    model = GAME_OBJECT_MODEL_MAP.get(object_type)
     if model is None:
         return "[unknown]"
     obj = db.get(model, object_id)

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import require_gm
 from wizards_engine.api.pagination import paginate
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.user import Invite, User
 from wizards_engine.schemas.common import PaginatedResponse
@@ -126,15 +127,7 @@ def delete_invite(
     """
     invite = invite_svc.get_invite(db, invite_id)
     if invite is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Invite '{invite_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Invite", invite_id)
 
     if invite.is_consumed:
         raise HTTPException(

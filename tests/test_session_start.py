@@ -445,7 +445,7 @@ class TestSessionStartErrors:
     ) -> None:
         """Returns 404 when session ID does not exist."""
         auth_as(client, seed_data["gm"])
-        response = client.post("/api/v1/sessions/01DOESNOTEXIST0000000000000/start")
+        response = client.post("/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ/start")
 
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "not_found"

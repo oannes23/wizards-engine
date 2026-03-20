@@ -13,11 +13,12 @@ PATCH  /groups/{id}     — GM only.  Update name/description/notes.
 DELETE /groups/{id}     — GM only.  Soft delete.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.group import Group
 from wizards_engine.models.user import User
@@ -154,15 +155,7 @@ def get_group(
     """
     group = group_svc.get_group(db, group_id)
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Group '{group_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Group", group_id)
 
     trait_slots = get_traits_for_owner(db, "group", group_id, "group_trait")
     traits = [TraitDisplayResponse.model_validate(t) for t in trait_slots]
@@ -211,15 +204,7 @@ def update_group(
     """
     group = group_svc.get_group(db, group_id)
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Group '{group_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Group", group_id)
 
     # Build the updates dict from only the fields the caller explicitly provided.
     updates = body.model_dump(exclude_unset=True)
@@ -258,14 +243,6 @@ def delete_group(
     """
     group = group_svc.get_group(db, group_id)
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Group '{group_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Group", group_id)
 
     group_svc.delete_group(db, group)

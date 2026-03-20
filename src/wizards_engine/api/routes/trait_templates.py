@@ -17,11 +17,11 @@ PATCH  /trait-templates/{id}     — GM only.  Update name/description only.
 DELETE /trait-templates/{id}     — GM only.  Soft delete.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
-from wizards_engine.api.responses import error_response
+from wizards_engine.api.responses import error_response, raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.slot import TraitTemplate
 from wizards_engine.models.user import User
@@ -161,15 +161,7 @@ def get_trait_template(
     """
     template = trait_template_svc.get_trait_template(db, template_id)
     if template is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Trait template '{template_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Trait template", template_id)
     return TraitTemplateResponse.model_validate(template)
 
 
@@ -210,15 +202,7 @@ def update_trait_template(
     """
     template = trait_template_svc.get_trait_template(db, template_id)
     if template is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Trait template '{template_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Trait template", template_id)
 
     # Build the updates dict from only the fields the caller explicitly provided.
     updates = body.model_dump(exclude_unset=True)
@@ -262,15 +246,7 @@ def delete_trait_template(
     """
     template = trait_template_svc.get_trait_template(db, template_id)
     if template is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Trait template '{template_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Trait template", template_id)
 
     # Idempotent — already deleted templates are a no-op.
     if not template.is_deleted:

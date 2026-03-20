@@ -15,12 +15,12 @@ DELETE /clocks/{id}                — GM only.  Soft delete.
 POST   /groups/{group_id}/clocks   — GM only.  Create clock auto-associated with group.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
-from wizards_engine.api.responses import validation_error_response
+from wizards_engine.api.responses import raise_not_found, validation_error_response
 from wizards_engine.db import get_db
 from wizards_engine.models.clock import Clock
 from wizards_engine.models.group import Group
@@ -58,15 +58,7 @@ def _get_clock_or_404(db: Session, clock_id: str) -> Clock:
     """
     clock = clock_svc.get_clock(db, clock_id)
     if clock is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Clock '{clock_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Clock", clock_id)
     return clock
 
 
@@ -168,15 +160,7 @@ def create_group_clock(
     """
     group = db.get(Group, group_id)
     if group is None or group.is_deleted:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Group '{group_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Group", group_id)
 
     clock = clock_svc.create_clock(
         db,

@@ -7,15 +7,16 @@ Endpoint
 POST /characters/{id}/find-time  — Owner or GM.  Spend 3 Plot to gain 1 FT.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user
+from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.db import get_db
-from wizards_engine.models.character import Character
 from wizards_engine.models.user import User
-from wizards_engine.services.event import create_event
+from wizards_engine.models.character import Character
+from wizards_engine.services.player_actions import execute_find_time
 
 router = APIRouter()
 
@@ -80,125 +81,17 @@ def find_time(
             (``insufficient_plot``) or Free Time is already at 20
             (``free_time_at_cap``).
     """
-    # ------------------------------------------------------------------
-    # 1. Fetch character — must exist and not be deleted
-    # ------------------------------------------------------------------
+    # Authorisation — owner or GM (checked before calling the service).
     character: Character | None = db.get(Character, character_id)
     if character is None or character.is_deleted:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", character_id)
 
-    # ------------------------------------------------------------------
-    # 2. Authorisation — owner or GM
-    # ------------------------------------------------------------------
     if current_user.role != "gm" and current_user.character_id != character_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "forbidden",
-                    "message": "You do not have permission to perform this action for this character.",
-                }
-            },
-        )
+        raise_forbidden("You do not have permission to perform this action for this character.")
 
-    # ------------------------------------------------------------------
-    # 3. Must be a full (PC-level) character
-    # ------------------------------------------------------------------
-    if character.detail_level != "full":
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": {
-                    "code": "not_a_pc",
-                    "message": "Only full (PC-level) characters can use find-time.",
-                }
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # 4. Validate Plot >= 3
-    # ------------------------------------------------------------------
-    plot_before: int = character.plot or 0
-    if plot_before < 3:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": {
-                    "code": "insufficient_plot",
-                    "message": "Character does not have enough Plot (requires 3).",
-                }
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # 5. Validate Free Time < 20
-    # ------------------------------------------------------------------
-    ft_before: int = character.free_time or 0
-    if ft_before >= 20:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": {
-                    "code": "free_time_at_cap",
-                    "message": "Character's Free Time is already at the cap of 20.",
-                }
-            },
-        )
-
-    # ------------------------------------------------------------------
-    # 6. Apply changes
-    # ------------------------------------------------------------------
-    plot_after = plot_before - 3
-    ft_after = ft_before + 1
-
-    character.plot = plot_after
-    character.free_time = ft_after
-    db.flush()
-
-    # ------------------------------------------------------------------
-    # 7. Create event
-    # ------------------------------------------------------------------
-    create_event(
-        db,
-        type="player.find_time",
-        actor_type="gm" if current_user.role == "gm" else "player",
-        actor_id=current_user.id,
-        visibility="private",
-        changes={
-            f"character.{character_id}.plot": {
-                "op": "meter.delta",
-                "before": plot_before,
-                "after": plot_after,
-            },
-            f"character.{character_id}.free_time": {
-                "op": "meter.delta",
-                "before": ft_before,
-                "after": ft_after,
-            },
-        },
-        targets=[
-            {
-                "target_type": "character",
-                "target_id": character_id,
-                "is_primary": True,
-            }
-        ],
-    )
-
-    # ------------------------------------------------------------------
-    # 8. Return updated meters
-    # ------------------------------------------------------------------
-    db.refresh(character)
+    result = execute_find_time(db, character_id, actor_user=current_user)
     return FindTimeResponse(
-        id=character.id,
-        plot=character.plot,
-        free_time=character.free_time,
+        id=result.id,
+        plot=result.plot,
+        free_time=result.free_time,
     )

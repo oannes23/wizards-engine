@@ -128,9 +128,10 @@ def setup():
 
 def test_get_me_returns_gm_identity(setup):
     """GET /me returns id, display_name, role='gm', and character_id=null for the GM."""
-    response = setup["client"].get(
-        "/api/v1/me", cookies={COOKIE_NAME: setup["gm_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.get("/api/v1/me")
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == setup["gm_id"]
@@ -141,9 +142,10 @@ def test_get_me_returns_gm_identity(setup):
 
 def test_get_me_returns_player_identity(setup):
     """GET /me returns id, display_name, role='player', and character_id=null for a player."""
-    response = setup["client"].get(
-        "/api/v1/me", cookies={COOKIE_NAME: setup["player_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["player_code"])
+    response = client.get("/api/v1/me")
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == setup["player_id"]
@@ -172,11 +174,10 @@ def test_get_me_returns_401_when_no_cookie(setup):
 
 def test_patch_me_updates_display_name(setup):
     """PATCH /me with a valid display_name updates and returns the new name."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "New GM Name"},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.patch("/api/v1/me", json={"display_name": "New GM Name"})
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == setup["gm_id"]
@@ -187,11 +188,10 @@ def test_patch_me_updates_display_name(setup):
 
 def test_patch_me_strips_surrounding_whitespace(setup):
     """PATCH /me trims leading/trailing whitespace from display_name."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "  Trimmed Name  "},
-        cookies={COOKIE_NAME: setup["player_code"]},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["player_code"])
+    response = client.patch("/api/v1/me", json={"display_name": "  Trimmed Name  "})
+    client.cookies.clear()
     assert response.status_code == 200
     body = response.json()
     assert body["display_name"] == "Trimmed Name"
@@ -199,26 +199,22 @@ def test_patch_me_strips_surrounding_whitespace(setup):
 
 def test_patch_me_accepts_exactly_50_chars(setup):
     """PATCH /me accepts a display_name that is exactly 50 characters long."""
+    client = setup["client"]
     name_50 = "A" * 50
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": name_50},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.patch("/api/v1/me", json={"display_name": name_50})
+    client.cookies.clear()
     assert response.status_code == 200
     assert response.json()["display_name"] == name_50
 
 
 def test_patch_me_persists_change_across_requests(setup):
     """After PATCH /me, a subsequent GET /me reflects the updated display_name."""
-    setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "Persisted Name"},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
-    get_response = setup["client"].get(
-        "/api/v1/me", cookies={COOKIE_NAME: setup["gm_code"]}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    client.patch("/api/v1/me", json={"display_name": "Persisted Name"})
+    get_response = client.get("/api/v1/me")
+    client.cookies.clear()
     assert get_response.status_code == 200
     assert get_response.json()["display_name"] == "Persisted Name"
 
@@ -230,31 +226,28 @@ def test_patch_me_persists_change_across_requests(setup):
 
 def test_patch_me_returns_422_for_empty_display_name(setup):
     """PATCH /me returns 422 when display_name is an empty string."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": ""},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.patch("/api/v1/me", json={"display_name": ""})
+    client.cookies.clear()
     assert response.status_code == 422
 
 
 def test_patch_me_returns_422_for_whitespace_only_display_name(setup):
     """PATCH /me returns 422 when display_name is whitespace-only (empty after trim)."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "   "},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.patch("/api/v1/me", json={"display_name": "   "})
+    client.cookies.clear()
     assert response.status_code == 422
 
 
 def test_patch_me_returns_422_for_display_name_over_50_chars(setup):
     """PATCH /me returns 422 when display_name exceeds 50 characters."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "A" * 51},
-        cookies={COOKIE_NAME: setup["gm_code"]},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, setup["gm_code"])
+    response = client.patch("/api/v1/me", json={"display_name": "A" * 51})
+    client.cookies.clear()
     assert response.status_code == 422
 
 
@@ -280,9 +273,10 @@ def test_patch_me_returns_401_when_no_cookie(setup):
 
 def test_get_me_returns_401_for_invalid_cookie(setup):
     """GET /me returns 401 cookie_invalid when the cookie value is not in the DB."""
-    response = setup["client"].get(
-        "/api/v1/me", cookies={COOKIE_NAME: "this-code-does-not-exist"}
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, "this-code-does-not-exist")
+    response = client.get("/api/v1/me")
+    client.cookies.clear()
     assert response.status_code == 401
     body = response.json()
     assert body["error"]["code"] == "cookie_invalid"
@@ -290,11 +284,10 @@ def test_get_me_returns_401_for_invalid_cookie(setup):
 
 def test_patch_me_returns_401_for_invalid_cookie(setup):
     """PATCH /me returns 401 cookie_invalid when the cookie value is not in the DB."""
-    response = setup["client"].patch(
-        "/api/v1/me",
-        json={"display_name": "Will Not Save"},
-        cookies={COOKIE_NAME: "this-code-does-not-exist"},
-    )
+    client = setup["client"]
+    client.cookies.set(COOKIE_NAME, "this-code-does-not-exist")
+    response = client.patch("/api/v1/me", json={"display_name": "Will Not Save"})
+    client.cookies.clear()
     assert response.status_code == 401
     body = response.json()
     assert body["error"]["code"] == "cookie_invalid"

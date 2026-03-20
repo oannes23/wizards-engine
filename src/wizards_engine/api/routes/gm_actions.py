@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import require_gm
-from wizards_engine.api.responses import error_response
+from wizards_engine.api.responses import error_response, raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
 from wizards_engine.schemas.event import EventResponse
@@ -97,5 +97,6 @@ def perform_gm_action(
                 }
             },
         )
+
 
     return EventResponse.model_validate(event)

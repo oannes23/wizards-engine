@@ -15,6 +15,15 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.magic_effect import MagicEffect
 
+__all__ = [
+    "EFFECT_CAP",
+    "create_effect",
+    "use_effect",
+    "retire_effect",
+    "get_effect",
+    "get_effects_for_character",
+]
+
 # Effect types that count toward the cap of 9.
 _CAPPED_TYPES = frozenset({"charged", "permanent"})
 

@@ -101,7 +101,7 @@ class TestSessionTimelineNotFound:
         self, client: TestClient, db: Session, seed_data: dict
     ) -> None:
         auth_as(client, seed_data["gm"])
-        response = client.get("/api/v1/sessions/01HXNONEXISTENTID12345678/timeline")
+        response = client.get("/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ/timeline")
         assert response.status_code == 404
         body = response.json()
         assert body["error"]["code"] == "not_found"

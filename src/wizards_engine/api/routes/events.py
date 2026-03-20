@@ -13,12 +13,13 @@ PATCH  /events/{id}/visibility  — GM only.  Override visibility level.
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.event import Event, EventTarget
 from wizards_engine.models.user import User
@@ -194,40 +195,16 @@ def get_event(
     event = db.get(Event, event_id)
 
     if event is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Event '{event_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Event", event_id)
 
     # Silent events are excluded from the normal read path for all users
     # (including the GM — the GM uses a separate silent feed endpoint).
     if event.visibility == "silent":
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Event '{event_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Event", event_id)
 
     # Apply visibility check — 404 (not 403) per API conventions.
     if not can_user_see_event(db, current_user, event):
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Event '{event_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Event", event_id)
 
     return EventResponse.model_validate(event)
 
@@ -272,15 +249,7 @@ def update_event_visibility(
     event = db.get(Event, event_id)
 
     if event is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Event '{event_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Event", event_id)
 
     event.visibility = body.visibility
     db.flush()

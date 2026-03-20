@@ -481,14 +481,14 @@ class TestGetProposal:
     """Single proposal detail endpoint."""
 
     def test_unauthenticated_returns_401(self, client: TestClient) -> None:
-        response = client.get("/api/v1/proposals/01FAKEPROPOSALID000000001")
+        response = client.get("/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 401
 
     def test_nonexistent_returns_404(
         self, client: TestClient, seed_data: dict
     ) -> None:
         auth_as(client, seed_data["gm"])
-        response = client.get("/api/v1/proposals/01FAKEPROPOSALID000000001")
+        response = client.get("/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
 
     def test_player_can_see_own_proposal(
@@ -568,7 +568,7 @@ class TestUpdateProposal:
 
     def test_unauthenticated_returns_401(self, client: TestClient) -> None:
         response = client.patch(
-            "/api/v1/proposals/01FAKEPROPOSALID000000001",
+            "/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ",
             json={"narrative": "New narrative."},
         )
         assert response.status_code == 401
@@ -755,7 +755,7 @@ class TestUpdateProposal:
     ) -> None:
         auth_as(client, seed_data["gm"])
         response = client.patch(
-            "/api/v1/proposals/01FAKEPROPOSALID000000001",
+            "/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ",
             json={"narrative": "Test."},
         )
         assert response.status_code == 404
@@ -770,7 +770,7 @@ class TestDeleteProposal:
     """DELETE /proposals/{id} endpoint."""
 
     def test_unauthenticated_returns_401(self, client: TestClient) -> None:
-        response = client.delete("/api/v1/proposals/01FAKEPROPOSALID000000001")
+        response = client.delete("/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 401
 
     def test_player_can_delete_own_pending_proposal(
@@ -855,7 +855,7 @@ class TestDeleteProposal:
         self, client: TestClient, seed_data: dict
     ) -> None:
         auth_as(client, seed_data["gm"])
-        response = client.delete("/api/v1/proposals/01FAKEPROPOSALID000000001")
+        response = client.delete("/api/v1/proposals/01JZZZZZZZZZZZZZZZZZZZZZZZ")
         assert response.status_code == 404
 
     def test_delete_returns_no_body(

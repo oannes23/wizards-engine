@@ -54,6 +54,25 @@ from wizards_engine.schemas.gm_actions import (
 from wizards_engine.services.bond import create_bond as bond_service_create
 from wizards_engine.services.event import VALID_VISIBILITY_LEVELS, create_event
 from wizards_engine.services.magic_effect import create_effect as effect_service_create
+from wizards_engine.services.shared import count_trauma_bonds, has_pending_resolve_trauma
+
+__all__ = [
+    "handle_modify_character",
+    "handle_modify_group",
+    "handle_modify_location",
+    "handle_modify_clock",
+    "handle_create_bond",
+    "handle_modify_bond",
+    "handle_retire_bond",
+    "handle_create_trait",
+    "handle_modify_trait",
+    "handle_retire_trait",
+    "handle_create_effect",
+    "handle_modify_effect",
+    "handle_retire_effect",
+    "handle_award_xp",
+    "dispatch_gm_action",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -95,60 +114,6 @@ def _clamp(value: int, lo: int, hi: int) -> tuple[int, bool]:
         return hi, True
     return value, False
 
-
-def _count_trauma_bonds(db: Session, character_id: str) -> int:
-    """Return the count of active trauma bonds for a character.
-
-    A trauma bond is a ``pc_bond`` slot owned by the character where
-    ``is_trauma = True`` and ``is_active = True``.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character_id: ULID of the character to inspect.
-
-    Returns:
-        Number of active trauma bonds.
-    """
-    rows = (
-        db.execute(
-            select(Slot).where(
-                and_(
-                    Slot.owner_type == "character",
-                    Slot.owner_id == character_id,
-                    Slot.slot_type == "pc_bond",
-                    Slot.is_trauma.is_(True),
-                    Slot.is_active.is_(True),
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return len(rows)
-
-
-def _has_pending_resolve_trauma(db: Session, character_id: str) -> bool:
-    """Return ``True`` if a pending ``resolve_trauma`` proposal exists.
-
-    Used to ensure idempotency — only one pending trauma proposal per
-    character at a time.
-
-    Args:
-        db: Active SQLAlchemy session.
-        character_id: ULID of the character to check.
-
-    Returns:
-        ``True`` if a pending ``resolve_trauma`` proposal exists for
-        this character.
-    """
-    result = db.scalars(
-        select(Proposal).where(
-            Proposal.character_id == character_id,
-            Proposal.action_type == "resolve_trauma",
-            Proposal.status == "pending",
-        )
-    ).first()
-    return result is not None
 
 
 # ---------------------------------------------------------------------------
@@ -343,10 +308,10 @@ def handle_modify_character(
     # Stress boundary check — auto-generate resolve_trauma proposal
     # ------------------------------------------------------------------
     if character.stress is not None and ch.stress is not None:
-        trauma_count = _count_trauma_bonds(db, character.id)
+        trauma_count = count_trauma_bonds(db, character.id)
         effective_max = 9 - trauma_count
         if character.stress >= effective_max:
-            if not _has_pending_resolve_trauma(db, character.id):
+            if not has_pending_resolve_trauma(db, character.id):
                 proposal = Proposal(
                     character_id=character.id,
                     action_type="resolve_trauma",
@@ -406,7 +371,7 @@ def _meter_range_for_field(
         A ``(lo, hi)`` tuple.
     """
     if field == "stress":
-        trauma_count = _count_trauma_bonds(db, character.id)
+        trauma_count = count_trauma_bonds(db, character.id)
         return (0, 9 - trauma_count)
     return _METER_RANGES[field]
 

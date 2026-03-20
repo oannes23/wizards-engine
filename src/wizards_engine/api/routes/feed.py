@@ -28,10 +28,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
+from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.group import Group
@@ -125,15 +126,7 @@ def character_feed(
     """
     character = db.get(Character, character_id)
     if character is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Character '{character_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Character", character_id)
 
     return build_game_object_feed(
         db,
@@ -187,15 +180,7 @@ def group_feed(
     """
     group = db.get(Group, group_id)
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Group '{group_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Group", group_id)
 
     return build_game_object_feed(
         db,
@@ -249,15 +234,7 @@ def location_feed(
     """
     location = db.get(Location, location_id)
     if location is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "not_found",
-                    "message": f"Location '{location_id}' not found.",
-                }
-            },
-        )
+        raise_not_found("Location", location_id)
 
     return build_game_object_feed(
         db,

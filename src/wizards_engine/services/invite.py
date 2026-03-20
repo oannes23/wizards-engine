@@ -20,6 +20,13 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.user import Invite
 
+__all__ = [
+    "create_invite",
+    "get_invite",
+    "list_invites_query",
+    "delete_invite",
+]
+
 
 def create_invite(db: Session) -> Invite:
     """Create a new bare invite and persist it.

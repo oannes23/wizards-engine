@@ -30,6 +30,12 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.event import Event, EventTarget
 from wizards_engine.models.session import Session as SessionModel
 
+__all__ = [
+    "VALID_ACTOR_TYPES",
+    "VALID_VISIBILITY_LEVELS",
+    "create_event",
+]
+
 
 # ---------------------------------------------------------------------------
 # Constants

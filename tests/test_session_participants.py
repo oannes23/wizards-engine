@@ -209,7 +209,7 @@ class TestAddParticipant:
         """Registering to a non-existent session returns 404."""
         auth_as(client, seed_data["gm"])
         response = client.post(
-            "/api/v1/sessions/01DOESNOTEXIST0000000000000/participants",
+            "/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ/participants",
             json={"character_id": seed_data["pc1"].id},
         )
 
@@ -366,7 +366,7 @@ class TestRemoveParticipant:
         """Deleting from a non-existent session returns 404."""
         auth_as(client, seed_data["gm"])
         response = client.delete(
-            f"/api/v1/sessions/01DOESNOTEXIST0000000000000/participants/{seed_data['pc1'].id}"
+            f"/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ/participants/{seed_data['pc1'].id}"
         )
 
         assert response.status_code == 404
@@ -538,7 +538,7 @@ class TestUpdateParticipant:
         """PATCH to a non-existent session returns 404."""
         auth_as(client, seed_data["gm"])
         response = client.patch(
-            f"/api/v1/sessions/01DOESNOTEXIST0000000000000/participants/{seed_data['pc1'].id}",
+            f"/api/v1/sessions/01JZZZZZZZZZZZZZZZZZZZZZZZ/participants/{seed_data['pc1'].id}",
             json={"additional_contribution": True},
         )
 

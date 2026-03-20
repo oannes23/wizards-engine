@@ -12,6 +12,11 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.user import Invite, User
 
+__all__ = [
+    "InviteNotFoundError",
+    "join_game",
+]
+
 # ---------------------------------------------------------------------------
 # Canonical defaults for a new full (PC-level) character
 # ---------------------------------------------------------------------------

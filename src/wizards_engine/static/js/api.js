@@ -63,8 +63,13 @@ var api = (function () {
       if (typeof Alpine !== "undefined" && Alpine.store("app")) {
         Alpine.store("app").clearUser();
       }
-      // Redirect to login — use replace so back-button does not loop
-      window.location.replace("#/login");
+      // Don't redirect away from public routes that don't require auth
+      var hash = window.location.hash;
+      var isPublic = hash === "#/setup" || hash === "#/login" || hash === "#/join";
+      if (!isPublic) {
+        // Redirect to login — use replace so back-button does not loop
+        window.location.replace("#/login");
+      }
       // Don't show toast for 401 — the redirect itself communicates session expiry
     } else if (!silent) {
       _dispatchError(message, response.status);

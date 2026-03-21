@@ -67,6 +67,20 @@
 })();
 
 // ---------------------------------------------------------------------------
+// Server-path → hash mapping (runs once, before Alpine starts)
+// ---------------------------------------------------------------------------
+// When the user navigates to a server-side path like /setup or /login the
+// server returns the SPA shell but the hash is empty. Map these paths to the
+// corresponding hash routes so the client router renders the right view.
+(function () {
+  var pathMap = { "/setup": "#/setup", "/login": "#/login" };
+  var mapped = pathMap[window.location.pathname];
+  if (mapped && !window.location.hash) {
+    window.location.hash = mapped;
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // Alpine init — store bootstrap + router start
 // ---------------------------------------------------------------------------
 document.addEventListener("alpine:init", function () {

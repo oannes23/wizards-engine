@@ -32,11 +32,7 @@
          and not on a login/setup route. -->
     <div id="nav-container" hidden></div>
 
-    <!-- Load order: Alpine (CDN) → utils → api → store → router → components → app -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
-      defer
-    ></script>
+    <!-- Load order: utils → api → store → router → views → components → app → Alpine (CDN, must be last) -->
     <script src="/static/js/utils.js" defer></script>
     <script src="/static/js/api.js" defer></script>
     <script src="/static/js/store.js" defer></script>
@@ -74,5 +70,9 @@
     <script src="/static/js/views/story-detail.js" defer></script>
     <script src="/static/js/views/profile.js" defer></script>
     <script src="/static/js/app.js" defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
+      defer
+    ></script>
   </body>
 </html>

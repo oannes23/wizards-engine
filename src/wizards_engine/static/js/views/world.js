@@ -94,6 +94,9 @@ window.views.world = (function () {
       // Set of "type/id" keys for objects the current user has starred.
       _starredSet: {},
 
+      // ---- Render debounce timer --------------------------------------------
+      _renderTimer: null,
+
       // ---- Computed helpers ------------------------------------------------
 
       /**
@@ -181,14 +184,15 @@ window.views.world = (function () {
       /**
        * Trigger a re-render of the card list for the current tab.
        * Called after a fetch completes or when the tab changes.
-       * Uses a microtask (Promise.resolve) so Alpine has finished updating
-       * reactive state before we read filteredItems().
+       * Debounced via setTimeout so rapid successive calls coalesce into
+       * a single render after Alpine has finished updating reactive state.
        */
       _renderCards: function () {
         var self = this;
-        Promise.resolve().then(function () {
+        clearTimeout(self._renderTimer);
+        self._renderTimer = setTimeout(function () {
           _renderCardList(self);
-        });
+        }, 0);
       },
 
       // ---- Lifecycle -------------------------------------------------------
@@ -517,6 +521,7 @@ window.views.world = (function () {
       // Card list — populated imperatively by _renderCardList()
       '  <div id="world-card-list"',
       '       class="world-card-list"',
+      '       x-ignore',
       '       role="list"',
       '       aria-label="World objects">',
       '  </div>',
@@ -548,16 +553,6 @@ window.views.world = (function () {
       if (root) {
         Alpine.initTree(root);
       }
-
-      // After Alpine initialises, trigger the initial render of the card list.
-      // Use a short timeout so Alpine's init() has time to fire the first fetch.
-      var renderTimer = setTimeout(function () {
-        var alpineData = root && root._x_dataStack && root._x_dataStack[0];
-        if (alpineData) {
-          _renderCardList(alpineData);
-        }
-        clearTimeout(renderTimer);
-      }, 0);
 
     }
   };

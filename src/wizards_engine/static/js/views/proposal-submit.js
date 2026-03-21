@@ -578,6 +578,7 @@ window.views.proposalSubmit = (function () {
       selectType: function (type) {
         this.selectedType = type;
         this.step = 2;
+        _injectStepIndicator(2);
         this._fetchCharacter();
         // work_on_project needs the stories list up front
         if (type === "work_on_project") {
@@ -653,6 +654,7 @@ window.views.proposalSubmit = (function () {
         }
 
         this.step = 3;
+        _injectStepIndicator(3);
       },
 
       /**
@@ -661,6 +663,7 @@ window.views.proposalSubmit = (function () {
       goBack: function () {
         if (this.step > 1) {
           this.step--;
+          _injectStepIndicator(this.step);
         }
       },
 
@@ -1995,32 +1998,6 @@ window.views.proposalSubmit = (function () {
     // update it. We use a custom event dispatched from within Alpine instead.
     // For the initial render, inject Step 1 indicator immediately.
     _injectStepIndicator(1);
-
-    // Listen for Alpine-driven step changes and update the indicator.
-    // Alpine x-data doesn't natively emit step changes, so we use a polling
-    // approach on the root element's Alpine data — or, more cleanly, we watch
-    // for hashchange (since we're in a SPA). The simplest durable solution:
-    // have the step indicator refresh itself whenever a step-related click fires.
-    // We delegate to the root element with a data attribute approach.
-    var rootEl = document.getElementById("proposal-submit-root");
-    if (rootEl) {
-      // Observe attribute/text changes to detect step changes
-      var observer = new MutationObserver(function () {
-        if (typeof Alpine !== "undefined" && rootEl._x_dataStack) {
-          var data = rootEl._x_dataStack[0];
-          if (data && typeof data.step === "number") {
-            _injectStepIndicator(data.step);
-          }
-        }
-      });
-      observer.observe(rootEl, { subtree: true, childList: true, attributes: true });
-
-      // Disconnect when the user navigates away
-      window.addEventListener("hashchange", function _cleanup() {
-        observer.disconnect();
-        window.removeEventListener("hashchange", _cleanup);
-      }, { once: true });
-    }
   };
 
   // -------------------------------------------------------------------------

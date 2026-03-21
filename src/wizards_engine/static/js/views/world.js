@@ -559,29 +559,6 @@ window.views.world = (function () {
         clearTimeout(renderTimer);
       }, 0);
 
-      // Watch for data changes using a MutationObserver so the card list
-      // stays in sync with filter changes and fetch results.
-      var observer = new MutationObserver(function () {
-        var alpineData = root && root._x_dataStack && root._x_dataStack[0];
-        if (alpineData) {
-          _renderCardList(alpineData);
-        }
-      });
-
-      if (root) {
-        observer.observe(root, {
-          subtree:    true,
-          childList:  true,
-          attributes: true,
-          attributeFilter: ["class"],
-        });
-      }
-
-      // Clean up when navigating away
-      window.addEventListener("hashchange", function _cleanup() {
-        observer.disconnect();
-        window.removeEventListener("hashchange", _cleanup);
-      }, { once: true });
     }
   };
 })();

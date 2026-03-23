@@ -42,8 +42,8 @@ window.views.character = (function () {
   var PLOT_MAX    = 5;
   var GNOSIS_DISPLAY_MAX = 23; // Gnosis has no hard cap; display up to 23
 
-  // Tab identifiers
-  var TABS = ["traits", "bonds", "effects", "skills", "feed"];
+  // Tab identifiers (Skills now inline; Feed moves to bottom in 8.5.3)
+  var TABS = ["traits", "bonds", "effects"];
 
   var SKILL_LABELS = {
     awareness:  "Awareness",
@@ -105,6 +105,22 @@ window.views.character = (function () {
    * @param {*} str
    * @returns {string}
    */
+  function _esc(str) {
+    return window.utils.esc(str);
+  }
+
+  /**
+   * Truncate a string to maxLen characters, appending ellipsis if trimmed.
+   * @param {string} text
+   * @param {number} maxLen
+   * @returns {string}
+   */
+  function _snippet(text, maxLen) {
+    if (!text) return "";
+    var s = String(text);
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen).trimEnd() + "\u2026";
+  }
 
   // ---------------------------------------------------------------------------
   // Tier 1 — Header & meters
@@ -181,11 +197,11 @@ window.views.character = (function () {
     return (
       '<div class="cs-header">' +
         '<div class="cs-header__title-row">' +
-          '<h2 class="cs-header__name">' + window.utils.esc(c.name) + '</h2>' +
+          '<h2 class="cs-header__name">' + _esc(c.name) + '</h2>' +
           editBtn +
         '</div>' +
         (descFull
-          ? '<p class="cs-header__desc">' + window.utils.esc(descFull) + '</p>'
+          ? '<p class="cs-header__desc">' + _esc(descFull) + '</p>'
           : '') +
         '<div class="cs-meters">' +
           stressBar +
@@ -213,8 +229,6 @@ window.views.character = (function () {
       traits:  "Traits",
       bonds:   "Bonds",
       effects: "Effects",
-      skills:  "Skills",
-      feed:    "Feed",
     };
 
     var html = '<nav class="cs-tabs" role="tablist" aria-label="Character sheet sections">';
@@ -225,11 +239,39 @@ window.views.character = (function () {
         '<button class="cs-tab' + (isActive ? ' cs-tab--active' : '') + '"' +
         '        role="tab"' +
         '        aria-selected="' + (isActive ? 'true' : 'false') + '"' +
-        '        data-tab="' + window.utils.esc(key) + '">' +
-        window.utils.esc(TAB_LABELS[key]) +
+        '        data-tab="' + _esc(key) + '">' +
+        _esc(TAB_LABELS[key]) +
         '</button>';
     }
     html += '</nav>';
+    return html;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inline skills grid (below header, above tabs)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Build a compact 2×4 inline skills grid shown between the header and tab bar.
+   * All 8 skills are always displayed. Each cell: name (muted) + value (bold).
+   *
+   * @param {object} skills — dict of skill name to level (from CharacterDetailResponse)
+   * @returns {string} HTML
+   */
+  function _buildSkillsInline(skills) {
+    var skillKeys = Object.keys(SKILL_LABELS);
+    var html = '<div class="cs-skills-inline">';
+    for (var i = 0; i < skillKeys.length; i++) {
+      var key = skillKeys[i];
+      var level = (skills && skills[key] !== undefined && skills[key] !== null)
+        ? Number(skills[key]) : 0;
+      html +=
+        '<div class="cs-skills-inline__cell">' +
+          '<span class="cs-skills-inline__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
+          '<span class="cs-skills-inline__value">' + level + '</span>' +
+        '</div>';
+    }
+    html += '</div>';
     return html;
   }
 
@@ -294,22 +336,22 @@ window.views.character = (function () {
     var rechargeBtn = charge < 5
       ? '<button class="cs-action-btn"' +
         '        data-action="recharge-trait"' +
-        '        data-trait-id="' + window.utils.esc(t.id) + '"' +
-        '        data-trait-name="' + window.utils.esc(t.name) + '">' +
+        '        data-trait-id="' + _esc(t.id) + '"' +
+        '        data-trait-name="' + _esc(t.name) + '">' +
         'Recharge' +
         '</button>'
       : "";
 
-    var descSnippet = window.utils.snippet(t.description || "", 120);
+    var descSnippet = _snippet(t.description || "", 120);
 
     return (
       '<li class="cs-trait-item">' +
         '<div class="cs-trait-item__header">' +
-          '<strong class="cs-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
+          '<strong class="cs-trait-item__name">' + _esc(t.name) + '</strong>' +
           dots +
         '</div>' +
         (descSnippet
-          ? '<p class="cs-trait-item__desc">' + window.utils.esc(descSnippet) + '</p>'
+          ? '<p class="cs-trait-item__desc">' + _esc(descSnippet) + '</p>'
           : '') +
         (rechargeBtn
           ? '<div class="cs-trait-item__actions">' + rechargeBtn + '</div>'
@@ -378,8 +420,8 @@ window.views.character = (function () {
         maintainBtn =
           '<button class="cs-action-btn"' +
           '        data-action="maintain-bond"' +
-          '        data-bond-id="' + window.utils.esc(b.id) + '"' +
-          '        data-bond-name="' + window.utils.esc(targetDisplay) + '">' +
+          '        data-bond-id="' + _esc(b.id) + '"' +
+          '        data-bond-name="' + _esc(targetDisplay) + '">' +
           'Maintain' +
           '</button>';
       }
@@ -394,17 +436,17 @@ window.views.character = (function () {
       ? '<mark class="cs-trauma-badge">Trauma</mark>'
       : "";
 
-    var descSnippet = window.utils.snippet(b.description || "", 100);
+    var descSnippet = _snippet(b.description || "", 100);
 
     return (
-      '<li class="' + window.utils.esc(itemClass) + '">' +
+      '<li class="' + _esc(itemClass) + '">' +
         '<div class="cs-bond-item__header">' +
-          '<span class="cs-bond-item__name">' + window.utils.esc(displayName) + '</span>' +
+          '<span class="cs-bond-item__name">' + _esc(displayName) + '</span>' +
           traumaBadge +
           dotsHtml +
         '</div>' +
         (descSnippet
-          ? '<p class="cs-bond-item__desc">' + window.utils.esc(descSnippet) + '</p>'
+          ? '<p class="cs-bond-item__desc">' + _esc(descSnippet) + '</p>'
           : '') +
         (maintainBtn
           ? '<div class="cs-bond-item__actions">' + maintainBtn + '</div>'
@@ -451,7 +493,7 @@ window.views.character = (function () {
     var badgeLabel = effectType === "charged"   ? "Charged"
                    : effectType === "permanent" ? "Permanent"
                    : effectType === "instant"   ? "Instant"
-                   : window.utils.esc(effectType);
+                   : _esc(effectType);
     var badgeMod = effectType === "charged"   ? "charged"
                  : effectType === "permanent" ? "permanent"
                  : "instant";
@@ -468,7 +510,7 @@ window.views.character = (function () {
       });
     } else if (effectType === "permanent") {
       chargesHtml =
-        '<span class="cs-effect-power">Power ' + window.utils.esc(e.power_level) + '</span>';
+        '<span class="cs-effect-power">Power ' + _esc(e.power_level) + '</span>';
     }
 
     // Use button: only for charged effects with at least 1 charge remaining.
@@ -477,30 +519,30 @@ window.views.character = (function () {
     var useBtn = (effectType === "charged" && currentCharges > 0)
       ? '<button class="cs-action-btn"' +
         '        data-action="use-effect"' +
-        '        data-effect-id="' + window.utils.esc(e.id) + '"' +
-        '        data-effect-name="' + window.utils.esc(e.name) + '">' +
+        '        data-effect-id="' + _esc(e.id) + '"' +
+        '        data-effect-name="' + _esc(e.name) + '">' +
         'Use' +
         '</button>'
       : "";
     var retireBtn =
       '<button class="cs-action-btn cs-action-btn--secondary"' +
       '        data-action="retire-effect"' +
-      '        data-effect-id="' + window.utils.esc(e.id) + '"' +
-      '        data-effect-name="' + window.utils.esc(e.name) + '">' +
+      '        data-effect-id="' + _esc(e.id) + '"' +
+      '        data-effect-name="' + _esc(e.name) + '">' +
       'Retire' +
       '</button>';
 
-    var descSnippet = window.utils.snippet(e.description || "", 100);
+    var descSnippet = _snippet(e.description || "", 100);
 
     return (
       '<li class="cs-effect-item">' +
         '<div class="cs-effect-item__header">' +
-          '<strong class="cs-effect-item__name">' + window.utils.esc(e.name) + '</strong>' +
+          '<strong class="cs-effect-item__name">' + _esc(e.name) + '</strong>' +
           badge +
           chargesHtml +
         '</div>' +
         (descSnippet
-          ? '<p class="cs-effect-item__desc">' + window.utils.esc(descSnippet) + '</p>'
+          ? '<p class="cs-effect-item__desc">' + _esc(descSnippet) + '</p>'
           : '') +
         '<div class="cs-effect-item__actions">' +
           useBtn +
@@ -531,7 +573,7 @@ window.views.character = (function () {
       var level = (skills[key] !== undefined && skills[key] !== null) ? Number(skills[key]) : 0;
       html +=
         '<li class="cs-skill-item">' +
-          '<span class="cs-skill-item__name">' + window.utils.esc(SKILL_LABELS[key]) + '</span>' +
+          '<span class="cs-skill-item__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
           '<span class="cs-skill-item__level">' + level + '</span>' +
         '</li>';
     }
@@ -614,7 +656,7 @@ window.views.character = (function () {
         var xp    = Number(statBlock.xp)    || 0;
         html +=
           '<li class="cs-magic-stat-item">' +
-            '<span class="cs-magic-stat-item__name">' + window.utils.esc(MAGIC_STAT_LABELS[key]) + '</span>' +
+            '<span class="cs-magic-stat-item__name">' + _esc(MAGIC_STAT_LABELS[key]) + '</span>' +
             '<span class="cs-magic-stat-item__level">Level ' + level + '</span>' +
             '<span class="cs-magic-stat-item__xp">XP ' + xp + '</span>' +
           '</li>';
@@ -645,8 +687,8 @@ window.views.character = (function () {
         for (var pt = 0; pt < pastTraits.length; pt++) {
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + window.utils.esc(pastTraits[pt].name) + '</span>' +
-              '<mark class="cs-past-badge">' + window.utils.esc(pastTraits[pt].slot_type === "core_trait" ? "Core" : "Role") + '</mark>' +
+              '<span class="cs-past-item__name">' + _esc(pastTraits[pt].name) + '</span>' +
+              '<mark class="cs-past-badge">' + _esc(pastTraits[pt].slot_type === "core_trait" ? "Core" : "Role") + '</mark>' +
             '</li>';
         }
         html += '</ul>';
@@ -660,7 +702,7 @@ window.views.character = (function () {
                        : b.label || b.target_name || "Unknown";
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + window.utils.esc(bDisplay) + '</span>' +
+              '<span class="cs-past-item__name">' + _esc(bDisplay) + '</span>' +
             '</li>';
         }
         html += '</ul>';
@@ -671,7 +713,7 @@ window.views.character = (function () {
         for (var pe = 0; pe < pastEffects.length; pe++) {
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + window.utils.esc(pastEffects[pe].name) + '</span>' +
+              '<span class="cs-past-item__name">' + _esc(pastEffects[pe].name) + '</span>' +
             '</li>';
         }
         html += '</ul>';
@@ -719,12 +761,6 @@ window.views.character = (function () {
         break;
       case "effects":
         html += _buildEffectsTab(c.magic_effects);
-        break;
-      case "skills":
-        html += _buildSkillsTab(c.skills);
-        break;
-      case "feed":
-        html += _buildFeedTab();
         break;
       default:
         html += _buildTraitsTab(c.traits);
@@ -1009,6 +1045,7 @@ window.views.character = (function () {
     var html =
       '<div class="cs-root">' +
         _buildHeader(c) +
+        _buildSkillsInline(c.skills) +
         _buildTabBar() +
         _buildTabPanel(c) +
         _buildTier3(c) +
@@ -1024,11 +1061,7 @@ window.views.character = (function () {
           var tab = btn.getAttribute("data-tab");
           if (tab && tab !== _activeTab) {
             _activeTab = tab;
-            if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
-              _fetchFeed(true);
-            } else {
-              _renderSheet();
-            }
+            _renderSheet();
           }
         });
       })(tabBtns[i]);
@@ -1072,7 +1105,7 @@ window.views.character = (function () {
         '<hgroup>' +
           '<h2>Character Sheet</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
         '<button id="cs-retry-btn">Retry</button>' +
       '</div>';
 
@@ -1105,10 +1138,6 @@ window.views.character = (function () {
         if (!_mounted) return;
         _character = data;
         _renderSheet();
-        // If Feed tab was active on first load, prime the feed.
-        if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
-          _fetchFeed(true);
-        }
       })
       .catch(function (err) {
         if (!_mounted) return;

@@ -17,9 +17,9 @@ Build create, edit, and archive forms for all game object types (Characters, Gro
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 8.6.1 — Character Create and Edit Forms | 🔴 Not started | — |
+| 8.6.1 — Character Create and Edit Forms | 🟢 Complete | 2026-03-22 |
 | 8.6.2 — Group Create/Edit/Archive Forms | 🔴 Not started | — |
-| 8.6.3 — Location Create/Edit/Archive Forms | 🔴 Not started | — |
+| 8.6.3 — Location Create/Edit/Archive Forms | 🟢 Complete | 2026-03-22 |
 
 ### Story 8.6.1 — Character Create and Edit Forms
 

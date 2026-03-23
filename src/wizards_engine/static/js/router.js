@@ -68,6 +68,7 @@ var router = (function () {
     "/gm/invites":         function () { if (typeof views !== "undefined" && views.gmPlayers)   { views.gmPlayers({ tab: "invites" });   } else { _placeholder("Invite Management")(); } },
     "/gm/trait-templates": function () { if (typeof views !== "undefined" && views.gmTemplates) { views.gmTemplates(); } else { _placeholder("Trait Template Catalog")(); } },
     "/gm/clocks":          function () { if (typeof views !== "undefined" && views.gmClocks)    { views.gmClocks();    } else { _placeholder("Clock Management")(); } },
+    "/gm/world/locations/new": function () { if (typeof views !== "undefined" && views.locationEdit) { views.locationEdit(null); } else { _placeholder("New Location")(); } },
     "/character/edit":     function () { if (typeof views !== "undefined" && views.characterEdit) { views.characterEdit(); } else { _placeholder("Edit Character")(); } },
     "/feed/starred":       function () { if (typeof views !== "undefined" && views.feedStarred)  { views.feedStarred();  } else { _placeholder("Starred Feed")(); } },
   };
@@ -187,6 +188,17 @@ var router = (function () {
           views.worldDetail("groups", params.id);
         } else {
           _placeholder("Group Detail")();
+        }
+      },
+    },
+    {
+      // More specific: /gm/world/locations/:id/edit must come before /gm/world/locations/:id
+      pattern: "/gm/world/locations/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.locationEdit) {
+          views.locationEdit(params.id);
+        } else {
+          _placeholder("Edit Location")();
         }
       },
     },

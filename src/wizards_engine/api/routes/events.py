@@ -38,6 +38,15 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 
+_SORT_COLUMNS = {
+    "created_at": Event.created_at,
+    "type": Event.type,
+    "actor_type": Event.actor_type,
+}
+
+_VALID_SORT_DIRS = {"asc", "desc"}
+
+
 @router.get(
     "/events",
     response_model=PaginatedResponse[EventResponse],
@@ -50,6 +59,8 @@ router = APIRouter()
         "Supports optional filters: ``type`` (prefix wildcard via ``*``), "
         "``target_type``, ``target_id``, ``session_id``, ``actor_type``, "
         "``proposal_id``, ``since`` (inclusive), ``until`` (inclusive).  "
+        "Sort via ``?sort_by=<col>&sort_dir=asc|desc`` where ``sort_by`` "
+        "accepts ``created_at``, ``type``, or ``actor_type``.  "
         "ULID cursor pagination via ``?after=<ulid>&limit=N``."
     ),
 )
@@ -64,6 +75,8 @@ def list_events(
     until: datetime | None = None,
     after: str | None = None,
     limit: int = 50,
+    sort_by: str | None = None,
+    sort_dir: str = "desc",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[EventResponse]:
@@ -87,6 +100,11 @@ def list_events(
         until: Optional upper bound on ``created_at`` (inclusive).
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
+        sort_by: Optional column to sort by.  Accepted values:
+            ``created_at``, ``type``, ``actor_type``.  When omitted,
+            results are ordered by ``id DESC`` (ULID/insertion order).
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"`` (default).
+            Ignored when ``sort_by`` is not provided.
         current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
@@ -136,8 +154,20 @@ def list_events(
             and_(EventTarget.event_id == Event.id, *target_conditions),
         ).distinct()
 
-    # Paginate (applies ORDER BY id DESC and cursor filter internally).
-    page = paginate(db, q, model=Event, after=after, limit=limit)
+    # --- Resolve sort column ---
+    sort_col = _SORT_COLUMNS.get(sort_by) if sort_by is not None else None
+    resolved_sort_dir = sort_dir if sort_dir in _VALID_SORT_DIRS else "desc"
+
+    # Paginate — keyset cursor when sort_col is set, default ULID cursor otherwise.
+    page = paginate(
+        db,
+        q,
+        model=Event,
+        after=after,
+        limit=limit,
+        sort_col=sort_col,
+        sort_dir=resolved_sort_dir,
+    )
 
     # Visibility filter — applied after DB fetch since it requires bond-graph
     # traversal that cannot be expressed as SQL.  For small groups (4–6 players)

@@ -4,12 +4,23 @@ All list endpoints in Wizards Engine use ULID-ordered, cursor-based
 pagination.  Since ULIDs are lexicographically sortable by creation
 time, ordering by ``id`` DESC gives newest-first results and the cursor
 is just the ``id`` string of the last seen item.
+
+Two pagination modes are supported:
+
+1. **Default ULID cursor** — ``ORDER BY id DESC``, cursor is the ``id``
+   of the last returned row.  Used when ``sort_col`` is ``None``.
+
+2. **Keyset cursor** — ``ORDER BY <sort_col> <sort_dir>, id DESC``,
+   cursor encodes both the sort-column value and the ``id`` of the last
+   returned row.  Used when ``sort_col`` is provided.  The cursor is
+   the ULID ``id`` of the last row; the caller re-supplies ``sort_col``
+   and ``sort_dir`` on subsequent requests to maintain consistent ordering.
 """
 
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from sqlalchemy import desc
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from wizards_engine.schemas.common import PaginatedResponse
@@ -27,29 +38,53 @@ def paginate(
     model,
     after: str | None = None,
     limit: int = _DEFAULT_LIMIT,
+    sort_col=None,
+    sort_dir: str = "desc",
 ) -> PaginatedResponse[Any]:
-    """Apply ULID cursor pagination to a SQLAlchemy query and return results.
+    """Apply cursor pagination to a SQLAlchemy query and return results.
 
     The query must **not** already have an ``ORDER BY`` clause applied —
-    this function adds ``ORDER BY id DESC`` itself.
+    this function adds the appropriate ``ORDER BY`` itself.
+
+    Two modes are supported depending on whether ``sort_col`` is provided:
+
+    **Default ULID cursor** (``sort_col=None``):
+        Orders by ``id DESC`` (newest-first ULID order).  The cursor
+        (``after``) is a ULID string; only rows with ``id < after`` are
+        returned.
+
+    **Keyset cursor** (``sort_col`` provided):
+        Orders by ``<sort_col> <sort_dir>, id DESC`` to break ties.
+        The cursor (``after``) is the ``id`` of the last returned row.
+        Continuation pages must pass the same ``sort_col`` and ``sort_dir``
+        so that the ``id``-based sub-sort remains consistent.  Rows whose
+        sort-column value matches the boundary row are included only if
+        their ``id`` is less than the cursor; rows with a strictly less
+        favourable sort-column value are excluded entirely.
 
     Parameters
     ----------
     db:
         Active SQLAlchemy :class:`~sqlalchemy.orm.Session`.
     query:
-        A SQLAlchemy ``Select`` statement (or legacy ``Query``) targeting
-        rows that have an ``id`` column populated with ULID strings.
+        A SQLAlchemy ``Select`` statement targeting rows that have an
+        ``id`` column populated with ULID strings.
     model:
         The ORM model class being queried.  Used to access the ``id``
         column for filtering and ordering.
     after:
-        Optional ULID cursor.  When provided, only rows whose ``id`` is
-        *less than* this value are returned (i.e. older rows), enabling
-        forward pagination through newest-first results.
+        Optional ULID cursor identifying the last item seen.  Behaviour
+        depends on the mode — see above.
     limit:
         Maximum number of items to return.  Clamped to
         :data:`_MAX_LIMIT`.  Defaults to :data:`_DEFAULT_LIMIT`.
+    sort_col:
+        Optional SQLAlchemy column object to sort by (e.g.
+        ``Event.created_at``).  When provided, keyset cursor mode is
+        active.  When ``None``, default ULID cursor mode is used.
+    sort_dir:
+        Sort direction for ``sort_col``: ``"asc"`` or ``"desc"``.
+        Ignored when ``sort_col`` is ``None``.  Defaults to ``"desc"``.
 
     Returns
     -------
@@ -59,12 +94,52 @@ def paginate(
     """
     limit = min(limit, _MAX_LIMIT)
 
-    # Build the paginated query: filter by cursor, order newest-first, fetch
-    # one extra row so we can detect whether more pages exist.
-    q = query.order_by(desc(model.id))
+    if sort_col is None:
+        # --- Default ULID cursor mode ---
+        # ORDER BY id DESC; cursor is a raw ULID string.
+        q = query.order_by(desc(model.id))
+
+        if after is not None:
+            q = q.filter(model.id < after)
+
+        rows = db.scalars(q.limit(limit + 1)).all()
+
+        has_more = len(rows) > limit
+        items = rows[:limit]
+        next_cursor = items[-1].id if has_more and items else None
+
+        return PaginatedResponse(
+            items=items,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )
+
+    # --- Keyset cursor mode ---
+    # ORDER BY sort_col <dir>, id DESC; cursor is the id of the last row.
+    # To continue from a cursor we need the sort-col value of that row,
+    # which we look up by id.
+    col_order = asc(sort_col) if sort_dir == "asc" else desc(sort_col)
+    q = query.order_by(col_order, desc(model.id))
 
     if after is not None:
-        q = q.filter(model.id < after)
+        # Fetch the boundary row so we know its sort-column value.
+        boundary = db.get(model, after)
+        if boundary is not None:
+            boundary_col_val = getattr(boundary, sort_col.key)
+            if sort_dir == "asc":
+                # Include rows where sort_col > boundary_val,
+                # or sort_col == boundary_val and id < after.
+                q = q.filter(
+                    (sort_col > boundary_col_val)
+                    | ((sort_col == boundary_col_val) & (model.id < after))
+                )
+            else:
+                # Include rows where sort_col < boundary_val,
+                # or sort_col == boundary_val and id < after.
+                q = q.filter(
+                    (sort_col < boundary_col_val)
+                    | ((sort_col == boundary_col_val) & (model.id < after))
+                )
 
     rows = db.scalars(q.limit(limit + 1)).all()
 

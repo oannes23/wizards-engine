@@ -19,7 +19,7 @@ Enrich the importable example campaign data and create a post-import seeding scr
 |-------|--------|-----------|
 | 8.7.1 — Enrich Importable YAML Data | 🟢 Complete | 2026-03-22 |
 | 8.7.2 — Post-Import Event & Proposal Seeding Script | 🟢 Complete | 2026-03-22 |
-| 8.7.3 — Seed Data Verification Checklist | 🔴 Not started | — |
+| 8.7.3 — Seed Data Verification Checklist | 🟢 Complete | 2026-03-22 |
 
 ### Story 8.7.1 — Enrich Importable YAML Data
 

@@ -203,6 +203,6 @@ Phase 7 (sequential, depends on all prior phases)
 | 8.2 — GM Queue Tab Redesign | 🟢 Complete | 4/4 |
 | 8.3 — Event Feed Redesign | 🟡 In progress | 2/3 |
 | 8.4 — Game Objects Browser Redesign | 🟡 In progress | 1/4 |
-| 8.5 — Character Detail View Overhaul | 🟡 In progress | 2/4 |
+| 8.5 — Character Detail View Overhaul | 🟢 Complete | 4/4 |
 | 8.6 — Game Object CRUD Forms | 🔴 Not started | 0/3 |
-| 8.7 — Comprehensive Example Campaign Data | 🟡 In progress | 1/3 |
+| 8.7 — Comprehensive Example Campaign Data | 🟢 Complete | 3/3 |

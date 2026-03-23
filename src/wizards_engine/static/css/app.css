@@ -3544,3 +3544,195 @@ main.container {
     font-size: 1.4rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   ExpandableItem — reusable expand/collapse card for traits and bonds
+   (Epic 8.5 — Character Detail)
+
+   Structure:
+     .exp-item[.exp-item--open][.exp-item--trait|--bond]
+       .exp-item__trigger[aria-expanded]
+         .exp-item__trigger-left
+           .exp-item__name
+           .exp-item__dots
+           .exp-item__badge  (optional)
+         .exp-item__chevron
+       .exp-item__body[hidden]
+         .exp-item__desc
+         .exp-item__actions
+           .exp-item__action-btn
+         .exp-item__footer   (optional)
+   --------------------------------------------------------------------------- */
+
+.exp-item {
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  overflow: hidden;
+}
+
+/* Separate items in a list */
+.exp-item + .exp-item {
+  margin-top: 0.5rem;
+}
+
+/* Variant accent — left border stripe */
+.exp-item--trait {
+  border-left: 3px solid var(--pico-primary, #7c6aff);
+}
+
+.exp-item--bond {
+  border-left: 3px solid var(--we-ft-green, #27ae60);
+}
+
+/* Trigger button — full-width clickable row */
+.exp-item__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pico-color, #ddd);
+  text-align: left;
+  min-height: 44px; /* touch target */
+  border-radius: 0; /* inherit from parent */
+}
+
+.exp-item__trigger:hover,
+.exp-item__trigger:focus-visible {
+  background: var(--pico-card-sectioning-background-color, #252535);
+  outline: none;
+}
+
+.exp-item__trigger:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: -2px;
+}
+
+/* Left side of trigger: name + dots + optional badge */
+.exp-item__trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0; /* allow text truncation */
+  flex-wrap: wrap;
+}
+
+.exp-item__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exp-item__dots {
+  flex-shrink: 0;
+}
+
+.exp-item__badge {
+  flex-shrink: 0;
+}
+
+/* Chevron indicator — rotates 90deg when open */
+.exp-item__chevron {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #aaa);
+  transition: transform 0.2s ease;
+  display: inline-block;
+  line-height: 1;
+}
+
+.exp-item--open .exp-item__chevron {
+  transform: rotate(90deg);
+}
+
+/* Body — hidden by default, revealed on expand */
+.exp-item__body {
+  padding: 0.75rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+}
+
+.exp-item__body[hidden] {
+  display: none;
+}
+
+/* Description text */
+.exp-item__desc {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: var(--pico-color, #ddd);
+  line-height: 1.5;
+}
+
+.exp-item__desc:last-child {
+  margin-bottom: 0;
+}
+
+/* Action buttons row */
+.exp-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.exp-item__action-btn {
+  font-size: 0.8rem;
+  padding: 0.375rem 0.75rem;
+  min-height: 36px;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  background: transparent;
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.exp-item__action-btn:hover,
+.exp-item__action-btn:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+  text-decoration: none;
+}
+
+/* Optional footer link (e.g., "Go to [partner] →" for bonds) */
+.exp-item__footer {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+  font-size: 0.8rem;
+}
+
+.exp-item__footer a {
+  color: var(--pico-muted-color, #aaa);
+  text-decoration: none;
+}
+
+.exp-item__footer a:hover {
+  color: var(--pico-color, #ddd);
+  text-decoration: underline;
+}
+
+/* ExpandableItem — mobile touch target boost */
+@media (max-width: 599px) {
+  .exp-item__trigger {
+    min-height: 48px;
+    padding: 0.75rem;
+  }
+
+  .exp-item__action-btn {
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+}

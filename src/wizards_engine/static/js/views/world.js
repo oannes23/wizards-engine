@@ -1,25 +1,23 @@
-/* Wizards Engine — World Browser view
+/* Wizards Engine — Game Objects Browser view
  *
  * Routes:  #/world   and   #/gm/world
  * Access:  All authenticated users (GM sees same content as players)
  *
- * Displays a tabbed world browser with four categories:
- *   Characters — GET /api/v1/characters  → GameObjectCard list
- *   Groups     — GET /api/v1/groups      → GameObjectCard list
- *   Locations  — GET /api/v1/locations   → GameObjectCard list
- *   Stories    — GET /api/v1/stories     → custom story cards
+ * Displays a tabbed browser with four categories:
+ *   Characters — GET /api/v1/characters  → DataTable (with All/PC/NPC sub-tabs)
+ *   Groups     — GET /api/v1/groups      → DataTable
+ *   Locations  — GET /api/v1/locations   → DataTable
+ *   Stories    — GET /api/v1/stories     → custom story cards (richer shape)
  *
- * Each tab is lazy-loaded on first selection.  Data is cached in the
- * Alpine x-data state for the lifetime of the view.
+ * Characters, Groups, and Locations render as sortable DataTables.
+ * Sort requests are passed to the backend via sort_by/sort_dir query params.
+ * The Stories tab keeps the existing card layout.
  *
- * A text search input above the card list filters by name (client-side,
- * case-insensitive substring match on already-fetched data).
+ * Characters tab has sub-tabs: All | PCs | NPCs.
+ *   PCs  → detail_level=full
+ *   NPCs → detail_level=simplified
  *
- * Cards are tappable and navigate to the object's detail route:
- *   #/world/characters/{id}
- *   #/world/groups/{id}
- *   #/world/locations/{id}
- *   #/world/stories/{id}
+ * Star toggle uses optimistic UI (existing pattern).
  *
  * Registers as:  window.views.world
  * Called by:     router.js route table entries for "/world" and "/gm/world"
@@ -34,8 +32,7 @@ window.views.world = (function () {
 
   /**
    * Escape a string for safe use in HTML attribute values and text content.
-   * Delegates to window.utils.esc; also escapes single quotes for use inside
-   * Alpine attribute strings.
+   * Also escapes single quotes for use inside Alpine attribute strings.
    * @param {*} str
    * @returns {string}
    */
@@ -57,6 +54,382 @@ window.views.world = (function () {
   }
 
   // ---------------------------------------------------------------------------
+  // DataTable column configurations
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Build column config for the Characters DataTable.
+   * @param {object} context — {starredSet, activeTab}
+   * @returns {Array}
+   */
+  function _characterColumns(context) {
+    return [
+      {
+        key:      "name",
+        label:    "Name",
+        sortable: true,
+        linkTo:   function (row) {
+          return "#/world/characters/" + encodeURIComponent(row.id || "");
+        },
+      },
+      {
+        key:    "detail_level",
+        label:  "Type",
+        width:  "70px",
+        render: function (val) {
+          if (val === "full") {
+            return '<mark class="world-dt-badge world-dt-badge--pc">PC</mark>';
+          }
+          return '<mark class="world-dt-badge world-dt-badge--npc">NPC</mark>';
+        },
+      },
+      {
+        key:        "description",
+        label:      "Description",
+        hideMobile: false,
+        render:     function (val) {
+          return window.utils.esc(_snippet(val || "", 120));
+        },
+      },
+      {
+        key:    "_star",
+        label:  "",
+        width:  "44px",
+        render: function (val, row) {
+          var type = "character";
+          var id = row.id || "";
+          var key = type + "/" + id;
+          var starred = !!(context.starredSet && context.starredSet[key]);
+          var icon = starred ? "\u2605" : "\u2606"; // ★ or ☆
+          var label = starred ? "Unstar " + (row.name || "") : "Star " + (row.name || "");
+          return (
+            '<button class="world-dt-star-btn"' +
+            '        data-star-type="' + window.utils.esc(type) + '"' +
+            '        data-star-id="' + window.utils.esc(id) + '"' +
+            '        data-starred="' + (starred ? "true" : "false") + '"' +
+            '        aria-label="' + window.utils.esc(label) + '"' +
+            '        aria-pressed="' + (starred ? "true" : "false") + '">' +
+              icon +
+            '</button>'
+          );
+        },
+      },
+    ];
+  }
+
+  /**
+   * Build column config for the Groups DataTable.
+   * @param {object} context — {starredSet}
+   * @returns {Array}
+   */
+  function _groupColumns(context) {
+    return [
+      {
+        key:      "name",
+        label:    "Name",
+        sortable: true,
+        linkTo:   function (row) {
+          return "#/world/groups/" + encodeURIComponent(row.id || "");
+        },
+      },
+      {
+        key:    "tier",
+        label:  "Tier",
+        width:  "70px",
+        render: function (val) {
+          if (val === null || val === undefined || val === "") return "";
+          return '<mark class="world-dt-badge world-dt-badge--tier">Tier ' + window.utils.esc(String(val)) + '</mark>';
+        },
+      },
+      {
+        key:        "description",
+        label:      "Description",
+        hideMobile: false,
+        render:     function (val) {
+          return window.utils.esc(_snippet(val || "", 120));
+        },
+      },
+      {
+        key:    "_star",
+        label:  "",
+        width:  "44px",
+        render: function (val, row) {
+          var type = "group";
+          var id = row.id || "";
+          var key = type + "/" + id;
+          var starred = !!(context.starredSet && context.starredSet[key]);
+          var icon = starred ? "\u2605" : "\u2606";
+          var label = starred ? "Unstar " + (row.name || "") : "Star " + (row.name || "");
+          return (
+            '<button class="world-dt-star-btn"' +
+            '        data-star-type="' + window.utils.esc(type) + '"' +
+            '        data-star-id="' + window.utils.esc(id) + '"' +
+            '        data-starred="' + (starred ? "true" : "false") + '"' +
+            '        aria-label="' + window.utils.esc(label) + '"' +
+            '        aria-pressed="' + (starred ? "true" : "false") + '">' +
+              icon +
+            '</button>'
+          );
+        },
+      },
+    ];
+  }
+
+  /**
+   * Build column config for the Locations DataTable.
+   * @param {object} context — {starredSet}
+   * @returns {Array}
+   */
+  function _locationColumns(context) {
+    return [
+      {
+        key:      "name",
+        label:    "Name",
+        sortable: true,
+        linkTo:   function (row) {
+          return "#/world/locations/" + encodeURIComponent(row.id || "");
+        },
+      },
+      {
+        key:    "parent_name",
+        label:  "Parent",
+        width:  "150px",
+        render: function (val) {
+          if (!val) return '<span class="text-muted">—</span>';
+          return window.utils.esc(String(val));
+        },
+      },
+      {
+        key:        "description",
+        label:      "Description",
+        hideMobile: false,
+        render:     function (val) {
+          return window.utils.esc(_snippet(val || "", 120));
+        },
+      },
+      {
+        key:    "_star",
+        label:  "",
+        width:  "44px",
+        render: function (val, row) {
+          var type = "location";
+          var id = row.id || "";
+          var key = type + "/" + id;
+          var starred = !!(context.starredSet && context.starredSet[key]);
+          var icon = starred ? "\u2605" : "\u2606";
+          var label = starred ? "Unstar " + (row.name || "") : "Star " + (row.name || "");
+          return (
+            '<button class="world-dt-star-btn"' +
+            '        data-star-type="' + window.utils.esc(type) + '"' +
+            '        data-star-id="' + window.utils.esc(id) + '"' +
+            '        data-starred="' + (starred ? "true" : "false") + '"' +
+            '        aria-label="' + window.utils.esc(label) + '"' +
+            '        aria-pressed="' + (starred ? "true" : "false") + '">' +
+              icon +
+            '</button>'
+          );
+        },
+      },
+    ];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Module-level DataTable instances (destroyed and re-created on tab switch)
+  // ---------------------------------------------------------------------------
+
+  var _currentTable = null;
+
+  /**
+   * Destroy the current DataTable instance and clear the container.
+   */
+  function _destroyTable() {
+    if (_currentTable) {
+      _currentTable.destroy();
+      _currentTable = null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Star / unstar handler (DataTable version)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Wire star button click handlers within a DataTable container.
+   * Uses event delegation on the container.
+   *
+   * @param {HTMLElement} container — the DataTable's container element
+   * @param {object}      data      — Alpine data object (for _starredSet)
+   * @param {string}      tab       — current tab ("characters"|"groups"|"locations")
+   * @param {string}      charSubTab — current character sub-tab (if tab=characters)
+   */
+  function _bindDtStarClicks(container, data, tab, charSubTab) {
+    container.addEventListener("click", function (evt) {
+      var btn = evt.target.closest
+        ? evt.target.closest("[data-star-id]")
+        : null;
+      if (!btn) return;
+      evt.stopPropagation();
+
+      var cardType = btn.getAttribute("data-star-type");
+      var cardId   = btn.getAttribute("data-star-id");
+      var starred  = btn.getAttribute("data-starred") === "true";
+
+      _handleDtStar(data, container, tab, charSubTab, cardType, cardId, starred);
+    });
+  }
+
+  /**
+   * Handle a star button click inside a DataTable row.
+   * Applies optimistic UI immediately, calls the API, reverts on failure.
+   *
+   * @param {object}  data         — Alpine data object
+   * @param {HTMLElement} container — DataTable container
+   * @param {string}  tab          — current main tab
+   * @param {string}  charSubTab   — current character sub-tab
+   * @param {string}  cardType     — "character" | "group" | "location"
+   * @param {string}  cardId       — object ULID
+   * @param {boolean} currentlyStarred — true if currently starred
+   */
+  function _handleDtStar(data, container, tab, charSubTab, cardType, cardId, currentlyStarred) {
+    var key = cardType + "/" + cardId;
+
+    // Find the specific button in the container
+    var btn = container.querySelector(
+      '[data-star-type="' + cardType + '"][data-star-id="' + cardId + '"]'
+    );
+
+    if (currentlyStarred) {
+      // Unstar — optimistic
+      if (btn) {
+        btn.textContent = "\u2606"; // ☆
+        btn.setAttribute("data-starred", "false");
+        btn.setAttribute("aria-pressed", "false");
+      }
+      delete data._starredSet[key];
+
+      api
+        .del("/api/v1/me/starred/" + encodeURIComponent(cardType) + "/" + encodeURIComponent(cardId))
+        .catch(function () {
+          // Revert
+          data._starredSet[key] = true;
+          if (btn) {
+            btn.textContent = "\u2605"; // ★
+            btn.setAttribute("data-starred", "true");
+            btn.setAttribute("aria-pressed", "true");
+          }
+        });
+    } else {
+      // Star — optimistic
+      if (btn) {
+        btn.textContent = "\u2605"; // ★
+        btn.setAttribute("data-starred", "true");
+        btn.setAttribute("aria-pressed", "true");
+      }
+      data._starredSet[key] = true;
+
+      api
+        .post("/api/v1/me/starred", { type: cardType, id: cardId })
+        .catch(function () {
+          // Revert
+          delete data._starredSet[key];
+          if (btn) {
+            btn.textContent = "\u2606"; // ☆
+            btn.setAttribute("data-starred", "false");
+            btn.setAttribute("aria-pressed", "false");
+          }
+        });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DataTable renderer (for character/group/location tabs)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Create (or recreate) the DataTable for a non-story tab.
+   * Wires row-click navigation and star button delegation.
+   *
+   * @param {object} data     — Alpine data object
+   * @param {string} tab      — "characters" | "groups" | "locations"
+   * @param {string} charSubTab — "all" | "pc" | "npc" (only used when tab=characters)
+   */
+  function _renderDataTable(data, tab, charSubTab) {
+    _destroyTable();
+
+    var container = document.getElementById("world-dt-container");
+    if (!container) return;
+
+    var context = { starredSet: data._starredSet || {} };
+    var colsFn, type;
+
+    if (tab === "characters") {
+      colsFn = _characterColumns;
+      type   = "character";
+    } else if (tab === "groups") {
+      colsFn = _groupColumns;
+      type   = "group";
+    } else if (tab === "locations") {
+      colsFn = _locationColumns;
+      type   = "location";
+    } else {
+      return;
+    }
+
+    var columns = colsFn(context);
+
+    var table = new window.components.DataTable(container, {
+      columns:      columns,
+      emptyMessage: "No " + tab + " found.",
+      onRowClick:   function (row) {
+        var hash = "#/world/" + tab + "/" + encodeURIComponent(row.id || "");
+        if (typeof router !== "undefined") {
+          router.navigate(hash);
+        } else {
+          window.location.hash = hash;
+        }
+      },
+    });
+
+    _currentTable = table;
+
+    // Wire star button delegation on the container
+    _bindDtStarClicks(container, data, tab, charSubTab);
+
+    // Determine which rows to show based on sub-tab
+    var rows = _getTabRows(data, tab, charSubTab);
+
+    if (data.loaded[tab] === "loading" || data.loaded[tab] === false) {
+      table.setLoading(true);
+    } else if (data.loaded[tab] === "done") {
+      table.setRows(rows);
+    }
+    // If error, show nothing (error is displayed above the table)
+  }
+
+  /**
+   * Get the rows for a given tab/sub-tab combination.
+   * For characters, applies the sub-tab filter client-side.
+   *
+   * @param {object} data
+   * @param {string} tab
+   * @param {string} charSubTab
+   * @returns {Array}
+   */
+  function _getTabRows(data, tab, charSubTab) {
+    var all = data[tab] || [];
+    if (tab !== "characters" || charSubTab === "all") {
+      return all;
+    }
+    if (charSubTab === "pc") {
+      return all.filter(function (r) { return r.detail_level === "full"; });
+    }
+    if (charSubTab === "npc") {
+      return all.filter(function (r) { return r.detail_level === "simplified"; });
+    }
+    return all;
+  }
+
+  // ---------------------------------------------------------------------------
   // Alpine data factory
   // ---------------------------------------------------------------------------
 
@@ -69,7 +442,8 @@ window.views.world = (function () {
   function _makeData() {
     return {
       // ---- Tab state --------------------------------------------------------
-      activeTab: "characters",
+      activeTab:    "characters",
+      charSubTab:   "all",  // "all" | "pc" | "npc"
 
       // ---- Per-tab data caches ---------------------------------------------
       characters: [],
@@ -86,46 +460,37 @@ window.views.world = (function () {
       },
 
       // ---- UI state --------------------------------------------------------
-      search:  "",
-      loading: false,  // true while the active tab's fetch is in flight
-      error:   null,   // error message for the active tab, or null
+      loading: false,
+      error:   null,
 
       // ---- Starred state ---------------------------------------------------
-      // Set of "type/id" keys for objects the current user has starred.
       _starredSet: {},
 
       // ---- Render debounce timer --------------------------------------------
       _renderTimer: null,
 
-      // ---- Computed helpers ------------------------------------------------
-
-      /**
-       * Return the items for the active tab filtered by the search query.
-       * For stories, the name field is simply 'name'.
-       * @returns {Array}
-       */
-      filteredItems: function () {
-        var tab  = this.activeTab;
-        var all  = this[tab] || [];
-        var q    = (this.search || "").trim().toLowerCase();
-        if (!q) return all;
-        return all.filter(function (item) {
-          var name = (item.name || "").toLowerCase();
-          return name.indexOf(q) !== -1;
-        });
-      },
-
       // ---- Tab switching ---------------------------------------------------
 
       /**
-       * Switch to a tab by name, fetching its data if not yet loaded.
+       * Switch to a main tab, fetching data if not yet loaded.
        * @param {string} tab — "characters" | "groups" | "locations" | "stories"
        */
       switchTab: function (tab) {
-        this.error = null;
-        this.activeTab = tab;
-        this.search = "";
-        this._fetchIfNeeded(tab);
+        var self = this;
+        self.error = null;
+        self.activeTab = tab;
+        self._fetchIfNeeded(tab);
+        self._scheduleRender();
+      },
+
+      /**
+       * Switch the character sub-tab.
+       * @param {string} sub — "all" | "pc" | "npc"
+       */
+      switchCharSubTab: function (sub) {
+        var self = this;
+        self.charSubTab = sub;
+        self._scheduleRender();
       },
 
       // ---- Data fetching ---------------------------------------------------
@@ -141,14 +506,11 @@ window.views.world = (function () {
 
       /**
        * Fetch and store the items for a given tab from the API.
-       * Stores all pages (up to the first page for now — backend default is 50
-       * items which is sufficient for an MVP world browser).
-       *
        * @param {string} tab
        */
       _fetchData: function (tab) {
-        var self    = this;
-        var urlMap  = {
+        var self   = this;
+        var urlMap = {
           characters: "/api/v1/characters",
           groups:     "/api/v1/groups",
           locations:  "/api/v1/locations",
@@ -157,12 +519,20 @@ window.views.world = (function () {
         var url = urlMap[tab];
         if (!url) return;
 
-        self.loaded[tab]  = "loading";
-        self.loading      = (self.activeTab === tab);
-        self.error        = null;
+        // Characters: fetch all (both PC and NPC) in one request.
+        // Sub-tab filtering is done client-side.
+        var params = "?sort_by=name&sort_dir=asc";
+        if (tab === "characters") {
+          // No detail_level filter — fetch all, sub-tabs filter client-side.
+          params = "?sort_by=name&sort_dir=asc";
+        }
+
+        self.loaded[tab] = "loading";
+        self.loading     = (self.activeTab === tab);
+        self.error       = null;
 
         api
-          .get(url)
+          .get(url + params)
           .then(function (data) {
             var items = (data && data.items) ? data.items : [];
             self[tab]        = items;
@@ -176,22 +546,19 @@ window.views.world = (function () {
             if (self.activeTab === tab) {
               self.loading = false;
             }
-            // Re-render the card list after data lands
-            self._renderCards();
+            self._scheduleRender();
           });
       },
 
       /**
-       * Trigger a re-render of the card list for the current tab.
-       * Called after a fetch completes or when the tab changes.
-       * Debounced via setTimeout so rapid successive calls coalesce into
-       * a single render after Alpine has finished updating reactive state.
+       * Debounce a re-render call via setTimeout so rapid successive calls
+       * coalesce into a single render after Alpine has updated state.
        */
-      _renderCards: function () {
+      _scheduleRender: function () {
         var self = this;
         clearTimeout(self._renderTimer);
         self._renderTimer = setTimeout(function () {
-          _renderCardList(self);
+          _renderContent(self);
         }, 0);
       },
 
@@ -199,8 +566,7 @@ window.views.world = (function () {
 
       /**
        * Called by Alpine when this x-data component initialises.
-       * Fetches the user's starred objects, then starts the initial Characters
-       * tab fetch.
+       * Loads starred objects, then triggers the initial Characters fetch.
        */
       init: function () {
         var self = this;
@@ -218,7 +584,6 @@ window.views.world = (function () {
             self._starredSet = set;
           })
           .catch(function () {
-            // Starred list is non-critical — proceed without it.
             self._starredSet = {};
           })
           .finally(function () {
@@ -229,149 +594,84 @@ window.views.world = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Imperative card-list renderer
+  // Content renderer (dispatches to DataTable or story cards)
   // ---------------------------------------------------------------------------
 
   /**
-   * Build and inject the card list HTML into #world-card-list.
-   * For character/group/location tabs, delegates to gameObjectCard.render().
-   * For the stories tab, renders custom story cards inline.
+   * Render the content area for the active tab.
+   * For Characters, Groups, Locations: create/update a DataTable.
+   * For Stories: render custom story cards.
    *
-   * @param {object} data — the Alpine data object
+   * @param {object} data — Alpine data object
    */
-  function _renderCardList(data) {
-    var container = document.getElementById("world-card-list");
+  function _renderContent(data) {
+    var tab = data.activeTab;
+
+    if (tab === "stories") {
+      _destroyTable();
+      _renderStoryCards(data);
+      return;
+    }
+
+    // Characters sub-tab bar visibility
+    var subTabBar = document.getElementById("world-char-sub-tabs");
+    if (subTabBar) {
+      subTabBar.style.display = (tab === "characters") ? "" : "none";
+    }
+
+    // DataTable-based tabs
+    var container = document.getElementById("world-dt-container");
     if (!container) return;
 
-    var tab   = data.activeTab;
-    var items = data.filteredItems();
+    // If we have an existing table and data is already loaded, just update rows
+    if (_currentTable && data.loaded[tab] === "done") {
+      var rows = _getTabRows(data, tab, data.charSubTab);
+      _currentTable.setRows(rows);
+      return;
+    }
 
-    // Show loading / error states imperatively (Alpine also drives the
-    // overlay, but this keeps the card area clean while waiting).
+    // Otherwise rebuild the table (tab changed or table was destroyed)
+    _renderDataTable(data, tab, data.charSubTab);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Story card builder (unchanged from original)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Render story cards into #world-story-cards.
+   * @param {object} data — Alpine data object
+   */
+  function _renderStoryCards(data) {
+    var container = document.getElementById("world-story-cards");
+    if (!container) return;
+
+    var tab   = "stories";
+    var items = data.stories || [];
+
     if (data.loaded[tab] === "loading" || data.loaded[tab] === false) {
       container.innerHTML = "";
       return;
     }
-
     if (data.loaded[tab] === "error") {
       container.innerHTML = "";
       return;
     }
-
     if (items.length === 0) {
-      container.innerHTML = '<p class="world-empty">No ' + _esc(tab) + ' found.</p>';
+      container.innerHTML = '<p class="world-empty">No stories found.</p>';
       return;
     }
 
     var html = [];
-
-    if (tab === "stories") {
-      // Custom story card rendering
-      for (var i = 0; i < items.length; i++) {
-        html.push(_renderStoryCard(items[i]));
-      }
-      container.innerHTML = html.join("");
-      _bindStoryClicks(container);
-    } else {
-      // GameObjectCard component handles character / group / location
-      var type = tab.slice(0, -1); // "characters" → "character", etc.
-      var starredSet = data._starredSet || {};
-      for (var j = 0; j < items.length; j++) {
-        var item = items[j];
-        var itemData = {};
-        // Copy item fields into a new object so we can inject the starred flag
-        for (var k in item) {
-          if (Object.prototype.hasOwnProperty.call(item, k)) {
-            itemData[k] = item[k];
-          }
-        }
-        itemData.starred = !!starredSet[type + "/" + item.id];
-        html.push(
-          window.components.gameObjectCard.render({ type: type, data: itemData })
-        );
-      }
-      container.innerHTML = html.join("");
-      window.components.gameObjectCard.bindClicks(container);
-      window.components.gameObjectCard.bindStarClicks(container, function (cardType, cardId, currentlyStarred) {
-        _handleStar(data, container, cardType, cardId, currentlyStarred);
-      });
+    for (var i = 0; i < items.length; i++) {
+      html.push(_renderStoryCard(items[i]));
     }
+    container.innerHTML = html.join("");
+    _bindStoryClicks(container);
   }
-
-  // ---------------------------------------------------------------------------
-  // Star / unstar handler
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Handle a star button click on a game object card.
-   * Applies optimistic UI immediately, then calls the API. Reverts on failure.
-   *
-   * @param {object} data      — Alpine data object (for _starredSet)
-   * @param {HTMLElement} container — card-list container
-   * @param {string} cardType  — "character" | "group" | "location"
-   * @param {string} cardId    — object ULID
-   * @param {boolean} currentlyStarred — true if the button was showing ★
-   */
-  function _handleStar(data, container, cardType, cardId, currentlyStarred) {
-    var key = cardType + "/" + cardId;
-
-    // Optimistic UI: toggle the button immediately.
-    var btn = container.querySelector(
-      '[data-card-star][data-card-type="' + cardType + '"][data-card-id="' + cardId + '"]'
-    );
-
-    if (currentlyStarred) {
-      // Unstar
-      if (btn) {
-        btn.textContent = "\u2606"; // ☆
-        btn.setAttribute("data-card-starred", "false");
-        btn.setAttribute("aria-pressed", "false");
-      }
-      delete data._starredSet[key];
-
-      api
-        .del("/api/v1/me/starred/" + encodeURIComponent(cardType) + "/" + encodeURIComponent(cardId))
-        .catch(function () {
-          // Revert on failure
-          data._starredSet[key] = true;
-          if (btn) {
-            btn.textContent = "\u2605"; // ★
-            btn.setAttribute("data-card-starred", "true");
-            btn.setAttribute("aria-pressed", "true");
-          }
-        });
-    } else {
-      // Star
-      if (btn) {
-        btn.textContent = "\u2605"; // ★
-        btn.setAttribute("data-card-starred", "true");
-        btn.setAttribute("aria-pressed", "true");
-      }
-      data._starredSet[key] = true;
-
-      api
-        .post("/api/v1/me/starred", { type: cardType, id: cardId })
-        .catch(function () {
-          // Revert on failure
-          delete data._starredSet[key];
-          if (btn) {
-            btn.textContent = "\u2606"; // ☆
-            btn.setAttribute("data-card-starred", "false");
-            btn.setAttribute("aria-pressed", "false");
-          }
-        });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Story card builder
-  // ---------------------------------------------------------------------------
 
   /**
    * Render a single story card as an HTML string.
-   * Stories have a different shape from game objects so we render them here
-   * instead of through gameObjectCard.
-   *
    * @param {object} story — StoryResponse from the API
    * @returns {string} HTML
    */
@@ -420,7 +720,7 @@ window.views.world = (function () {
   }
 
   /**
-   * Wire click and keyboard navigation handlers for story cards in a container.
+   * Wire click and keyboard navigation handlers for story cards.
    * @param {HTMLElement} container
    */
   function _bindStoryClicks(container) {
@@ -454,9 +754,9 @@ window.views.world = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the static HTML scaffold for the world browser.
-   * Alpine directives handle tab switching, loading/error states, and search.
-   * The card list is rendered imperatively via _renderCardList().
+   * Build the static HTML scaffold for the game objects browser.
+   * Alpine directives handle tab switching and loading/error states.
+   * The DataTable and story cards are rendered imperatively.
    *
    * @returns {string} HTML
    */
@@ -472,7 +772,7 @@ window.views.world = (function () {
       return (
         '<button class="world-tab"' +
                 ' :class="{ \'world-tab--active\': activeTab === \'' + t.key + '\' }"' +
-                ' @click="switchTab(\'' + t.key + '\'); _renderCards()"' +
+                ' @click="switchTab(\'' + t.key + '\')"' +
                 ' :aria-current="activeTab === \'' + t.key + '\' ? \'page\' : undefined"' +
                 ' aria-label="' + _esc(t.label) + ' tab">' +
           _esc(t.label) +
@@ -480,28 +780,42 @@ window.views.world = (function () {
       );
     }).join("\n");
 
+    // Character sub-tabs: All | PCs | NPCs
+    var subTabs = [
+      { key: "all", label: "All" },
+      { key: "pc",  label: "PCs" },
+      { key: "npc", label: "NPCs" },
+    ];
+
+    var subTabHtml = subTabs.map(function (s) {
+      return (
+        '<button class="world-sub-tab"' +
+                ' :class="{ \'world-sub-tab--active\': charSubTab === \'' + s.key + '\' }"' +
+                ' @click="switchCharSubTab(\'' + s.key + '\')"' +
+                ' :aria-pressed="charSubTab === \'' + s.key + '\'">' +
+          _esc(s.label) +
+        '</button>'
+      );
+    }).join("\n");
+
     return [
       '<div id="world-root" x-data="worldData">',
 
-      '  <h2 class="world-heading">World</h2>',
+      '  <h2 class="world-heading">Game Objects</h2>',
 
-      // Tab bar
-      '  <nav class="world-tabs" role="tablist" aria-label="World browser categories">',
+      // Main tab bar
+      '  <nav class="world-tabs" role="tablist" aria-label="Game Objects categories">',
       tabHtml,
       '  </nav>',
 
-      // Search input
-      '  <div class="world-search">',
-      '    <input type="search"',
-      '           id="world-search-input"',
-      '           class="world-search__input"',
-      '           placeholder="Search by name..."',
-      '           aria-label="Filter by name"',
-      '           autocomplete="off"',
-      '           x-model="search"',
-      '           @input="_renderCards()"',
-      '    />',
-      '  </div>',
+      // Character sub-tabs (shown only when Characters tab is active)
+      '  <nav id="world-char-sub-tabs"',
+      '       class="world-sub-tabs"',
+      '       role="tablist"',
+      '       aria-label="Character type filter"',
+      '       x-show="activeTab === \'characters\'">',
+      subTabHtml,
+      '  </nav>',
 
       // Loading indicator
       '  <div class="world-loading"',
@@ -518,12 +832,20 @@ window.views.world = (function () {
       '       x-text="error">',
       '  </div>',
 
-      // Card list — populated imperatively by _renderCardList()
-      '  <div id="world-card-list"',
+      // DataTable container — used for Characters, Groups, Locations
+      '  <div id="world-dt-container"',
+      '       class="world-dt-container"',
+      '       x-show="activeTab !== \'stories\'"',
+      '       x-ignore>',
+      '  </div>',
+
+      // Story cards container — used for Stories tab
+      '  <div id="world-story-cards"',
       '       class="world-card-list"',
+      '       x-show="activeTab === \'stories\'"',
       '       x-ignore',
       '       role="list"',
-      '       aria-label="World objects">',
+      '       aria-label="Stories">',
       '  </div>',
 
       '</div>', // end #world-root
@@ -535,13 +857,15 @@ window.views.world = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Mount the world browser into #view.
-   * Registers the Alpine data component, initialises the Alpine subtree,
-   * and wires a hashchange cleanup handler.
+   * Mount the game objects browser into #view.
+   * Registers the Alpine data component, initialises the Alpine subtree.
    */
   return function render() {
     var el = document.getElementById("view");
     if (!el) return;
+
+    // Destroy any previous DataTable instance before re-rendering
+    _destroyTable();
 
     el.innerHTML = _buildHtml();
 
@@ -553,7 +877,6 @@ window.views.world = (function () {
       if (root) {
         Alpine.initTree(root);
       }
-
     }
   };
 })();

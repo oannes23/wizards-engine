@@ -3544,3 +3544,440 @@ main.container {
     font-size: 1.4rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   DataTable component — Story 8.1.7
+   Sortable, filterable table with responsive card layout for mobile.
+   Used by Game Objects browser, Sessions, GM Feed, and Queue Groups.
+   --------------------------------------------------------------------------- */
+
+/* Root wrapper — contains filter bar + table/card views */
+.dt-root {
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Filter bar
+   --------------------------------------------------------------------------- */
+
+.dt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: flex-end;
+}
+
+.dt-filter-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.2rem;
+}
+
+.dt-filter-global,
+.dt-filter-select-wrap,
+.dt-filter-col-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-filter-input,
+.dt-filter-select {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.25rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  color: var(--pico-color, #ddd);
+  min-height: 36px;
+  margin-bottom: 0;
+}
+
+.dt-filter-input:focus,
+.dt-filter-select:focus {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+   Table layout (desktop >= 600px)
+   --------------------------------------------------------------------------- */
+
+.dt-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+/* Column header */
+.dt-th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--pico-muted-color, #aaa);
+  border-bottom: 2px solid var(--pico-muted-border-color, #444);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Sortable header: pointer cursor and hover highlight */
+.dt-th[data-dt-sort] {
+  cursor: pointer;
+}
+
+.dt-th[data-dt-sort]:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.dt-th[data-dt-sort]:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: -2px;
+}
+
+/* Currently sorted column */
+.dt-th--sorted {
+  color: var(--pico-primary, #7c6aff);
+}
+
+/* Actions column — right-align */
+.dt-th--actions {
+  text-align: right;
+}
+
+/* Table rows */
+.dt-row {
+  border-bottom: 1px solid var(--pico-muted-border-color, #333);
+  transition: background 0.1s;
+}
+
+.dt-row--clickable {
+  cursor: pointer;
+}
+
+.dt-row--clickable:hover {
+  background: var(--pico-card-sectioning-background-color, rgba(255, 255, 255, 0.04));
+}
+
+.dt-row--clickable:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: -2px;
+}
+
+/* Empty state row */
+.dt-row--empty {
+  cursor: default;
+}
+
+.dt-td {
+  padding: 0.6rem 0.75rem;
+  vertical-align: middle;
+  color: var(--pico-color, #ddd);
+  font-size: 0.875rem;
+}
+
+.dt-td--empty {
+  text-align: center;
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  padding: 2rem 0.75rem;
+}
+
+/* Actions cell — right-align, no wrapping */
+.dt-td--actions {
+  text-align: right;
+  white-space: nowrap;
+  padding: 0.4rem 0.5rem;
+}
+
+/* Inline cell link */
+.dt-cell-link {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+}
+
+.dt-cell-link:hover {
+  text-decoration: underline;
+}
+
+/* Row action button */
+.dt-action-btn {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  min-height: 32px;
+  margin-left: 0.25rem;
+  cursor: pointer;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--pico-color, #ddd);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.dt-action-btn:hover {
+  background: var(--pico-card-sectioning-background-color, rgba(255, 255, 255, 0.06));
+  border-color: var(--pico-primary, #7c6aff);
+}
+
+.dt-action-btn:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+   Card layout (mobile < 600px)
+   --------------------------------------------------------------------------- */
+
+/* On desktop: hide cards; show table */
+.dt-table-wrap {
+  display: block;
+}
+
+.dt-cards-wrap {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  /* On mobile: hide table; show cards */
+  .dt-table-wrap {
+    display: none;
+  }
+
+  .dt-cards-wrap {
+    display: block;
+  }
+}
+
+/* Mobile card */
+.dt-card {
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+}
+
+.dt-card--clickable {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dt-card--clickable:hover {
+  background: var(--pico-card-sectioning-background-color, rgba(255, 255, 255, 0.04));
+}
+
+.dt-card--clickable:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: 2px;
+}
+
+.dt-card__field {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+  align-items: baseline;
+}
+
+.dt-card__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--pico-muted-color, #aaa);
+  flex-shrink: 0;
+  min-width: 5rem;
+}
+
+.dt-card__value {
+  color: var(--pico-color, #ddd);
+  word-break: break-word;
+}
+
+.dt-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+}
+
+.dt-card__actions .dt-action-btn {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  min-height: 44px; /* mobile touch target */
+}
+
+/* Empty state for card list */
+.dt-empty {
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Mobile-hidden columns — not rendered in card JS, no CSS needed */
+.dt-th--hide-mobile,
+.dt-td--hide-mobile {
+  /* These classes are present in the table for completeness; table is hidden
+     on mobile anyway. The JS does not emit these cells in card layout. */
+}
+
+/* ---------------------------------------------------------------------------
+   Loading skeleton shimmer
+   --------------------------------------------------------------------------- */
+
+@keyframes dt-shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.dt-skeleton {
+  padding: 0.5rem 0;
+}
+
+.dt-skeleton__row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dt-skeleton__cell {
+  flex: 1;
+  height: 1.2rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    90deg,
+    var(--pico-muted-border-color, #333) 25%,
+    var(--pico-card-sectioning-background-color, #3a3a4a) 50%,
+    var(--pico-muted-border-color, #333) 75%
+  );
+  background-size: 400px 100%;
+  animation: dt-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Game Objects browser — Character sub-tabs (All | PCs | NPCs)
+   Story 8.4.2
+   --------------------------------------------------------------------------- */
+
+.world-sub-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color, #444);
+}
+
+.world-sub-tab {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.85rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  min-height: 36px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.world-sub-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.world-sub-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+}
+
+/* DataTable container inside the world browser */
+.world-dt-container {
+  width: 100%;
+}
+
+/* Badges in DataTable cells — PC/NPC, Tier */
+.world-dt-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  line-height: 1.4;
+}
+
+.world-dt-badge--pc {
+  background: rgba(39, 174, 96, 0.2);
+  color: var(--we-ft-green, #27ae60);
+  border: 1px solid rgba(39, 174, 96, 0.4);
+}
+
+.world-dt-badge--npc {
+  background: rgba(170, 170, 170, 0.1);
+  color: var(--pico-muted-color, #aaa);
+  border: 1px solid rgba(170, 170, 170, 0.25);
+}
+
+.world-dt-badge--tier {
+  background: rgba(41, 128, 185, 0.15);
+  color: var(--we-gnosis-blue, #2980b9);
+  border: 1px solid rgba(41, 128, 185, 0.35);
+}
+
+/* Star button inside DataTable cells */
+.world-dt-star-btn {
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--pico-muted-color, #aaa);
+  line-height: 1;
+  min-height: 32px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: color 0.15s;
+}
+
+.world-dt-star-btn:hover {
+  color: var(--we-plot-amber, #f39c12);
+}
+
+.world-dt-star-btn[data-starred="true"] {
+  color: var(--we-plot-amber, #f39c12);
+}
+
+.world-dt-star-btn:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: 1px;
+}
+
+/* Mobile touch target for star in cards */
+@media (max-width: 599px) {
+  .world-dt-star-btn {
+    min-height: 40px;
+    min-width: 40px;
+    font-size: 1.25rem;
+  }
+}

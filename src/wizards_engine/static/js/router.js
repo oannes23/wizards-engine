@@ -58,7 +58,8 @@ var router = (function () {
     "/gm/queue":     function () { if (typeof views !== "undefined" && views.gmQueue)  { views.gmQueue();  } else { _placeholder("GM Queue")();     } },
     "/gm/sessions":      function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions();  } else { _placeholder("GM Sessions")(); } },
     "/gm/sessions/new":  function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions({ mode: "new" });  } else { _placeholder("New Session")(); } },
-    "/gm/world":     function () { if (typeof views !== "undefined" && views.world)   { views.world();   } else { _placeholder("GM World")();   } },
+    "/gm/world":               function () { if (typeof views !== "undefined" && views.world)           { views.world();           } else { _placeholder("GM World")();           } },
+    "/gm/world/characters/new": function () { if (typeof views !== "undefined" && views.characterCreate) { views.characterCreate(); } else { _placeholder("New Character")(); } },
     "/gm/feed":            function () { if (typeof views !== "undefined" && views.gmFeed)        { views.gmFeed();        } else { _placeholder("GM Feed")(); } },
     "/gm/feed/silent":     function () { if (typeof views !== "undefined" && views.gmFeedSilent)  { views.gmFeedSilent();  } else { _placeholder("GM Silent Feed")(); } },
     "/gm/more":            _placeholder("GM More"),
@@ -167,6 +168,17 @@ var router = (function () {
           views.storyDetail(params.id);
         } else {
           _placeholder("Story Detail")();
+        }
+      },
+    },
+    {
+      // More specific: /gm/world/characters/:id/edit must come before /gm/world/characters/:id
+      pattern: "/gm/world/characters/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.characterEdit) {
+          views.characterEdit(params.id);
+        } else {
+          _placeholder("Edit Character")();
         }
       },
     },

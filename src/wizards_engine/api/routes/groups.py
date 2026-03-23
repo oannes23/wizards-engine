@@ -160,7 +160,7 @@ def get_group(
     trait_slots = get_traits_for_owner(db, "group", group_id, "group_trait")
     traits = [TraitDisplayResponse.model_validate(t) for t in trait_slots]
 
-    bonds_raw = get_bonds_display_for_entity(db, "group", group_id)
+    bonds_raw = get_bonds_display_for_entity(db, "group", group_id, owned_only=True)
     bonds = BondGroups(active=bonds_raw["active"], past=bonds_raw["past"])
 
     member_chars = get_group_members(db, group_id)

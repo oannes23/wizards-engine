@@ -183,7 +183,7 @@ def get_location(
     trait_slots = get_traits_for_owner(db, "location", location_id, "feature_trait")
     traits = [TraitDisplayResponse.model_validate(t) for t in trait_slots]
 
-    bonds_raw = get_bonds_display_for_entity(db, "location", location_id)
+    bonds_raw = get_bonds_display_for_entity(db, "location", location_id, owned_only=True)
     bonds = BondGroups(active=bonds_raw["active"], past=bonds_raw["past"])
 
     presence_raw = get_presence_for_location(db, location_id)

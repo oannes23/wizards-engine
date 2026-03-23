@@ -361,21 +361,21 @@ window.components.nav = (function () {
     }
 
     if (store.isGm()) {
-      // GM gets a "More" button that opens a dropdown instead of a static tab
+      // GM gets a "More" button that opens a dropdown
       nav.appendChild(_buildMoreButton(currentPath, store));
-    } else {
-      // Players get a Profile secondary link
-      var profileLink = document.createElement("a");
-      profileLink.href = "#/profile";
-      profileLink.className = "nav-tab nav-tab--secondary";
-      profileLink.textContent = "Profile";
-      profileLink.setAttribute("aria-label", "Profile");
-      if (currentPath === "/profile") {
-        profileLink.classList.add("nav-tab--active");
-        profileLink.setAttribute("aria-current", "page");
-      }
-      nav.appendChild(profileLink);
     }
+
+    // Both GMs and players get a visible Profile link
+    var profileLink = document.createElement("a");
+    profileLink.href = "#/profile";
+    profileLink.className = "nav-tab nav-tab--secondary";
+    profileLink.textContent = "Profile";
+    profileLink.setAttribute("aria-label", "Profile");
+    if (currentPath === "/profile") {
+      profileLink.classList.add("nav-tab--active");
+      profileLink.setAttribute("aria-current", "page");
+    }
+    nav.appendChild(profileLink);
 
     return nav;
   }

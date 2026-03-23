@@ -9,17 +9,23 @@
  * Tab sets:
  *   Player: Feed (#/), Character (#/character), Proposals (#/proposals),
  *           World (#/world), Session (#/session)
- *   GM:     Queue (#/gm), Feed (#/gm/feed), World (#/gm/world),
- *           Sessions (#/gm/sessions), More (#/gm/more)
+ *   GM:     Queue (#/gm), Event Feed (#/gm/feed), Game Objects (#/gm/world),
+ *           Sessions (#/gm/sessions), More (dropdown)
  *
  * Active tab:
  *   Determined by matching window.location.hash at render time and on
  *   each hashchange event. Exact match wins; prefix match is fallback
- *   (so #/gm/feed highlights the GM Feed tab, #/ highlights Feed, etc.).
+ *   (so #/gm/feed highlights the GM Event Feed tab, #/ highlights Feed, etc.).
  *
  * GM-player dual identity:
- *   When the GM has a character_id the "More" menu includes a
+ *   When the GM has a character_id the "More" dropdown includes a
  *   "My Character" link to #/gm/character.
+ *
+ * More dropdown:
+ *   The GM "More" button opens a floating panel above the nav bar with links
+ *   to Players, Invites, Trait Templates, Clocks, Profile. Clicking any link
+ *   navigates and closes the dropdown. Clicking outside or pressing Escape
+ *   also closes it.
  *
  * Visibility:
  *   Nav is hidden when:
@@ -67,11 +73,20 @@ window.components.nav = (function () {
   ];
 
   var GM_TABS = [
-    { label: "Queue",    hash: "#/gm",           matchPrefix: false },
-    { label: "Feed",     hash: "#/gm/feed",      matchPrefix: true  },
-    { label: "World",    hash: "#/gm/world",     matchPrefix: true  },
-    { label: "Sessions", hash: "#/gm/sessions",  matchPrefix: true  },
-    { label: "More",     hash: "#/gm/more",      matchPrefix: true  },
+    { label: "Queue",        hash: "#/gm",          matchPrefix: false },
+    { label: "Event Feed",   hash: "#/gm/feed",     matchPrefix: true  },
+    { label: "Game Objects", hash: "#/gm/world",    matchPrefix: true  },
+    { label: "Sessions",     hash: "#/gm/sessions", matchPrefix: true  },
+  ];
+
+  // Items shown in the GM "More" dropdown panel.
+  // matchPrefix controls whether any of these routes activates the More button.
+  var GM_MORE_ITEMS = [
+    { label: "Players",         hash: "#/gm/players"         },
+    { label: "Invites",         hash: "#/gm/invites"         },
+    { label: "Trait Templates", hash: "#/gm/trait-templates" },
+    { label: "Clocks",          hash: "#/gm/clocks"          },
+    { label: "Profile",         hash: "#/profile"            },
   ];
 
   // ---------------------------------------------------------------------------
@@ -170,6 +185,151 @@ window.components.nav = (function () {
   }
 
   /**
+   * Return true if the current path matches any of the GM_MORE_ITEMS routes,
+   * which means the More button should appear active.
+   * @param {string} currentPath
+   * @returns {boolean}
+   */
+  function _isMoreActive(currentPath) {
+    for (var i = 0; i < GM_MORE_ITEMS.length; i++) {
+      var itemPath = GM_MORE_ITEMS[i].hash.slice(1) || "/";
+      if (currentPath === itemPath || currentPath.indexOf(itemPath + "/") === 0) {
+        return true;
+      }
+    }
+    // Also mark More active when on the old /gm/more route
+    if (currentPath === "/gm/more") return true;
+    // Also mark More active for GM character route (shown as My Character in dropdown)
+    if (currentPath === "/gm/character") return true;
+    return false;
+  }
+
+  /**
+   * Close the More dropdown panel if it exists, and remove the outside-click
+   * listener. Safe to call when panel is not open.
+   */
+  function _closeMorePanel() {
+    var panel = document.getElementById("nav-more-panel");
+    if (panel) {
+      panel.parentNode.removeChild(panel);
+    }
+    document.removeEventListener("click", _outsideMoreClick, true);
+    document.removeEventListener("keydown", _escMoreKey);
+  }
+
+  /**
+   * Handle clicks outside the More panel. Closes the panel when the user
+   * taps anywhere that is not the panel or the More button itself.
+   */
+  function _outsideMoreClick(evt) {
+    var panel = document.getElementById("nav-more-panel");
+    var btn = document.getElementById("nav-more-btn");
+    if (!panel) return;
+    if ((panel && panel.contains(evt.target)) || (btn && btn.contains(evt.target))) {
+      return;
+    }
+    _closeMorePanel();
+  }
+
+  /**
+   * Close More panel on Escape key.
+   */
+  function _escMoreKey(evt) {
+    if (evt.key === "Escape") {
+      _closeMorePanel();
+    }
+  }
+
+  /**
+   * Build and open the More dropdown panel, positioned above the nav-container.
+   * @param {string} currentPath
+   * @param {object} store  — Alpine app store
+   */
+  function _openMorePanel(currentPath, store) {
+    // If already open, close it (toggle behaviour)
+    if (document.getElementById("nav-more-panel")) {
+      _closeMorePanel();
+      return;
+    }
+
+    var panel = document.createElement("div");
+    panel.id = "nav-more-panel";
+    panel.className = "nav-more-panel";
+    panel.setAttribute("role", "menu");
+    panel.setAttribute("aria-label", "More options");
+
+    // Build item list
+    var items = GM_MORE_ITEMS.slice(); // copy
+    // Prepend "My Character" if the GM has a character
+    if (store && store.character_id) {
+      items = [{ label: "My Character", hash: "#/gm/character" }].concat(items);
+    }
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var itemPath = item.hash.slice(1) || "/";
+      var isActive = (currentPath === itemPath || currentPath.indexOf(itemPath + "/") === 0);
+
+      var a = document.createElement("a");
+      a.href = item.hash;
+      a.className = "nav-more-panel__item" + (isActive ? " nav-more-panel__item--active" : "");
+      a.textContent = item.label;
+      a.setAttribute("role", "menuitem");
+      if (isActive) {
+        a.setAttribute("aria-current", "page");
+      }
+
+      // Clicking any item closes the panel
+      a.addEventListener("click", _closeMorePanel);
+
+      panel.appendChild(a);
+    }
+
+    // Attach panel to nav-container (renders above the nav bar)
+    var container = document.getElementById("nav-container");
+    if (container) {
+      container.appendChild(panel);
+    }
+
+    // Close on outside click or Escape (use capture phase so panel link clicks
+    // are processed before the outside-click handler fires)
+    setTimeout(function () {
+      document.addEventListener("click", _outsideMoreClick, true);
+      document.addEventListener("keydown", _escMoreKey);
+    }, 0);
+  }
+
+  /**
+   * Build the GM "More" button that opens the dropdown panel.
+   * @param {string} currentPath
+   * @param {object} store
+   * @returns {HTMLElement}
+   */
+  function _buildMoreButton(currentPath, store) {
+    var btn = document.createElement("button");
+    btn.id = "nav-more-btn";
+    btn.className = "nav-tab nav-tab--more";
+    btn.setAttribute("aria-label", "More navigation options");
+    btn.setAttribute("aria-haspopup", "menu");
+    btn.setAttribute("aria-expanded", "false");
+
+    if (_isMoreActive(currentPath)) {
+      btn.classList.add("nav-tab--active");
+    }
+
+    btn.textContent = "More";
+
+    btn.addEventListener("click", function (evt) {
+      evt.stopPropagation();
+      var isOpen = !!document.getElementById("nav-more-panel");
+      btn.setAttribute("aria-expanded", String(!isOpen));
+      _openMorePanel(currentPath, store);
+    });
+
+    return btn;
+  }
+
+  /**
    * Build the complete <nav> element for the current auth state.
    * Returns null if the nav should not be shown.
    */
@@ -200,32 +360,22 @@ window.components.nav = (function () {
       nav.appendChild(_buildTab(tabs[i], currentPath));
     }
 
-    // GM dual-identity: append "My Character" link inside the More group
-    // We add it as a visually distinct secondary link (not a main tab)
-    if (store.isGm() && store.character_id) {
-      var charLink = document.createElement("a");
-      charLink.href = "#/gm/character";
-      charLink.className = "nav-tab nav-tab--secondary";
-      charLink.textContent = "My Character";
-      charLink.setAttribute("aria-label", "My Character");
-      if (currentPath === "/gm/character") {
-        charLink.classList.add("nav-tab--active");
-        charLink.setAttribute("aria-current", "page");
+    if (store.isGm()) {
+      // GM gets a "More" button that opens a dropdown instead of a static tab
+      nav.appendChild(_buildMoreButton(currentPath, store));
+    } else {
+      // Players get a Profile secondary link
+      var profileLink = document.createElement("a");
+      profileLink.href = "#/profile";
+      profileLink.className = "nav-tab nav-tab--secondary";
+      profileLink.textContent = "Profile";
+      profileLink.setAttribute("aria-label", "Profile");
+      if (currentPath === "/profile") {
+        profileLink.classList.add("nav-tab--active");
+        profileLink.setAttribute("aria-current", "page");
       }
-      nav.appendChild(charLink);
+      nav.appendChild(profileLink);
     }
-
-    // Profile link — accessible to both players and GM
-    var profileLink = document.createElement("a");
-    profileLink.href = "#/profile";
-    profileLink.className = "nav-tab nav-tab--secondary";
-    profileLink.textContent = "Profile";
-    profileLink.setAttribute("aria-label", "Profile");
-    if (currentPath === "/profile") {
-      profileLink.classList.add("nav-tab--active");
-      profileLink.setAttribute("aria-current", "page");
-    }
-    nav.appendChild(profileLink);
 
     return nav;
   }
@@ -241,6 +391,9 @@ window.components.nav = (function () {
   function _render() {
     var container = document.getElementById("nav-container");
     if (!container) return;
+
+    // Close any open More dropdown before rebuilding the nav
+    _closeMorePanel();
 
     // Remove old nav if present
     var existing = document.getElementById("app-nav");

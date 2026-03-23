@@ -199,3 +199,4 @@ Phase 7 (sequential, depends on all prior phases)
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
 | 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |
+| 8.7 — Comprehensive Example Campaign Data | 🟡 In progress | 2/3 |

@@ -1,6 +1,6 @@
 """Command-line interface for campaign import/export.
 
-Provides three sub-commands:
+Provides four sub-commands:
 
 ``export``
     Dump the entire database to a YAML directory tree.
@@ -10,6 +10,10 @@ Provides three sub-commands:
 
 ``validate``
     Run two-pass validation against a YAML directory without touching the DB.
+
+``seed-events``
+    Generate realistic events and proposals against an imported database so
+    every UI feature has data to display.
 
 Exit codes
 ----------
@@ -26,6 +30,8 @@ Usage examples::
     uv run wizards-campaign import --input ./campaign-data/ --dry-run
     uv run wizards-campaign import --input ./campaign-data/ --force
     uv run wizards-campaign validate --input ./campaign-data/
+    uv run wizards-campaign seed-events
+    uv run wizards-campaign seed-events --db-url sqlite:///path/to/db
 
 Database path
 -------------
@@ -33,6 +39,10 @@ The ``--db`` flag overrides the SQLite file path for ``export`` and ``import``
 commands.  When omitted the path is read from the ``WIZARDS_DB_PATH``
 environment variable, falling back to ``wizards_engine.db`` in the current
 working directory.
+
+For ``seed-events`` the ``--db-url`` flag accepts a full SQLAlchemy URL
+(``sqlite:///path``).  When omitted the URL is constructed from the same
+``WIZARDS_DB_PATH`` / ``wizards_engine.db`` fallback as the other commands.
 """
 
 from __future__ import annotations
@@ -47,6 +57,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from wizards_engine.campaign.exporter import CampaignExporter, ExportResult
 from wizards_engine.campaign.importer import CampaignImporter, ImportResult
+from wizards_engine.campaign.seed_events import SeedResult, seed_events
 from wizards_engine.campaign.validators import ValidationFinding, validate_campaign
 from wizards_engine.models.base import Base
 
@@ -176,6 +187,23 @@ def _print_import_summary(result: ImportResult) -> None:
             print(f"  [warn] {w}")
 
 
+def _print_seed_summary(result: SeedResult) -> None:
+    """Print a human-readable seed summary to stdout.
+
+    Parameters
+    ----------
+    result:
+        The :class:`SeedResult` returned by :func:`seed_events`.
+    """
+    if result.skipped:
+        print(f"Skipped: {result.reason}")
+        return
+    print("Seed complete.")
+    print(f"  Sessions created : {result.sessions_created}")
+    print(f"  Events created   : {result.events_created}")
+    print(f"  Proposals created: {result.proposals_created}")
+
+
 def _print_validation_errors(errors: list[ValidationFinding]) -> None:
     """Print structured validation errors to stderr.
 
@@ -288,6 +316,45 @@ def _cmd_import(args: argparse.Namespace) -> int:
         return 2
 
     _print_import_summary(result)
+    return 0
+
+
+def _cmd_seed_events(args: argparse.Namespace) -> int:
+    """Handle the ``seed-events`` sub-command.
+
+    Connects to the database and generates realistic events and proposals
+    via the internal service layer so that every UI feature has data to
+    display.  The script is idempotent — it skips seeding if events already
+    exist in the database.
+
+    Parameters
+    ----------
+    args:
+        Parsed command-line arguments (``args.db_url``, ``args.db``).
+
+    Returns
+    -------
+    int
+        Exit code: 0 on success (including skip), 2 on runtime error.
+    """
+    db_path: Path | None = args.db
+
+    try:
+        db = _open_session(db_path, create_tables=False)
+        try:
+            result = seed_events(db)
+            if not result.skipped:
+                db.commit()
+        finally:
+            db.close()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+
+    _print_seed_summary(result)
     return 0
 
 
@@ -414,6 +481,22 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Input directory containing the campaign YAML files.",
     )
 
+    # --- seed-events ---
+    seed_parser = subparsers.add_parser(
+        "seed-events",
+        help=(
+            "Generate realistic events and proposals against an imported database "
+            "so every UI feature has data to display."
+        ),
+    )
+    seed_parser.add_argument(
+        "--db",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help="SQLite database file path (overrides WIZARDS_DB_PATH env var).",
+    )
+
     return parser
 
 
@@ -440,6 +523,7 @@ def main(argv: list[str] | None = None) -> None:
         "export": _cmd_export,
         "import": _cmd_import,
         "validate": _cmd_validate,
+        "seed-events": _cmd_seed_events,
     }
 
     handler = dispatch[args.command]

@@ -8,6 +8,10 @@ Covers:
 - Approved/rejected proposals NOT included
 - PC summaries only include detail_level="full", not deleted
 - PC summaries handle nullable meters (return 0)
+- PC summaries include meter maximums (stress_max, free_time_max, plot_max, gnosis_max)
+- PCSummary stress_max = 9 with no trauma bonds
+- PCSummary stress_max = 8 with 1 trauma bond
+- PCSummary static maxes: free_time_max=20, plot_max=5, gnosis_max=23
 - Stress proximity: PC within 2 of effective max is included
 - Stress proximity: PC not at risk is excluded
 - Stress proximity: trauma bonds reduce effective max
@@ -634,3 +638,98 @@ class TestGmDashboardStressProximity:
 
         assert response.status_code == 200
         assert response.json()["stress_proximity"] == []
+
+
+# ===========================================================================
+# PCSummary meter maximums — Story 8.1.2
+# ===========================================================================
+
+
+class TestGmDashboardPCSummaryMeterMaximums:
+    """PCSummary now includes meter maximums for all four resource meters."""
+
+    def test_pc_summary_includes_max_fields(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        """Response includes stress_max, free_time_max, plot_max, gnosis_max."""
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = response.json()["pc_summaries"]
+        assert len(summaries) >= 1
+        s = summaries[0]
+        assert "stress_max" in s
+        assert "free_time_max" in s
+        assert "plot_max" in s
+        assert "gnosis_max" in s
+
+    def test_stress_max_is_9_with_no_trauma_bonds(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """PC with 0 trauma bonds: stress_max = 9."""
+        # seed_data PCs have no trauma bonds by default.
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = {s["id"]: s for s in response.json()["pc_summaries"]}
+        assert summaries[seed_data["pc1"].id]["stress_max"] == 9
+
+    def test_stress_max_reduced_by_one_trauma_bond(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """PC with 1 active trauma bond: stress_max = 8."""
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = {s["id"]: s for s in response.json()["pc_summaries"]}
+        assert summaries[seed_data["pc1"].id]["stress_max"] == 8
+
+    def test_stress_max_reduced_by_two_trauma_bonds(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """PC with 2 active trauma bonds: stress_max = 7."""
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = {s["id"]: s for s in response.json()["pc_summaries"]}
+        assert summaries[seed_data["pc1"].id]["stress_max"] == 7
+
+    def test_static_meter_maxes_are_correct(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        """Static maximums: free_time_max=20, plot_max=5, gnosis_max=23."""
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = {s["id"]: s for s in response.json()["pc_summaries"]}
+        s = summaries[seed_data["pc1"].id]
+        assert s["free_time_max"] == 20
+        assert s["plot_max"] == 5
+        assert s["gnosis_max"] == 23
+
+    def test_trauma_bonds_on_one_pc_do_not_affect_others(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """Trauma bonds on pc1 do not reduce stress_max for pc2."""
+        _make_trauma_bond(db, seed_data["pc1"].id)
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = _get(client)
+
+        assert response.status_code == 200
+        summaries = {s["id"]: s for s in response.json()["pc_summaries"]}
+        assert summaries[seed_data["pc1"].id]["stress_max"] == 8
+        assert summaries[seed_data["pc2"].id]["stress_max"] == 9

@@ -2368,6 +2368,21 @@ main.container {
   text-align: center;
 }
 
+/* --- Permanent "Recent Events" feed section -------------------------------- */
+
+.cs-feed-section {
+  margin-top: 2rem;
+  border-top: 1px solid var(--pico-muted-border-color, #e0e0e0);
+  padding-top: 1.25rem;
+}
+
+.cs-feed-section__heading {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--pico-color, inherit);
+}
+
 /* --- Tier 3: Collapsibles -------------------------------------------------- */
 
 .cs-tier3 {

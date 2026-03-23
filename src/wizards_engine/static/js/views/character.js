@@ -10,15 +10,18 @@
  *   "Find Time" button (visible when plot >= 3, no-op placeholder).
  *
  * Tier 2 — Tabbed sections
- *   Traits | Bonds | Effects | Skills | Feed
+ *   Traits | Bonds | Effects
  *
  * Tier 3 — Collapsible sections (collapsed by default)
  *   Magic Stats | Past / Retired | Session History
  *
+ * Tier 4 — Permanent bottom section
+ *   Recent Events feed (FeedList component, character-scoped)
+ *
  * Data
  * ----
  * Primary:  GET /api/v1/characters/{id}       (CharacterDetailResponse)
- * Feed:     GET /api/v1/characters/{id}/feed?limit=20
+ * Feed:     GET /api/v1/characters/{id}/feed  (via FeedList component)
  * Polling:  60-second interval via store.registerPoll('character-sheet', ...)
  *
  * Registers as: window.views.character
@@ -34,7 +37,6 @@ window.views.character = (function () {
 
   var POLL_KEY = "character-sheet";
   var POLL_INTERVAL_MS = 60000;
-  var FEED_LIMIT = 20;
 
   // Domain maximums not present in the API response.
   var STRESS_MAX  = 9;
@@ -87,14 +89,11 @@ window.views.character = (function () {
    */
   var _actionInFlight = false;
 
-  /** Active tab key ("traits", "bonds", "effects", "skills", "feed"). */
+  /** Active tab key ("traits", "bonds", "effects"). */
   var _activeTab = "traits";
 
-  /** Feed state. */
-  var _feedItems = [];
-  var _feedNextCursor = null;
-  var _feedHasMore = false;
-  var _feedLoading = false;
+  /** FeedList instance for the permanent "Recent Events" section. */
+  var _feedList = null;
 
   // ---------------------------------------------------------------------------
   // HTML helpers
@@ -623,51 +622,23 @@ window.views.character = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Feed tab
+  // Permanent feed section ("Recent Events")
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the Feed tab content using current _feedItems state.
-   * @returns {string} HTML
+   * Build the permanent "Recent Events" section that sits below the tabbed
+   * content and Tier 3 collapsibles. The actual list is rendered by a FeedList
+   * instance mounted after the DOM is written.
+   *
+   * @returns {string} HTML — contains a container div with id "cs-feed-container"
    */
-  function _buildFeedTab() {
-    if (_feedLoading && _feedItems.length === 0) {
-      return '<p class="cs-loading" aria-busy="true">Loading feed...</p>';
-    }
-
-    if (_feedItems.length === 0) {
-      return '<p class="cs-empty">No activity yet.</p>';
-    }
-
-    var html = '<div class="cs-feed">';
-
-    var store = (typeof Alpine !== "undefined" && Alpine.store("app")) || {};
-    var myCharId = store.character_id || null;
-
-    for (var i = 0; i < _feedItems.length; i++) {
-      var item = _feedItems[i];
-      var isOwn = myCharId && item.character_id === myCharId;
-      html += window.components.feedItem.render({
-        item: item,
-        type: item.item_type || item.type || "event",
-        isOwn: !!isOwn,
-      });
-    }
-
-    html += '</div>';
-
-    if (_feedHasMore) {
-      html +=
-        '<div class="cs-feed-more">' +
-          '<button id="cs-load-more-btn"' +
-          '        class="outline secondary"' +
-          '        ' + (_feedLoading ? 'aria-busy="true" disabled' : '') + '>' +
-          (_feedLoading ? 'Loading...' : 'Load more') +
-          '</button>' +
-        '</div>';
-    }
-
-    return html;
+  function _buildFeedSection() {
+    return (
+      '<section class="cs-feed-section">' +
+        '<h3 class="cs-feed-section__heading">Recent Events</h3>' +
+        '<div id="cs-feed-container" class="cs-feed-section__container"></div>' +
+      '</section>'
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1090,9 +1061,23 @@ window.views.character = (function () {
         _buildTabBar() +
         _buildTabPanel(c) +
         _buildTier3(c) +
+        _buildFeedSection() +
       '</div>';
 
+    // Destroy any existing FeedList before replacing the DOM.
+    if (_feedList) {
+      _feedList.destroy();
+      _feedList = null;
+    }
+
     _viewEl.innerHTML = html;
+
+    // Mount FeedList into the feed container.
+    var feedContainer = document.getElementById("cs-feed-container");
+    if (feedContainer && _characterId) {
+      _feedList = new window.components.FeedList(feedContainer);
+      _feedList.load("/api/v1/characters/" + _characterId + "/feed");
+    }
 
     // Wire tab button click handlers
     var tabBtns = _viewEl.querySelectorAll(".cs-tab[data-tab]");
@@ -1193,59 +1178,6 @@ window.views.character = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Data fetching — feed
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Fetch one page of feed items.
-   * On initial load (reset=true) replaces _feedItems; on load-more appends.
-   *
-   * @param {boolean} reset — true = first page, false = append next page
-   */
-  function _fetchFeed(reset) {
-    if (!_mounted || !_characterId || _feedLoading) return;
-
-    _feedLoading = true;
-    if (reset) {
-      _feedNextCursor = null;
-    }
-
-    // Render the loading indicator if we're already on the feed tab
-    if (_activeTab === "feed" && _character) {
-      _renderSheet();
-    }
-
-    var url = "/api/v1/characters/" + _characterId + "/feed?limit=" + FEED_LIMIT;
-    if (!reset && _feedNextCursor) {
-      url += "&after=" + encodeURIComponent(_feedNextCursor);
-    }
-
-    api
-      .get(url)
-      .then(function (data) {
-        if (!_mounted) return;
-        var items = (data && data.items) ? data.items : [];
-        _feedNextCursor = (data && data.next_cursor) ? data.next_cursor : null;
-        _feedHasMore    = !!(data && data.has_more);
-
-        if (reset) {
-          _feedItems = items;
-        } else {
-          _feedItems = _feedItems.concat(items);
-        }
-      })
-      .catch(function () {
-        // Feed errors are non-fatal; leave the current list in place
-      })
-      .finally(function () {
-        _feedLoading = false;
-        if (_mounted && _activeTab === "feed" && _character) {
-          _renderSheet();
-        }
-      });
-  }
-
-  // ---------------------------------------------------------------------------
   // Poll callback
   // ---------------------------------------------------------------------------
 
@@ -1273,6 +1205,10 @@ window.views.character = (function () {
    */
   function _teardown() {
     _mounted = false;
+    if (_feedList) {
+      _feedList.destroy();
+      _feedList = null;
+    }
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       Alpine.store("app").unregisterPoll(POLL_KEY);
     }
@@ -1318,15 +1254,17 @@ window.views.character = (function () {
     }
 
     // Reset state for a fresh mount.
-    _mounted         = true;
-    _characterId     = characterId;
-    _character       = null;
-    _activeTab       = "traits";
-    _feedItems       = [];
-    _feedNextCursor  = null;
-    _feedHasMore     = false;
-    _feedLoading     = false;
-    _actionInFlight  = false;
+    _mounted        = true;
+    _characterId    = characterId;
+    _character      = null;
+    _activeTab      = "traits";
+    _actionInFlight = false;
+
+    // Destroy any stale FeedList from a previous mount.
+    if (_feedList) {
+      _feedList.destroy();
+      _feedList = null;
+    }
 
     // Initial data load.
     _fetchCharacter(true);

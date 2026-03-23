@@ -56,6 +56,133 @@ window.views.worldDetail = (function () {
   }
 
   /**
+   * Return true if the current user is the GM.
+   * @returns {boolean}
+   */
+  function _isGm() {
+    try {
+      return !!(typeof Alpine !== "undefined" && Alpine.store("app") && Alpine.store("app").isGm());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * Dispatch a success toast via the api:success custom event.
+   * @param {string} message
+   */
+  function _showSuccess(message) {
+    document.dispatchEvent(new CustomEvent("api:success", {
+      detail: { message: message },
+      bubbles: true,
+    }));
+  }
+
+  /**
+   * Build GM Edit/Archive action buttons HTML for a detail view header.
+   * Returns empty string for non-GM users.
+   *
+   * @param {string} type  — "characters" | "groups" | "locations"
+   * @param {string} id    — ULID
+   * @param {string} name  — display name (for Archive confirmation)
+   * @returns {string} HTML
+   */
+  function _buildDetailCrudButtons(type, id, name) {
+    if (!_isGm()) return "";
+    return (
+      '<div class="wd-crud-actions">' +
+        '<a class="wd-crud-actions__edit"' +
+           ' href="#/gm/world/' + _esc(type) + '/' + _esc(encodeURIComponent(id)) + '/edit"' +
+           ' aria-label="Edit ' + _esc(name) + '">' +
+          'Edit' +
+        '</a>' +
+        '<button class="wd-crud-actions__archive"' +
+                ' data-wd-archive-type="' + _esc(type) + '"' +
+                ' data-wd-archive-id="' + _esc(id) + '"' +
+                ' data-wd-archive-name="' + _esc(name) + '"' +
+                ' aria-label="Archive ' + _esc(name) + '">' +
+          'Archive' +
+        '</button>' +
+      '</div>'
+    );
+  }
+
+  /**
+   * Wire the Archive button click handler for a detail view.
+   * After confirmation, calls DELETE /api/v1/{type}/{id} and navigates back
+   * to the world browser.
+   *
+   * @param {HTMLElement} el — the #view element
+   * @param {string} type   — "characters" | "groups" | "locations"
+   */
+  function _bindDetailArchive(el, type) {
+    var btn = el.querySelector("[data-wd-archive-id]");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var id   = btn.getAttribute("data-wd-archive-id");
+      var name = btn.getAttribute("data-wd-archive-name");
+      _showDetailArchiveConfirm(type, id, name);
+    });
+  }
+
+  /**
+   * Show an inline confirmation dialog for archiving from the detail view.
+   * On confirm: calls DELETE, shows success toast, navigates back to world.
+   *
+   * @param {string} type — "characters" | "groups" | "locations"
+   * @param {string} id   — ULID
+   * @param {string} name — display name
+   */
+  function _showDetailArchiveConfirm(type, id, name) {
+    var existing = document.getElementById("wd-archive-confirm");
+    if (existing) existing.remove();
+
+    var dialog = document.createElement("div");
+    dialog.id = "wd-archive-confirm";
+    dialog.className = "world-archive-confirm";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", "Confirm archive");
+    dialog.innerHTML =
+      '<div class="world-archive-confirm__box">' +
+        '<p class="world-archive-confirm__message">' +
+          'Are you sure you want to archive ' + _esc(name) + '? This can be undone.' +
+        '</p>' +
+        '<div class="world-archive-confirm__actions">' +
+          '<button class="world-archive-confirm__cancel">Cancel</button>' +
+          '<button class="world-archive-confirm__confirm">Archive</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(dialog);
+
+    dialog.querySelector(".world-archive-confirm__cancel").addEventListener("click", function () {
+      dialog.remove();
+    });
+
+    dialog.querySelector(".world-archive-confirm__confirm").addEventListener("click", function () {
+      dialog.remove();
+      api
+        .del("/api/v1/" + type + "/" + encodeURIComponent(id))
+        .then(function () {
+          _showSuccess(name + " archived.");
+          window.location.hash = "#/world";
+        })
+        .catch(function () {
+          _showSuccess("Archive failed. Please try again.");
+        });
+    });
+
+    dialog.addEventListener("click", function (evt) {
+      if (evt.target === dialog) {
+        dialog.remove();
+      }
+    });
+
+    dialog.querySelector(".world-archive-confirm__cancel").focus();
+  }
+
+  /**
    * Truncate a string to maxLen characters, appending ellipsis if trimmed.
    * @param {string} text
    * @param {number} maxLen
@@ -313,6 +440,7 @@ window.views.worldDetail = (function () {
           '<h2 class="wd-pc-summary__name">' + _esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
+          _buildDetailCrudButtons("characters", c.id || "", c.name || "Untitled") +
         '</div>' +
         (descSnippet
           ? '<p class="wd-pc-summary__desc">' + _esc(descSnippet) + '</p>'
@@ -371,6 +499,7 @@ window.views.worldDetail = (function () {
         '<div class="wd-npc__header">' +
           '<h2 class="wd-npc__name">' + _esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--npc">NPC</mark>' +
+          _buildDetailCrudButtons("characters", c.id || "", c.name || "Untitled") +
         '</div>' +
         (descFull
           ? '<p class="wd-npc__desc">' + _esc(descFull) + '</p>'
@@ -417,6 +546,7 @@ window.views.worldDetail = (function () {
               _buildNpcSummary(data) +
             '</div>';
         }
+        _bindDetailArchive(el, "characters");
       })
       .catch(function (err) {
         if (!_mounted) return;
@@ -456,6 +586,7 @@ window.views.worldDetail = (function () {
       '<div class="wd-detail__header">' +
         '<h2 class="wd-detail__name">' + _esc(name) + '</h2>' +
         '<mark class="wd-badge wd-badge--tier">Tier ' + _esc(tier) + '</mark>' +
+        _buildDetailCrudButtons("groups", group.id || "", name) +
       '</div>';
 
     if (description) {
@@ -573,6 +704,7 @@ window.views.worldDetail = (function () {
             _buildBackButton() +
             _buildGroupDetail(group, clocks) +
           '</div>';
+        _bindDetailArchive(el, "groups");
         // Wire member card clicks and star toggles
         var memberCards = el.querySelector(".wd-member-cards");
         if (memberCards) {
@@ -611,6 +743,7 @@ window.views.worldDetail = (function () {
     // Header
     html += '<div class="wd-detail__header">';
     html += '<h2 class="wd-detail__name">' + _esc(name) + '</h2>';
+    html += _buildDetailCrudButtons("locations", location.id || "", name);
 
     // Parent link
     if (parent) {
@@ -754,6 +887,8 @@ window.views.worldDetail = (function () {
             _buildBackButton() +
             _buildLocationDetail(location, parent, children, clocks) +
           '</div>';
+
+        _bindDetailArchive(el, "locations");
 
         // Wire child location card clicks and star toggles
         var childCards = el.querySelector(".wd-child-cards");

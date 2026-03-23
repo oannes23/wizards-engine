@@ -2306,6 +2306,230 @@ main.container {
 }
 
 /* ---------------------------------------------------------------------------
+   World browser — GM toolbar ("Create New" button)
+   --------------------------------------------------------------------------- */
+
+.world-gm-toolbar {
+  margin-bottom: 0.75rem;
+}
+
+.world-gm-toolbar__row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.world-gm-toolbar__create-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  min-height: 36px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--pico-primary, #7c6aff);
+  border: 1.5px solid var(--pico-primary, #7c6aff);
+  border-radius: 0.375rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.world-gm-toolbar__create-btn:hover,
+.world-gm-toolbar__create-btn:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+   World browser — per-card GM action buttons (Edit / Archive)
+   --------------------------------------------------------------------------- */
+
+.world-card-wrap {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.world-card-wrap .game-object-card {
+  margin-bottom: 0;
+}
+
+.world-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem 0.5rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-card-border-color, #333);
+  border-top: none;
+  border-radius: 0 0 0.375rem 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.world-card-actions__edit {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  border-radius: 0.25rem;
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.world-card-actions__edit:hover,
+.world-card-actions__edit:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+.world-card-actions__archive {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid var(--we-stress-red, #c0392b);
+  border-radius: 0.25rem;
+  color: var(--we-stress-red, #c0392b);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.world-card-actions__archive:hover,
+.world-card-actions__archive:focus-visible {
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Archive confirmation dialog (shared by world.js and world-detail.js)
+   --------------------------------------------------------------------------- */
+
+.world-archive-confirm {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.world-archive-confirm__box {
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-card-border-color, #333);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 360px;
+  width: 90%;
+}
+
+.world-archive-confirm__message {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.world-archive-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.world-archive-confirm__cancel {
+  font-size: 0.9rem;
+  padding: 0.45rem 1rem;
+  min-height: 36px;
+  background: none;
+  border: 1px solid var(--pico-muted-border-color, #555);
+  border-radius: 0.375rem;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+}
+
+.world-archive-confirm__cancel:hover,
+.world-archive-confirm__cancel:focus-visible {
+  border-color: var(--pico-contrast, #fff);
+  color: var(--pico-contrast, #fff);
+  outline: none;
+}
+
+.world-archive-confirm__confirm {
+  font-size: 0.9rem;
+  padding: 0.45rem 1rem;
+  min-height: 36px;
+  background: var(--we-stress-red, #c0392b);
+  border: 1px solid var(--we-stress-red, #c0392b);
+  border-radius: 0.375rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.world-archive-confirm__confirm:hover,
+.world-archive-confirm__confirm:focus-visible {
+  background: #a93226;
+  border-color: #a93226;
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+   World detail — GM CRUD action buttons in header
+   --------------------------------------------------------------------------- */
+
+.wd-crud-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.wd-crud-actions__edit {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  border-radius: 0.25rem;
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wd-crud-actions__edit:hover,
+.wd-crud-actions__edit:focus-visible {
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  outline: none;
+}
+
+.wd-crud-actions__archive {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid var(--we-stress-red, #c0392b);
+  border-radius: 0.25rem;
+  color: var(--we-stress-red, #c0392b);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wd-crud-actions__archive:hover,
+.wd-crud-actions__archive:focus-visible {
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
    Story Detail view (#/world/stories/:id, #/gm/world/stories/:id)
    --------------------------------------------------------------------------- */
 
@@ -2705,6 +2929,10 @@ main.container {
 }
 
 .wd-detail__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 

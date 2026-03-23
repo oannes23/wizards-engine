@@ -44,6 +44,29 @@ window.views.world = (function () {
   }
 
   /**
+   * Return true if the current user is the GM.
+   * @returns {boolean}
+   */
+  function _isGm() {
+    try {
+      return !!(typeof Alpine !== "undefined" && Alpine.store("app") && Alpine.store("app").isGm());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * Dispatch a success toast via the api:success custom event.
+   * @param {string} message
+   */
+  function _showSuccess(message) {
+    document.dispatchEvent(new CustomEvent("api:success", {
+      detail: { message: message },
+      bubbles: true,
+    }));
+  }
+
+  /**
    * Truncate a string to at most maxLen characters, appending an ellipsis.
    * @param {string} text
    * @param {number} maxLen
@@ -229,6 +252,50 @@ window.views.world = (function () {
   }
 
   // ---------------------------------------------------------------------------
+  // GM toolbar renderer
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Render the GM-only "Create New" button into #world-gm-toolbar.
+   * Shows only for Characters, Groups, and Locations tabs (not Stories).
+   * Hidden entirely for player users.
+   *
+   * @param {string} tab — current active tab key
+   */
+  function _renderGmToolbar(tab) {
+    var toolbar = document.getElementById("world-gm-toolbar");
+    if (!toolbar) return;
+
+    var createableTabs = { characters: true, groups: true, locations: true };
+
+    if (!_isGm() || !createableTabs[tab]) {
+      toolbar.innerHTML = "";
+      return;
+    }
+
+    var routes = {
+      characters: "#/gm/world/characters/new",
+      groups:     "#/gm/world/groups/new",
+      locations:  "#/gm/world/locations/new",
+    };
+
+    var labels = {
+      characters: "Create New Character",
+      groups:     "Create New Group",
+      locations:  "Create New Location",
+    };
+
+    toolbar.innerHTML =
+      '<div class="world-gm-toolbar__row">' +
+        '<a href="' + _esc(routes[tab]) + '"' +
+           ' class="world-gm-toolbar__create-btn"' +
+           ' aria-label="' + _esc(labels[tab]) + '">' +
+          '+ Create New' +
+        '</a>' +
+      '</div>';
+  }
+
+  // ---------------------------------------------------------------------------
   // Imperative card-list renderer
   // ---------------------------------------------------------------------------
 
@@ -245,6 +312,9 @@ window.views.world = (function () {
 
     var tab   = data.activeTab;
     var items = data.filteredItems();
+
+    // Update GM toolbar (Create New button) for applicable tabs.
+    _renderGmToolbar(tab);
 
     // Show loading / error states imperatively (Alpine also drives the
     // overlay, but this keeps the card area clean while waiting).
@@ -264,6 +334,8 @@ window.views.world = (function () {
     }
 
     var html = [];
+
+    var isGm = _isGm();
 
     if (tab === "stories") {
       // Custom story card rendering
@@ -286,15 +358,40 @@ window.views.world = (function () {
           }
         }
         itemData.starred = !!starredSet[type + "/" + item.id];
-        html.push(
-          window.components.gameObjectCard.render({ type: type, data: itemData })
-        );
+        var cardHtml = window.components.gameObjectCard.render({ type: type, data: itemData });
+        if (isGm) {
+          var itemId   = item.id || "";
+          var itemName = item.name || item.display_name || "Untitled";
+          cardHtml =
+            '<div class="world-card-wrap">' +
+              cardHtml +
+              '<div class="world-card-actions">' +
+                '<a class="world-card-actions__edit"' +
+                   ' href="#/gm/world/' + _esc(tab) + '/' + _esc(encodeURIComponent(itemId)) + '/edit"' +
+                   ' aria-label="Edit ' + _esc(itemName) + '">' +
+                  'Edit' +
+                '</a>' +
+                '<button class="world-card-actions__archive"' +
+                        ' data-world-archive-type="' + _esc(type) + '"' +
+                        ' data-world-archive-tab="' + _esc(tab) + '"' +
+                        ' data-world-archive-id="' + _esc(itemId) + '"' +
+                        ' data-world-archive-name="' + _esc(itemName) + '"' +
+                        ' aria-label="Archive ' + _esc(itemName) + '">' +
+                  'Archive' +
+                '</button>' +
+              '</div>' +
+            '</div>';
+        }
+        html.push(cardHtml);
       }
       container.innerHTML = html.join("");
       window.components.gameObjectCard.bindClicks(container);
       window.components.gameObjectCard.bindStarClicks(container, function (cardType, cardId, currentlyStarred) {
         _handleStar(data, container, cardType, cardId, currentlyStarred);
       });
+      if (isGm) {
+        _bindArchiveClicks(container, data);
+      }
     }
   }
 
@@ -360,6 +457,113 @@ window.views.world = (function () {
             btn.setAttribute("aria-pressed", "false");
           }
         });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Archive handler
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Show an inline confirmation dialog for archiving a game object.
+   * On confirm: calls DELETE /api/v1/{tab}/{id}, removes the card wrapper
+   * from the DOM, and shows a success toast.
+   * On cancel: dismisses the dialog without action.
+   *
+   * @param {HTMLElement} container — the card-list container
+   * @param {string} type           — "character" | "group" | "location"
+   * @param {string} tab            — "characters" | "groups" | "locations"
+   * @param {string} id             — ULID
+   * @param {string} name           — display name for the confirmation message
+   * @param {object} data           — Alpine data (used to splice item from cache)
+   */
+  function _showArchiveConfirm(container, type, tab, id, name, data) {
+    // Remove any existing confirmation dialog first
+    var existing = document.getElementById("world-archive-confirm");
+    if (existing) existing.remove();
+
+    var dialog = document.createElement("div");
+    dialog.id = "world-archive-confirm";
+    dialog.className = "world-archive-confirm";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", "Confirm archive");
+    dialog.innerHTML =
+      '<div class="world-archive-confirm__box">' +
+        '<p class="world-archive-confirm__message">' +
+          'Are you sure you want to archive ' + window.utils.esc(name) + '? This can be undone.' +
+        '</p>' +
+        '<div class="world-archive-confirm__actions">' +
+          '<button class="world-archive-confirm__cancel">Cancel</button>' +
+          '<button class="world-archive-confirm__confirm">Archive</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(dialog);
+
+    dialog.querySelector(".world-archive-confirm__cancel").addEventListener("click", function () {
+      dialog.remove();
+    });
+
+    dialog.querySelector(".world-archive-confirm__confirm").addEventListener("click", function () {
+      dialog.remove();
+
+      // Find the card wrapper and remove it (optimistic UI)
+      var wrap = container.querySelector(
+        '.world-card-wrap [data-world-archive-id="' + id + '"]'
+      );
+      var wrapEl = wrap ? wrap.closest(".world-card-wrap") : null;
+      if (wrapEl) wrapEl.remove();
+
+      // Also remove from data cache so re-renders stay clean
+      if (data[tab] && Array.isArray(data[tab])) {
+        data[tab] = data[tab].filter(function (item) { return item.id !== id; });
+      }
+
+      api
+        .del("/api/v1/" + tab + "/" + encodeURIComponent(id))
+        .then(function () {
+          _showSuccess(name + " archived.");
+        })
+        .catch(function () {
+          // Re-fetch to restore if the API call failed
+          _showSuccess("Archive failed. Please reload.");
+          data.loaded[tab] = false;
+          data._fetchData(tab);
+        });
+    });
+
+    // Close on backdrop click
+    dialog.addEventListener("click", function (evt) {
+      if (evt.target === dialog) {
+        dialog.remove();
+      }
+    });
+
+    // Focus the cancel button for accessibility
+    dialog.querySelector(".world-archive-confirm__cancel").focus();
+  }
+
+  /**
+   * Wire Archive button click handlers in the card list.
+   * Archive buttons carry data-world-archive-* attributes for identification.
+   *
+   * @param {HTMLElement} container — the card-list container
+   * @param {object} data           — Alpine data object
+   */
+  function _bindArchiveClicks(container, data) {
+    var btns = container.querySelectorAll("[data-world-archive-id]");
+    for (var i = 0; i < btns.length; i++) {
+      (function (btn) {
+        btn.addEventListener("click", function (evt) {
+          evt.stopPropagation();
+          var type = btn.getAttribute("data-world-archive-type");
+          var tab  = btn.getAttribute("data-world-archive-tab");
+          var id   = btn.getAttribute("data-world-archive-id");
+          var name = btn.getAttribute("data-world-archive-name");
+          _showArchiveConfirm(container, type, tab, id, name, data);
+        });
+      })(btns[i]);
     }
   }
 
@@ -517,6 +721,9 @@ window.views.world = (function () {
       '       x-show="error && !loading"',
       '       x-text="error">',
       '  </div>',
+
+      // GM toolbar — "Create New" button, rendered imperatively by _renderCardList()
+      '  <div id="world-gm-toolbar" class="world-gm-toolbar"></div>',
 
       // Card list — populated imperatively by _renderCardList()
       '  <div id="world-card-list"',

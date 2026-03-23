@@ -65,13 +65,6 @@ window.views.sessionDetail = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  function _isGm() {
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      return Alpine.store("app").isGm();
-    }
-    return false;
-  }
-
   function _formatDate(dateStr) {
     if (!dateStr) return "";
     try {
@@ -247,7 +240,7 @@ window.views.sessionDetail = (function () {
 
     // Action buttons (GM only)
     var actionsHtml = "";
-    if (_isGm()) {
+    if (window.utils.isGm()) {
       actionsHtml = '<div class="session-detail__actions">';
       if (isDraft) {
         actionsHtml += '<button id="detail-edit-btn">Edit</button> ';
@@ -638,7 +631,7 @@ window.views.sessionDetail = (function () {
     _viewEl = document.getElementById("view");
     if (!_viewEl) return;
 
-    if (!_isGm()) {
+    if (!window.utils.isGm()) {
       _viewEl.innerHTML =
         '<div class="session-detail">' +
           '<p class="error-text" role="alert">Access denied — GM only.</p>' +

@@ -37,16 +37,13 @@ window.views.gmDashboard = (function () {
   var POLL_INTERVAL_MS = 60000;
   var DASHBOARD_URL = "/api/v1/gm/dashboard";
 
-  // Meter maximums are now supplied by the API in each PC summary object:
-  //   stress_max     — 9 minus trauma bond count (per-character, computed server-side)
-  //   free_time_max  — always 20
-  //   plot_max       — always 5
-  //   gnosis_max     — always 23
-  // These fallbacks are used only when a field is unexpectedly absent.
-  var STRESS_MAX_FALLBACK = 9;
-  var FREE_TIME_MAX_FALLBACK = 20;
-  var PLOT_MAX_FALLBACK = 5;
-  var GNOSIS_MAX_FALLBACK = 23;
+  // Maximum stress value for PCs (used when server doesn't supply it).
+  // The PC summary does not include a max_stress field — we use a fallback of 5
+  // which matches the game rules. Views that know the true max (e.g. character
+  // sheet) use the actual value from the character object.
+  var STRESS_MAX = 5;
+  // Free Time, Plot and Gnosis are 0–5 resources.
+  var RESOURCE_MAX = 5;
 
   // ---------------------------------------------------------------------------
   // Private state
@@ -64,7 +61,6 @@ window.views.gmDashboard = (function () {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
-
 
   /**
    * Render a meter bar using window.components.meterBar if available,
@@ -201,9 +197,7 @@ window.views.gmDashboard = (function () {
   /**
    * Render the PC summaries section.
    *
-   * @param {Array} pcs — array of PC summary objects from the API, each with:
-   *   id, name, stress, stress_max, free_time, free_time_max,
-   *   plot, plot_max, gnosis, gnosis_max
+   * @param {Array} pcs — array of { id, name, stress, free_time, plot, gnosis }
    * @returns {string} HTML string
    */
   function _renderPcSection(pcs) {
@@ -223,24 +217,20 @@ window.views.gmDashboard = (function () {
       html += '<div class="gm-dashboard__pc-grid">';
       for (var i = 0; i < pcs.length; i++) {
         var pc = pcs[i];
-        var stress      = Number(pc.stress)       || 0;
-        var stressMax   = Number(pc.stress_max)   || STRESS_MAX_FALLBACK;
-        var freetime    = Number(pc.free_time)     || 0;
-        var freetimeMax = Number(pc.free_time_max) || FREE_TIME_MAX_FALLBACK;
-        var plot        = Number(pc.plot)          || 0;
-        var plotMax     = Number(pc.plot_max)      || PLOT_MAX_FALLBACK;
-        var gnosis      = Number(pc.gnosis)        || 0;
-        var gnosisMax   = Number(pc.gnosis_max)    || GNOSIS_MAX_FALLBACK;
+        var stress = Number(pc.stress) || 0;
+        var freetime = Number(pc.free_time) || 0;
+        var plot = Number(pc.plot) || 0;
+        var gnosis = Number(pc.gnosis) || 0;
 
         html +=
           '<a href="#/gm/world/characters/' + window.utils.esc(pc.id) + '" class="gm-dashboard__pc-card">' +
             '<article>' +
               '<header class="gm-dashboard__pc-name">' + window.utils.esc(pc.name) + '</header>' +
               '<div class="gm-dashboard__pc-meters">' +
-                _meterBar("Stress",    stress,   stressMax,   "var(--we-stress-red, #c0392b)") +
-                _meterBar("Free Time", freetime, freetimeMax, "var(--we-ft-green, #27ae60)") +
-                _meterBar("Plot",      plot,     plotMax,     "var(--we-plot-amber, #e67e22)") +
-                _meterBar("Gnosis",    gnosis,   gnosisMax,   "var(--we-gnosis-blue, #2980b9)") +
+                _meterBar("Stress",     stress,   STRESS_MAX,   window.constants.METER_COLORS.stress) +
+                _meterBar("Free Time",  freetime, RESOURCE_MAX, window.constants.METER_COLORS.free_time) +
+                _meterBar("Plot",       plot,     RESOURCE_MAX, window.constants.METER_COLORS.plot) +
+                _meterBar("Gnosis",     gnosis,   RESOURCE_MAX, window.constants.METER_COLORS.gnosis) +
               '</div>' +
             '</article>' +
           '</a>';
@@ -327,9 +317,9 @@ window.views.gmDashboard = (function () {
   function _renderList() {
     if (!_viewEl || !_mounted) return;
 
-    var proposals = (_data && _data.pending_proposals)    ? _data.pending_proposals    : [];
-    var pcs       = (_data && _data.pc_summaries)         ? _data.pc_summaries         : [];
-    var clocks    = (_data && _data.near_completion_clocks) ? _data.near_completion_clocks : [];
+    var proposals = (_data && _data.pending_proposals) ? _data.pending_proposals : [];
+    var pcs = (_data && _data.pc_summaries) ? _data.pc_summaries : [];
+    var clocks = (_data && _data.near_completion_clocks) ? _data.near_completion_clocks : [];
 
     // Build a name-map from pc_summaries so proposals can show character names
     // without an extra API call (dashboard already includes this data).

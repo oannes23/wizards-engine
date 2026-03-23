@@ -1,84 +1,32 @@
-/* Wizards Engine — game constants
+/* Wizards Engine — shared UI constants
  *
- * Exposed as window.constants so all view and component scripts can reference
- * canonical game values without magic numbers.
+ * Exposed as window.constants so all view and component scripts can consume
+ * these values without duplicating magic strings.
  *
- * Load order: after utils.js, before all view/component scripts.
+ * Available immediately — load this script after utils.js.
  *
  * API:
- *   window.constants.STRESS_MAX          — 9  (maximum Stress before Trauma)
- *   window.constants.FT_MAX              — 20 (maximum Free Time)
- *   window.constants.PLOT_MAX            — 5  (maximum Plot points)
- *   window.constants.GNOSIS_DISPLAY_MAX  — 23 (display cap for Gnosis meter)
- *   window.constants.SKILL_NAMES        — ordered list of skill identifiers
- *   window.constants.METER_COLORS       — CSS variable map for meter colors
+ *   window.constants.METER_COLORS   — CSS color values for the four resource meters
  */
 
 window.constants = (function () {
-  // ---------------------------------------------------------------------------
-  // Numeric caps
-  // ---------------------------------------------------------------------------
-
-  /** Maximum Stress value before a Trauma resolve_trauma proposal is generated. */
-  var STRESS_MAX = 9;
-
-  /** Maximum Free Time a character can accumulate. */
-  var FT_MAX = 20;
-
-  /** Maximum Plot points a character can hold. */
-  var PLOT_MAX = 5;
-
   /**
-   * Display cap for the Gnosis meter bar. The actual Gnosis value can exceed
-   * this (there is no hard maximum), but the bar treats this as 100%.
-   */
-  var GNOSIS_DISPLAY_MAX = 23;
-
-  // ---------------------------------------------------------------------------
-  // Skill names
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Ordered list of the eight skill identifiers as they appear in the API
-   * and character data. Use these for iteration and lookup.
-   */
-  var SKILL_NAMES = [
-    "awareness",
-    "composure",
-    "influence",
-    "finesse",
-    "speed",
-    "power",
-    "knowledge",
-    "technology",
-  ];
-
-  // ---------------------------------------------------------------------------
-  // Meter colors
-  // ---------------------------------------------------------------------------
-
-  /**
-   * CSS variable (or fallback value) for each resource meter.
-   * These reference PicoCSS theme variables with hex fallbacks for
-   * environments where the variables are not defined.
+   * CSS color values for the four resource meter bars.
+   * Use these instead of hardcoding color strings in view files.
+   *
+   *   stress    — red   (Stress meter)
+   *   free_time — green (Free Time meter)
+   *   plot      — blue  (Plot meter)
+   *   gnosis    — purple (Gnosis meter)
    */
   var METER_COLORS = {
-    stress:    "var(--we-stress-red, #c0392b)",
-    free_time: "var(--we-ft-green, #27ae60)",
-    plot:      "var(--we-plot-amber, #d4a017)",
-    gnosis:    "var(--we-gnosis-blue, #805ad5)",
+    stress:    "var(--pico-del-color, #c0392b)",
+    free_time: "var(--pico-ins-color, #27ae60)",
+    plot:      "var(--pico-primary, #1095c1)",
+    gnosis:    "var(--pico-secondary, #805ad5)",
   };
 
-  // ---------------------------------------------------------------------------
-  // Export
-  // ---------------------------------------------------------------------------
-
   return {
-    STRESS_MAX:         STRESS_MAX,
-    FT_MAX:             FT_MAX,
-    PLOT_MAX:           PLOT_MAX,
-    GNOSIS_DISPLAY_MAX: GNOSIS_DISPLAY_MAX,
-    SKILL_NAMES:        SKILL_NAMES,
-    METER_COLORS:       METER_COLORS,
+    METER_COLORS: METER_COLORS,
   };
 })();

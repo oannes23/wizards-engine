@@ -10,18 +10,15 @@
  *   "Find Time" button (visible when plot >= 3, no-op placeholder).
  *
  * Tier 2 — Tabbed sections
- *   Traits | Bonds | Effects
+ *   Traits | Bonds | Effects | Skills | Feed
  *
  * Tier 3 — Collapsible sections (collapsed by default)
  *   Magic Stats | Past / Retired | Session History
  *
- * Tier 4 — Permanent bottom section
- *   Recent Events feed (FeedList component, character-scoped)
- *
  * Data
  * ----
  * Primary:  GET /api/v1/characters/{id}       (CharacterDetailResponse)
- * Feed:     GET /api/v1/characters/{id}/feed  (via FeedList component)
+ * Feed:     GET /api/v1/characters/{id}/feed?limit=20
  * Polling:  60-second interval via store.registerPoll('character-sheet', ...)
  *
  * Registers as: window.views.character
@@ -37,6 +34,7 @@ window.views.character = (function () {
 
   var POLL_KEY = "character-sheet";
   var POLL_INTERVAL_MS = 60000;
+  var FEED_LIMIT = 20;
 
   // Domain maximums not present in the API response.
   var STRESS_MAX  = 9;
@@ -44,8 +42,8 @@ window.views.character = (function () {
   var PLOT_MAX    = 5;
   var GNOSIS_DISPLAY_MAX = 23; // Gnosis has no hard cap; display up to 23
 
-  // Tab identifiers (Skills now inline; Feed moves to bottom in 8.5.3)
-  var TABS = ["traits", "bonds", "effects"];
+  // Tab identifiers
+  var TABS = ["traits", "bonds", "effects", "skills", "feed"];
 
   var SKILL_LABELS = {
     awareness:  "Awareness",
@@ -89,37 +87,14 @@ window.views.character = (function () {
    */
   var _actionInFlight = false;
 
-  /** Active tab key ("traits", "bonds", "effects"). */
+  /** Active tab key ("traits", "bonds", "effects", "skills", "feed"). */
   var _activeTab = "traits";
 
-  /** FeedList instance for the permanent "Recent Events" section. */
-  var _feedList = null;
-
-  // ---------------------------------------------------------------------------
-  // HTML helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * HTML-escape for text content. Delegates to window.utils.esc.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
-
-  /**
-   * Truncate a string to maxLen characters, appending ellipsis if trimmed.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
-  function _snippet(text, maxLen) {
-    if (!text) return "";
-    var s = String(text);
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen).trimEnd() + "\u2026";
-  }
+  /** Feed state. */
+  var _feedItems = [];
+  var _feedNextCursor = null;
+  var _feedHasMore = false;
+  var _feedLoading = false;
 
   // ---------------------------------------------------------------------------
   // Tier 1 — Header & meters
@@ -135,8 +110,7 @@ window.views.character = (function () {
   function _buildHeader(c) {
     var canEdit = false;
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      var store = Alpine.store("app");
-      canEdit = store.isGm() || store.isOwner(c.id);
+      canEdit = window.utils.isGm() || Alpine.store("app").isOwner(c.id);
     }
 
     var editBtn = canEdit
@@ -191,16 +165,16 @@ window.views.character = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    var descFull = c.description || "";
+    var descSnippet = window.utils.snippet(c.description || "", 160);
 
     return (
       '<div class="cs-header">' +
         '<div class="cs-header__title-row">' +
-          '<h2 class="cs-header__name">' + _esc(c.name) + '</h2>' +
+          '<h2 class="cs-header__name">' + window.utils.esc(c.name) + '</h2>' +
           editBtn +
         '</div>' +
-        (descFull
-          ? '<p class="cs-header__desc">' + _esc(descFull) + '</p>'
+        (descSnippet
+          ? '<p class="cs-header__desc">' + window.utils.esc(descSnippet) + '</p>'
           : '') +
         '<div class="cs-meters">' +
           stressBar +
@@ -228,6 +202,8 @@ window.views.character = (function () {
       traits:  "Traits",
       bonds:   "Bonds",
       effects: "Effects",
+      skills:  "Skills",
+      feed:    "Feed",
     };
 
     var html = '<nav class="cs-tabs" role="tablist" aria-label="Character sheet sections">';
@@ -238,39 +214,11 @@ window.views.character = (function () {
         '<button class="cs-tab' + (isActive ? ' cs-tab--active' : '') + '"' +
         '        role="tab"' +
         '        aria-selected="' + (isActive ? 'true' : 'false') + '"' +
-        '        data-tab="' + _esc(key) + '">' +
-        _esc(TAB_LABELS[key]) +
+        '        data-tab="' + window.utils.esc(key) + '">' +
+        window.utils.esc(TAB_LABELS[key]) +
         '</button>';
     }
     html += '</nav>';
-    return html;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Inline skills grid (below header, above tabs)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Build a compact 2×4 inline skills grid shown between the header and tab bar.
-   * All 8 skills are always displayed. Each cell: name (muted) + value (bold).
-   *
-   * @param {object} skills — dict of skill name to level (from CharacterDetailResponse)
-   * @returns {string} HTML
-   */
-  function _buildSkillsInline(skills) {
-    var skillKeys = Object.keys(SKILL_LABELS);
-    var html = '<div class="cs-skills-inline">';
-    for (var i = 0; i < skillKeys.length; i++) {
-      var key = skillKeys[i];
-      var level = (skills && skills[key] !== undefined && skills[key] !== null)
-        ? Number(skills[key]) : 0;
-      html +=
-        '<div class="cs-skills-inline__cell">' +
-          '<span class="cs-skills-inline__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
-          '<span class="cs-skills-inline__value">' + level + '</span>' +
-        '</div>';
-    }
-    html += '</div>';
     return html;
   }
 
@@ -323,7 +271,7 @@ window.views.character = (function () {
   }
 
   /**
-   * Build a single trait expandable card using the ExpandableItem component.
+   * Build a single trait list item with ChargeDots and a Recharge button.
    * @param {object} t — CharacterTraitResponse
    * @returns {string} HTML
    */
@@ -331,44 +279,32 @@ window.views.character = (function () {
     var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
     var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
 
-    // Determine GM status for Edit button
-    var isGm = false;
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      isGm = Alpine.store("app").isGm();
-    }
+    // Recharge button: visible when charge < 5.
+    var rechargeBtn = charge < 5
+      ? '<button class="cs-action-btn"' +
+        '        data-action="recharge-trait"' +
+        '        data-trait-id="' + window.utils.esc(t.id) + '"' +
+        '        data-trait-name="' + window.utils.esc(t.name) + '">' +
+        'Recharge' +
+        '</button>'
+      : "";
 
-    // Build action list
-    var actions = [];
+    var descSnippet = window.utils.snippet(t.description || "", 120);
 
-    // Recharge button: visible when charge < 5
-    if (charge < 5) {
-      actions.push({
-        label: "Recharge",
-        dataAttrs: {
-          "data-action":     "recharge-trait",
-          "data-trait-id":   t.id,
-          "data-trait-name": t.name,
-        },
-      });
-    }
-
-    // Edit button: GM-only, links to edit form
-    if (isGm) {
-      actions.push({
-        label:     "Edit",
-        href:      "#/gm/traits/" + encodeURIComponent(t.id) + "/edit",
-        secondary: true,
-      });
-    }
-
-    return window.components.expandableItem.render({
-      id:          t.id,
-      name:        t.name,
-      dotsHtml:    dots,
-      description: t.description || "",
-      actions:     actions,
-      variant:     "trait",
-    });
+    return (
+      '<li class="cs-trait-item">' +
+        '<div class="cs-trait-item__header">' +
+          '<strong class="cs-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
+          dots +
+        '</div>' +
+        (descSnippet
+          ? '<p class="cs-trait-item__desc">' + window.utils.esc(descSnippet) + '</p>'
+          : '') +
+        (rechargeBtn
+          ? '<div class="cs-trait-item__actions">' + rechargeBtn + '</div>'
+          : '') +
+      '</li>'
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -398,7 +334,7 @@ window.views.character = (function () {
   }
 
   /**
-   * Build a single bond expandable card using the ExpandableItem component.
+   * Build a single bond list item.
    * @param {object} b — BondDisplayResponse
    * @returns {string} HTML
    */
@@ -406,20 +342,15 @@ window.views.character = (function () {
     var isTrauma = !!b.is_trauma;
     var isPC = b.slot_type === "pc_bond";
 
-    // Determine GM status for Edit button
-    var isGm = false;
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      isGm = Alpine.store("app").isGm();
-    }
+    var itemClass = "cs-bond-item" + (isTrauma ? " cs-bond-item--trauma" : "");
 
-    // Charge dots: only for PC bonds with charges data
+    // For PC bonds, show ChargeDots.
     var dotsHtml = "";
-    var charges = 0;
-    var effectiveMax = 5;
+    var maintainBtn = "";
     if (isPC && b.charges !== null && b.charges !== undefined) {
-      charges = Number(b.charges) || 0;
+      var charges = Number(b.charges) || 0;
       var degradations = Number(b.degradations) || 0;
-      effectiveMax = 5 - degradations;
+      var effectiveMax = 5 - degradations;
 
       dotsHtml = window.components.chargeDots.render({
         current: charges,
@@ -427,72 +358,48 @@ window.views.character = (function () {
         variant: "bond",
         effectiveMax: effectiveMax < 5 ? effectiveMax : undefined,
       });
+
+      // Maintain button: visible on non-trauma bonds when charges < effective max
+      if (!isTrauma && charges < effectiveMax) {
+        var targetDisplay = b.label && b.target_name
+          ? b.label + " \u2014 " + b.target_name
+          : b.label || b.target_name || "Bond";
+        maintainBtn =
+          '<button class="cs-action-btn"' +
+          '        data-action="maintain-bond"' +
+          '        data-bond-id="' + window.utils.esc(b.id) + '"' +
+          '        data-bond-name="' + window.utils.esc(targetDisplay) + '">' +
+          'Maintain' +
+          '</button>';
+      }
     }
 
-    // Display name: "label — targetName" or whichever is present
     var label = b.label || "";
     var targetName = b.target_name || "";
-    var displayName = label && targetName ? label + " \u2014 " + targetName
+    var displayName = label && targetName ? label + " — " + targetName
                     : label || targetName || "Unknown";
 
-    // Trauma badge
-    var badgeHtml = isTrauma
+    var traumaBadge = isTrauma
       ? '<mark class="cs-trauma-badge">Trauma</mark>'
       : "";
 
-    // Partner link in expanded body
-    var footerLinkHtml = "";
-    var targetType = b.target_type || "";
-    var targetId   = b.target_id   || "";
-    if (targetType && targetId) {
-      var typeToPath = { character: "characters", group: "groups", location: "locations" };
-      var pathSeg = typeToPath[targetType] || targetType;
-      var partnerHref = "#/world/" + pathSeg + "/" + encodeURIComponent(targetId);
-      var partnerLabel = targetName || "partner";
-      footerLinkHtml =
-        '<a href="' + _esc(partnerHref) + '" class="exp-item__partner-link">' +
-          'Go to ' + _esc(partnerLabel) + ' \u2192' +
-        '</a>';
-    }
+    var descSnippet = window.utils.snippet(b.description || "", 100);
 
-    // Action buttons
-    var actions = [];
-
-    // Maintain button: visible on non-trauma PC bonds when charges < effectiveMax
-    if (isPC && !isTrauma && charges < effectiveMax) {
-      var bondDisplay = label && targetName
-        ? label + " \u2014 " + targetName
-        : label || targetName || "Bond";
-      actions.push({
-        label: "Maintain",
-        dataAttrs: {
-          "data-action":    "maintain-bond",
-          "data-bond-id":   b.id,
-          "data-bond-name": bondDisplay,
-        },
-      });
-    }
-
-    // Edit button: GM-only
-    if (isGm) {
-      actions.push({
-        label:     "Edit",
-        href:      "#/gm/bonds/" + encodeURIComponent(b.id) + "/edit",
-        secondary: true,
-      });
-    }
-
-    return window.components.expandableItem.render({
-      id:             b.id,
-      name:           displayName,
-      dotsHtml:       dotsHtml,
-      badgeHtml:      badgeHtml,
-      description:    b.description || "",
-      footerLinkHtml: footerLinkHtml,
-      actions:        actions,
-      variant:        "bond",
-      extraClass:     isTrauma ? "exp-item--trauma" : "",
-    });
+    return (
+      '<li class="' + window.utils.esc(itemClass) + '">' +
+        '<div class="cs-bond-item__header">' +
+          '<span class="cs-bond-item__name">' + window.utils.esc(displayName) + '</span>' +
+          traumaBadge +
+          dotsHtml +
+        '</div>' +
+        (descSnippet
+          ? '<p class="cs-bond-item__desc">' + window.utils.esc(descSnippet) + '</p>'
+          : '') +
+        (maintainBtn
+          ? '<div class="cs-bond-item__actions">' + maintainBtn + '</div>'
+          : '') +
+      '</li>'
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -533,7 +440,7 @@ window.views.character = (function () {
     var badgeLabel = effectType === "charged"   ? "Charged"
                    : effectType === "permanent" ? "Permanent"
                    : effectType === "instant"   ? "Instant"
-                   : _esc(effectType);
+                   : window.utils.esc(effectType);
     var badgeMod = effectType === "charged"   ? "charged"
                  : effectType === "permanent" ? "permanent"
                  : "instant";
@@ -550,7 +457,7 @@ window.views.character = (function () {
       });
     } else if (effectType === "permanent") {
       chargesHtml =
-        '<span class="cs-effect-power">Power ' + _esc(e.power_level) + '</span>';
+        '<span class="cs-effect-power">Power ' + window.utils.esc(e.power_level) + '</span>';
     }
 
     // Use button: only for charged effects with at least 1 charge remaining.
@@ -559,30 +466,30 @@ window.views.character = (function () {
     var useBtn = (effectType === "charged" && currentCharges > 0)
       ? '<button class="cs-action-btn"' +
         '        data-action="use-effect"' +
-        '        data-effect-id="' + _esc(e.id) + '"' +
-        '        data-effect-name="' + _esc(e.name) + '">' +
+        '        data-effect-id="' + window.utils.esc(e.id) + '"' +
+        '        data-effect-name="' + window.utils.esc(e.name) + '">' +
         'Use' +
         '</button>'
       : "";
     var retireBtn =
       '<button class="cs-action-btn cs-action-btn--secondary"' +
       '        data-action="retire-effect"' +
-      '        data-effect-id="' + _esc(e.id) + '"' +
-      '        data-effect-name="' + _esc(e.name) + '">' +
+      '        data-effect-id="' + window.utils.esc(e.id) + '"' +
+      '        data-effect-name="' + window.utils.esc(e.name) + '">' +
       'Retire' +
       '</button>';
 
-    var descSnippet = _snippet(e.description || "", 100);
+    var descSnippet = window.utils.snippet(e.description || "", 100);
 
     return (
       '<li class="cs-effect-item">' +
         '<div class="cs-effect-item__header">' +
-          '<strong class="cs-effect-item__name">' + _esc(e.name) + '</strong>' +
+          '<strong class="cs-effect-item__name">' + window.utils.esc(e.name) + '</strong>' +
           badge +
           chargesHtml +
         '</div>' +
         (descSnippet
-          ? '<p class="cs-effect-item__desc">' + _esc(descSnippet) + '</p>'
+          ? '<p class="cs-effect-item__desc">' + window.utils.esc(descSnippet) + '</p>'
           : '') +
         '<div class="cs-effect-item__actions">' +
           useBtn +
@@ -613,7 +520,7 @@ window.views.character = (function () {
       var level = (skills[key] !== undefined && skills[key] !== null) ? Number(skills[key]) : 0;
       html +=
         '<li class="cs-skill-item">' +
-          '<span class="cs-skill-item__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
+          '<span class="cs-skill-item__name">' + window.utils.esc(SKILL_LABELS[key]) + '</span>' +
           '<span class="cs-skill-item__level">' + level + '</span>' +
         '</li>';
     }
@@ -622,23 +529,51 @@ window.views.character = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Permanent feed section ("Recent Events")
+  // Feed tab
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the permanent "Recent Events" section that sits below the tabbed
-   * content and Tier 3 collapsibles. The actual list is rendered by a FeedList
-   * instance mounted after the DOM is written.
-   *
-   * @returns {string} HTML — contains a container div with id "cs-feed-container"
+   * Build the Feed tab content using current _feedItems state.
+   * @returns {string} HTML
    */
-  function _buildFeedSection() {
-    return (
-      '<section class="cs-feed-section">' +
-        '<h3 class="cs-feed-section__heading">Recent Events</h3>' +
-        '<div id="cs-feed-container" class="cs-feed-section__container"></div>' +
-      '</section>'
-    );
+  function _buildFeedTab() {
+    if (_feedLoading && _feedItems.length === 0) {
+      return '<p class="cs-loading" aria-busy="true">Loading feed...</p>';
+    }
+
+    if (_feedItems.length === 0) {
+      return '<p class="cs-empty">No activity yet.</p>';
+    }
+
+    var html = '<div class="cs-feed">';
+
+    var store = (typeof Alpine !== "undefined" && Alpine.store("app")) || {};
+    var myCharId = store.character_id || null;
+
+    for (var i = 0; i < _feedItems.length; i++) {
+      var item = _feedItems[i];
+      var isOwn = myCharId && item.character_id === myCharId;
+      html += window.components.feedItem.render({
+        item: item,
+        type: item.item_type || item.type || "event",
+        isOwn: !!isOwn,
+      });
+    }
+
+    html += '</div>';
+
+    if (_feedHasMore) {
+      html +=
+        '<div class="cs-feed-more">' +
+          '<button id="cs-load-more-btn"' +
+          '        class="outline secondary"' +
+          '        ' + (_feedLoading ? 'aria-busy="true" disabled' : '') + '>' +
+          (_feedLoading ? 'Loading...' : 'Load more') +
+          '</button>' +
+        '</div>';
+    }
+
+    return html;
   }
 
   // ---------------------------------------------------------------------------
@@ -668,7 +603,7 @@ window.views.character = (function () {
         var xp    = Number(statBlock.xp)    || 0;
         html +=
           '<li class="cs-magic-stat-item">' +
-            '<span class="cs-magic-stat-item__name">' + _esc(MAGIC_STAT_LABELS[key]) + '</span>' +
+            '<span class="cs-magic-stat-item__name">' + window.utils.esc(MAGIC_STAT_LABELS[key]) + '</span>' +
             '<span class="cs-magic-stat-item__level">Level ' + level + '</span>' +
             '<span class="cs-magic-stat-item__xp">XP ' + xp + '</span>' +
           '</li>';
@@ -699,8 +634,8 @@ window.views.character = (function () {
         for (var pt = 0; pt < pastTraits.length; pt++) {
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + _esc(pastTraits[pt].name) + '</span>' +
-              '<mark class="cs-past-badge">' + _esc(pastTraits[pt].slot_type === "core_trait" ? "Core" : "Role") + '</mark>' +
+              '<span class="cs-past-item__name">' + window.utils.esc(pastTraits[pt].name) + '</span>' +
+              '<mark class="cs-past-badge">' + window.utils.esc(pastTraits[pt].slot_type === "core_trait" ? "Core" : "Role") + '</mark>' +
             '</li>';
         }
         html += '</ul>';
@@ -714,7 +649,7 @@ window.views.character = (function () {
                        : b.label || b.target_name || "Unknown";
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + _esc(bDisplay) + '</span>' +
+              '<span class="cs-past-item__name">' + window.utils.esc(bDisplay) + '</span>' +
             '</li>';
         }
         html += '</ul>';
@@ -725,7 +660,7 @@ window.views.character = (function () {
         for (var pe = 0; pe < pastEffects.length; pe++) {
           html +=
             '<li class="cs-past-item">' +
-              '<span class="cs-past-item__name">' + _esc(pastEffects[pe].name) + '</span>' +
+              '<span class="cs-past-item__name">' + window.utils.esc(pastEffects[pe].name) + '</span>' +
             '</li>';
         }
         html += '</ul>';
@@ -773,6 +708,12 @@ window.views.character = (function () {
         break;
       case "effects":
         html += _buildEffectsTab(c.magic_effects);
+        break;
+      case "skills":
+        html += _buildSkillsTab(c.skills);
+        break;
+      case "feed":
+        html += _buildFeedTab();
         break;
       default:
         html += _buildTraitsTab(c.traits);
@@ -1057,27 +998,12 @@ window.views.character = (function () {
     var html =
       '<div class="cs-root">' +
         _buildHeader(c) +
-        _buildSkillsInline(c.skills) +
         _buildTabBar() +
         _buildTabPanel(c) +
         _buildTier3(c) +
-        _buildFeedSection() +
       '</div>';
 
-    // Destroy any existing FeedList before replacing the DOM.
-    if (_feedList) {
-      _feedList.destroy();
-      _feedList = null;
-    }
-
     _viewEl.innerHTML = html;
-
-    // Mount FeedList into the feed container.
-    var feedContainer = document.getElementById("cs-feed-container");
-    if (feedContainer && _characterId) {
-      _feedList = new window.components.FeedList(feedContainer);
-      _feedList.load("/api/v1/characters/" + _characterId + "/feed");
-    }
 
     // Wire tab button click handlers
     var tabBtns = _viewEl.querySelectorAll(".cs-tab[data-tab]");
@@ -1087,7 +1013,11 @@ window.views.character = (function () {
           var tab = btn.getAttribute("data-tab");
           if (tab && tab !== _activeTab) {
             _activeTab = tab;
-            _renderSheet();
+            if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
+              _fetchFeed(true);
+            } else {
+              _renderSheet();
+            }
           }
         });
       })(tabBtns[i]);
@@ -1099,12 +1029,6 @@ window.views.character = (function () {
       loadMoreBtn.addEventListener("click", function () {
         _fetchFeed(false);
       });
-    }
-
-    // Wire expand/collapse toggle listeners for trait and bond cards
-    var tabPanel = _viewEl.querySelector(".cs-tab-panel");
-    if (tabPanel) {
-      window.components.expandableItem.attach(tabPanel);
     }
 
     // Wire action buttons (Find Time, Recharge, Maintain, Use, Retire)
@@ -1137,7 +1061,7 @@ window.views.character = (function () {
         '<hgroup>' +
           '<h2>Character Sheet</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="cs-retry-btn">Retry</button>' +
       '</div>';
 
@@ -1170,10 +1094,67 @@ window.views.character = (function () {
         if (!_mounted) return;
         _character = data;
         _renderSheet();
+        // If Feed tab was active on first load, prime the feed.
+        if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
+          _fetchFeed(true);
+        }
       })
       .catch(function (err) {
         if (!_mounted) return;
         _renderError((err && err.message) || undefined);
+      });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Data fetching — feed
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Fetch one page of feed items.
+   * On initial load (reset=true) replaces _feedItems; on load-more appends.
+   *
+   * @param {boolean} reset — true = first page, false = append next page
+   */
+  function _fetchFeed(reset) {
+    if (!_mounted || !_characterId || _feedLoading) return;
+
+    _feedLoading = true;
+    if (reset) {
+      _feedNextCursor = null;
+    }
+
+    // Render the loading indicator if we're already on the feed tab
+    if (_activeTab === "feed" && _character) {
+      _renderSheet();
+    }
+
+    var url = "/api/v1/characters/" + _characterId + "/feed?limit=" + FEED_LIMIT;
+    if (!reset && _feedNextCursor) {
+      url += "&after=" + encodeURIComponent(_feedNextCursor);
+    }
+
+    api
+      .get(url)
+      .then(function (data) {
+        if (!_mounted) return;
+        var items = (data && data.items) ? data.items : [];
+        _feedNextCursor = (data && data.next_cursor) ? data.next_cursor : null;
+        _feedHasMore    = !!(data && data.has_more);
+
+        if (reset) {
+          _feedItems = items;
+        } else {
+          _feedItems = _feedItems.concat(items);
+        }
+      })
+      .catch(function () {
+        // Feed errors are non-fatal; leave the current list in place
+      })
+      .finally(function () {
+        _feedLoading = false;
+        if (_mounted && _activeTab === "feed" && _character) {
+          _renderSheet();
+        }
       });
   }
 
@@ -1205,10 +1186,6 @@ window.views.character = (function () {
    */
   function _teardown() {
     _mounted = false;
-    if (_feedList) {
-      _feedList.destroy();
-      _feedList = null;
-    }
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       Alpine.store("app").unregisterPoll(POLL_KEY);
     }
@@ -1254,17 +1231,15 @@ window.views.character = (function () {
     }
 
     // Reset state for a fresh mount.
-    _mounted        = true;
-    _characterId    = characterId;
-    _character      = null;
-    _activeTab      = "traits";
-    _actionInFlight = false;
-
-    // Destroy any stale FeedList from a previous mount.
-    if (_feedList) {
-      _feedList.destroy();
-      _feedList = null;
-    }
+    _mounted         = true;
+    _characterId     = characterId;
+    _character       = null;
+    _activeTab       = "traits";
+    _feedItems       = [];
+    _feedNextCursor  = null;
+    _feedHasMore     = false;
+    _feedLoading     = false;
+    _actionInFlight  = false;
 
     // Initial data load.
     _fetchCharacter(true);

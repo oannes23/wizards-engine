@@ -47,155 +47,6 @@ window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * HTML-escape a value for text content or attribute values.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
-
-  /**
-   * Return true if the current user is the GM.
-   * @returns {boolean}
-   */
-  function _isGm() {
-    try {
-      return !!(typeof Alpine !== "undefined" && Alpine.store("app") && Alpine.store("app").isGm());
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /**
-   * Dispatch a success toast via the api:success custom event.
-   * @param {string} message
-   */
-  function _showSuccess(message) {
-    document.dispatchEvent(new CustomEvent("api:success", {
-      detail: { message: message },
-      bubbles: true,
-    }));
-  }
-
-  /**
-   * Build GM Edit/Archive action buttons HTML for a detail view header.
-   * Returns empty string for non-GM users.
-   *
-   * @param {string} type  — "characters" | "groups" | "locations"
-   * @param {string} id    — ULID
-   * @param {string} name  — display name (for Archive confirmation)
-   * @returns {string} HTML
-   */
-  function _buildDetailCrudButtons(type, id, name) {
-    if (!_isGm()) return "";
-    return (
-      '<div class="wd-crud-actions">' +
-        '<a class="wd-crud-actions__edit"' +
-           ' href="#/gm/world/' + _esc(type) + '/' + _esc(encodeURIComponent(id)) + '/edit"' +
-           ' aria-label="Edit ' + _esc(name) + '">' +
-          'Edit' +
-        '</a>' +
-        '<button class="wd-crud-actions__archive"' +
-                ' data-wd-archive-type="' + _esc(type) + '"' +
-                ' data-wd-archive-id="' + _esc(id) + '"' +
-                ' data-wd-archive-name="' + _esc(name) + '"' +
-                ' aria-label="Archive ' + _esc(name) + '">' +
-          'Archive' +
-        '</button>' +
-      '</div>'
-    );
-  }
-
-  /**
-   * Wire the Archive button click handler for a detail view.
-   * After confirmation, calls DELETE /api/v1/{type}/{id} and navigates back
-   * to the world browser.
-   *
-   * @param {HTMLElement} el — the #view element
-   * @param {string} type   — "characters" | "groups" | "locations"
-   */
-  function _bindDetailArchive(el, type) {
-    var btn = el.querySelector("[data-wd-archive-id]");
-    if (!btn) return;
-    btn.addEventListener("click", function () {
-      var id   = btn.getAttribute("data-wd-archive-id");
-      var name = btn.getAttribute("data-wd-archive-name");
-      _showDetailArchiveConfirm(type, id, name);
-    });
-  }
-
-  /**
-   * Show an inline confirmation dialog for archiving from the detail view.
-   * On confirm: calls DELETE, shows success toast, navigates back to world.
-   *
-   * @param {string} type — "characters" | "groups" | "locations"
-   * @param {string} id   — ULID
-   * @param {string} name — display name
-   */
-  function _showDetailArchiveConfirm(type, id, name) {
-    var existing = document.getElementById("wd-archive-confirm");
-    if (existing) existing.remove();
-
-    var dialog = document.createElement("div");
-    dialog.id = "wd-archive-confirm";
-    dialog.className = "world-archive-confirm";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-label", "Confirm archive");
-    dialog.innerHTML =
-      '<div class="world-archive-confirm__box">' +
-        '<p class="world-archive-confirm__message">' +
-          'Are you sure you want to archive ' + _esc(name) + '? This can be undone.' +
-        '</p>' +
-        '<div class="world-archive-confirm__actions">' +
-          '<button class="world-archive-confirm__cancel">Cancel</button>' +
-          '<button class="world-archive-confirm__confirm">Archive</button>' +
-        '</div>' +
-      '</div>';
-
-    document.body.appendChild(dialog);
-
-    dialog.querySelector(".world-archive-confirm__cancel").addEventListener("click", function () {
-      dialog.remove();
-    });
-
-    dialog.querySelector(".world-archive-confirm__confirm").addEventListener("click", function () {
-      dialog.remove();
-      api
-        .del("/api/v1/" + type + "/" + encodeURIComponent(id))
-        .then(function () {
-          _showSuccess(name + " archived.");
-          window.location.hash = "#/world";
-        })
-        .catch(function () {
-          _showSuccess("Archive failed. Please try again.");
-        });
-    });
-
-    dialog.addEventListener("click", function (evt) {
-      if (evt.target === dialog) {
-        dialog.remove();
-      }
-    });
-
-    dialog.querySelector(".world-archive-confirm__cancel").focus();
-  }
-
-  /**
-   * Truncate a string to maxLen characters, appending ellipsis if trimmed.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
-  function _snippet(text, maxLen) {
-    if (!text) return "";
-    var s = String(text);
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen).trimEnd() + "\u2026";
-  }
-
-  /**
    * Render the "back to world browser" button HTML.
    * @returns {string} HTML
    */
@@ -221,7 +72,7 @@ window.views.worldDetail = (function () {
     el.innerHTML =
       '<div class="wd-root">' +
         _buildBackButton() +
-        '<p class="wd-loading" aria-busy="true">Loading ' + _esc(label) + '...</p>' +
+        '<p class="wd-loading" aria-busy="true">Loading ' + window.utils.esc(label) + '...</p>' +
       '</div>';
   }
 
@@ -234,7 +85,7 @@ window.views.worldDetail = (function () {
     el.innerHTML =
       '<div class="wd-root">' +
         _buildBackButton() +
-        '<p class="wd-error" role="alert">' + _esc(message) + '</p>' +
+        '<p class="wd-error" role="alert">' + window.utils.esc(message) + '</p>' +
       '</div>';
   }
 
@@ -275,19 +126,19 @@ window.views.worldDetail = (function () {
       slotBadge = '<mark class="wd-bond-slot-badge">Bond</mark>';
     }
 
-    var descSnippet = _snippet(b.description || "", 100);
+    var descSnippet = window.utils.snippet(b.description || "", 100);
 
     return (
       '<li class="wd-bond-item' + (isTrauma ? ' wd-bond-item--trauma' : '') + '">' +
         '<div class="wd-bond-item__header">' +
-          '<a href="' + _esc(href) + '" class="wd-bond-item__link">' +
-            _esc(displayName) +
+          '<a href="' + window.utils.esc(href) + '" class="wd-bond-item__link">' +
+            window.utils.esc(displayName) +
           '</a>' +
           traumaBadge +
           slotBadge +
         '</div>' +
         (descSnippet
-          ? '<p class="wd-bond-item__desc">' + _esc(descSnippet) + '</p>'
+          ? '<p class="wd-bond-item__desc">' + window.utils.esc(descSnippet) + '</p>'
           : '') +
       '</li>'
     );
@@ -315,13 +166,13 @@ window.views.worldDetail = (function () {
       html +=
         '<li class="wd-clock-item">' +
           '<div class="wd-clock-item__header">' +
-            '<strong class="wd-clock-item__name">' + _esc(clock.name) + '</strong>' +
+            '<strong class="wd-clock-item__name">' + window.utils.esc(clock.name) + '</strong>' +
           '</div>' +
           '<div class="wd-clock-item__progress">' +
             progress +
           '</div>' +
           (clock.notes
-            ? '<p class="wd-clock-item__notes">' + _esc(clock.notes) + '</p>'
+            ? '<p class="wd-clock-item__notes">' + window.utils.esc(clock.notes) + '</p>'
             : '') +
         '</li>';
     }
@@ -332,82 +183,6 @@ window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
   // Character detail
   // ---------------------------------------------------------------------------
-
-  /**
-   * Build an expandable bond card for a PC bond in the world-detail PC summary.
-   * Similar to character.js _buildBondItem but read-only (no Maintain action).
-   *
-   * @param {object} b — BondDisplayResponse
-   * @param {boolean} isGm — whether the current user is a GM
-   * @returns {string} HTML
-   */
-  function _buildPcBondItem(b, isGm) {
-    var isTrauma = !!b.is_trauma;
-    var isPC = b.slot_type === "pc_bond";
-
-    // Charge dots for PC bonds
-    var dotsHtml = "";
-    if (isPC && b.charges !== null && b.charges !== undefined) {
-      var charges = Number(b.charges) || 0;
-      var degradations = Number(b.degradations) || 0;
-      var effectiveMax = 5 - degradations;
-
-      dotsHtml = window.components.chargeDots.render({
-        current: charges,
-        max: 5,
-        variant: "bond",
-        effectiveMax: effectiveMax < 5 ? effectiveMax : undefined,
-      });
-    }
-
-    // Display name
-    var label = b.label || "";
-    var targetName = b.target_name || "";
-    var displayName = label && targetName ? label + " \u2014 " + targetName
-                    : label || targetName || "Unknown";
-
-    // Trauma badge
-    var badgeHtml = isTrauma
-      ? '<mark class="cs-trauma-badge">Trauma</mark>'
-      : "";
-
-    // Partner link
-    var footerLinkHtml = "";
-    var targetType = b.target_type || "";
-    var targetId   = b.target_id   || "";
-    if (targetType && targetId) {
-      var typeToPath = { character: "characters", group: "groups", location: "locations" };
-      var pathSeg = typeToPath[targetType] || targetType;
-      var partnerHref = "#/world/" + pathSeg + "/" + encodeURIComponent(targetId);
-      var partnerLabel = targetName || "partner";
-      footerLinkHtml =
-        '<a href="' + _esc(partnerHref) + '" class="exp-item__partner-link">' +
-          'Go to ' + _esc(partnerLabel) + ' \u2192' +
-        '</a>';
-    }
-
-    // Actions: GM Edit only (no Maintain — world-detail is read-only)
-    var actions = [];
-    if (isGm) {
-      actions.push({
-        label:     "Edit",
-        href:      "#/gm/bonds/" + encodeURIComponent(b.id) + "/edit",
-        secondary: true,
-      });
-    }
-
-    return window.components.expandableItem.render({
-      id:             b.id,
-      name:           displayName,
-      dotsHtml:       dotsHtml,
-      badgeHtml:      badgeHtml,
-      description:    b.description || "",
-      footerLinkHtml: footerLinkHtml,
-      actions:        actions,
-      variant:        "bond",
-      extraClass:     isTrauma ? "exp-item--trauma" : "",
-    });
-  }
 
   /**
    * Build a read-only PC summary view for characters with detail_level === "full".
@@ -430,12 +205,12 @@ window.views.worldDetail = (function () {
     }
 
     var viewLink = (
-      '<a href="' + _esc(characterHash) + '" class="wd-pc-summary__view-link">' +
+      '<a href="' + window.utils.esc(characterHash) + '" class="wd-pc-summary__view-link">' +
         (isOwnCharacter ? 'View My Sheet' : 'View Full Sheet') +
       '</a>'
     );
 
-    var descSnippet = _snippet(c.description || "", 160);
+    var descSnippet = window.utils.snippet(c.description || "", 160);
 
     // Resource meters
     var STRESS_MAX         = 9;
@@ -473,54 +248,39 @@ window.views.worldDetail = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    // Determine GM status for Edit buttons
-    var isGm = false;
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      isGm = Alpine.store("app").isGm();
-    }
-
-    // Active traits — expandable cards
+    // Active traits (brief list)
     var activeTraits = (c.traits && c.traits.active) ? c.traits.active : [];
     var traitsHtml = "";
     if (activeTraits.length > 0) {
-      traitsHtml = '<section class="wd-pc-summary__section">';
-      traitsHtml += '<h3 class="wd-pc-summary__section-heading">Traits</h3>';
-      traitsHtml += '<ul class="wd-trait-list">';
+      traitsHtml =
+        '<section class="wd-pc-summary__section">' +
+          '<h3 class="wd-pc-summary__section-heading">Traits</h3>' +
+          '<ul class="wd-trait-list">';
       for (var i = 0; i < activeTraits.length; i++) {
         var t = activeTraits[i];
         var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
         var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
-
-        var traitActions = [];
-        if (isGm) {
-          traitActions.push({
-            label:     "Edit",
-            href:      "#/gm/traits/" + encodeURIComponent(t.id) + "/edit",
-            secondary: true,
-          });
-        }
-
-        traitsHtml += window.components.expandableItem.render({
-          id:          t.id,
-          name:        t.name,
-          dotsHtml:    dots,
-          description: t.description || "",
-          actions:     traitActions,
-          variant:     "trait",
-        });
+        traitsHtml +=
+          '<li class="wd-trait-item">' +
+            '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+              '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
+              dots +
+            '</div>' +
+          '</li>';
       }
       traitsHtml += '</ul></section>';
     }
 
-    // Active bonds — expandable cards
+    // Active bonds (brief list using shared _buildBondItem)
     var activeBonds = (c.bonds && c.bonds.active) ? c.bonds.active : [];
     var bondsHtml = "";
     if (activeBonds.length > 0) {
-      bondsHtml = '<section class="wd-pc-summary__section">';
-      bondsHtml += '<h3 class="wd-pc-summary__section-heading">Bonds</h3>';
-      bondsHtml += '<ul class="wd-bond-list">';
+      bondsHtml =
+        '<section class="wd-pc-summary__section">' +
+          '<h3 class="wd-pc-summary__section-heading">Bonds</h3>' +
+          '<ul class="wd-bond-list">';
       for (var j = 0; j < activeBonds.length; j++) {
-        bondsHtml += _buildPcBondItem(activeBonds[j], isGm);
+        bondsHtml += _buildBondItem(activeBonds[j]);
       }
       bondsHtml += '</ul></section>';
     }
@@ -528,23 +288,18 @@ window.views.worldDetail = (function () {
     return (
       '<div class="wd-pc-summary">' +
         '<div class="wd-pc-summary__header">' +
-          '<h2 class="wd-pc-summary__name">' + _esc(c.name) + '</h2>' +
+          '<h2 class="wd-pc-summary__name">' + window.utils.esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
-          _buildDetailCrudButtons("characters", c.id || "", c.name || "Untitled") +
         '</div>' +
         (descSnippet
-          ? '<p class="wd-pc-summary__desc">' + _esc(descSnippet) + '</p>'
+          ? '<p class="wd-pc-summary__desc">' + window.utils.esc(descSnippet) + '</p>'
           : '') +
         '<div class="wd-pc-summary__meters">' +
           stressBar + ftBar + plotBar + gnosisBar +
         '</div>' +
         traitsHtml +
         bondsHtml +
-        '<section class="cs-feed-section">' +
-          '<h3 class="cs-feed-section__heading">Recent Events</h3>' +
-          '<div id="wd-char-feed-container" class="cs-feed-section__container"></div>' +
-        '</section>' +
       '</div>'
     );
   }
@@ -568,8 +323,8 @@ window.views.worldDetail = (function () {
           var val = attributes[key];
           var valStr = (val !== null && val !== undefined) ? String(val) : "";
           attributesHtml +=
-            '<dt class="wd-npc-attrs__key">' + _esc(key) + '</dt>' +
-            '<dd class="wd-npc-attrs__val">' + _esc(valStr) + '</dd>';
+            '<dt class="wd-npc-attrs__key">' + window.utils.esc(key) + '</dt>' +
+            '<dd class="wd-npc-attrs__val">' + window.utils.esc(valStr) + '</dd>';
         }
         attributesHtml += '</dl>';
       }
@@ -592,12 +347,11 @@ window.views.worldDetail = (function () {
     return (
       '<div class="wd-npc">' +
         '<div class="wd-npc__header">' +
-          '<h2 class="wd-npc__name">' + _esc(c.name) + '</h2>' +
+          '<h2 class="wd-npc__name">' + window.utils.esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--npc">NPC</mark>' +
-          _buildDetailCrudButtons("characters", c.id || "", c.name || "Untitled") +
         '</div>' +
         (descFull
-          ? '<p class="wd-npc__desc">' + _esc(descFull) + '</p>'
+          ? '<p class="wd-npc__desc">' + window.utils.esc(descFull) + '</p>'
           : '') +
         (attributesHtml
           ? '<section class="wd-section"><h3 class="wd-section__heading">Attributes</h3>' + attributesHtml + '</section>'
@@ -626,13 +380,6 @@ window.views.worldDetail = (function () {
       .get("/api/v1/characters/" + id)
       .then(function (data) {
         if (!_mounted) return;
-
-        // Destroy any previous character feed list before replacing the DOM.
-        if (_charFeedList) {
-          _charFeedList.destroy();
-          _charFeedList = null;
-        }
-
         if (data.detail_level === "full") {
           // PC: render an inline read-only summary using shared components.
           el.innerHTML =
@@ -640,17 +387,14 @@ window.views.worldDetail = (function () {
               _buildBackButton() +
               _buildPcSummary(data) +
             '</div>';
-          // Wire expand/collapse toggle listeners for trait and bond cards
-          window.components.expandableItem.attach(el);
         } else {
-          // NPC: simplified summary (no feed section)
+          // NPC: simplified summary
           el.innerHTML =
             '<div class="wd-root">' +
               _buildBackButton() +
               _buildNpcSummary(data) +
             '</div>';
         }
-        _bindDetailArchive(el, "characters");
       })
       .catch(function (err) {
         if (!_mounted) return;
@@ -688,13 +432,12 @@ window.views.worldDetail = (function () {
     // Header
     html +=
       '<div class="wd-detail__header">' +
-        '<h2 class="wd-detail__name">' + _esc(name) + '</h2>' +
-        '<mark class="wd-badge wd-badge--tier">Tier ' + _esc(tier) + '</mark>' +
-        _buildDetailCrudButtons("groups", group.id || "", name) +
+        '<h2 class="wd-detail__name">' + window.utils.esc(name) + '</h2>' +
+        '<mark class="wd-badge wd-badge--tier">Tier ' + window.utils.esc(tier) + '</mark>' +
       '</div>';
 
     if (description) {
-      html += '<p class="wd-detail__desc">' + _esc(description) + '</p>';
+      html += '<p class="wd-detail__desc">' + window.utils.esc(description) + '</p>';
     }
 
     // Traits section
@@ -708,9 +451,9 @@ window.views.worldDetail = (function () {
         var t = traits[i];
         html +=
           '<li class="wd-trait-item">' +
-            '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
+            '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
             (t.description
-              ? '<p class="wd-trait-item__desc">' + _esc(t.description) + '</p>'
+              ? '<p class="wd-trait-item__desc">' + window.utils.esc(t.description) + '</p>'
               : '') +
           '</li>';
       }
@@ -808,7 +551,6 @@ window.views.worldDetail = (function () {
             _buildBackButton() +
             _buildGroupDetail(group, clocks) +
           '</div>';
-        _bindDetailArchive(el, "groups");
         // Wire member card clicks and star toggles
         var memberCards = el.querySelector(".wd-member-cards");
         if (memberCards) {
@@ -846,8 +588,7 @@ window.views.worldDetail = (function () {
 
     // Header
     html += '<div class="wd-detail__header">';
-    html += '<h2 class="wd-detail__name">' + _esc(name) + '</h2>';
-    html += _buildDetailCrudButtons("locations", location.id || "", name);
+    html += '<h2 class="wd-detail__name">' + window.utils.esc(name) + '</h2>';
 
     // Parent link
     if (parent) {
@@ -855,8 +596,8 @@ window.views.worldDetail = (function () {
       html +=
         '<p class="wd-detail__parent">' +
           'Part of ' +
-          '<a href="' + _esc(parentHref) + '" class="wd-parent-link">' +
-            _esc(parent.name) +
+          '<a href="' + window.utils.esc(parentHref) + '" class="wd-parent-link">' +
+            window.utils.esc(parent.name) +
           '</a>' +
         '</p>';
     } else if (location.parent_id) {
@@ -870,7 +611,7 @@ window.views.worldDetail = (function () {
     html += '</div>'; // wd-detail__header
 
     if (description) {
-      html += '<p class="wd-detail__desc">' + _esc(description) + '</p>';
+      html += '<p class="wd-detail__desc">' + window.utils.esc(description) + '</p>';
     }
 
     // Children section
@@ -908,9 +649,9 @@ window.views.worldDetail = (function () {
         var t = traits[i];
         html +=
           '<li class="wd-trait-item">' +
-            '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
+            '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
             (t.description
-              ? '<p class="wd-trait-item__desc">' + _esc(t.description) + '</p>'
+              ? '<p class="wd-trait-item__desc">' + window.utils.esc(t.description) + '</p>'
               : '') +
           '</li>';
       }
@@ -991,8 +732,6 @@ window.views.worldDetail = (function () {
             _buildBackButton() +
             _buildLocationDetail(location, parent, children, clocks) +
           '</div>';
-
-        _bindDetailArchive(el, "locations");
 
         // Wire child location card clicks and star toggles
         var childCards = el.querySelector(".wd-child-cards");
@@ -1099,18 +838,11 @@ window.views.worldDetail = (function () {
   /** Whether the view is currently mounted. Set false by the hashchange teardown. */
   var _mounted = false;
 
-  /** FeedList instance for the character detail "Recent Events" section, or null. */
-  var _charFeedList = null;
-
   /**
    * Teardown: mark as unmounted and remove the hashchange listener.
    */
   function _teardown() {
     _mounted = false;
-    if (_charFeedList) {
-      _charFeedList.destroy();
-      _charFeedList = null;
-    }
     window.removeEventListener("hashchange", _onHashChange);
   }
 
@@ -1145,13 +877,6 @@ window.views.worldDetail = (function () {
     // Reset mounted flag and attach hashchange teardown for this navigation.
     _mounted = true;
     _starredSet = {};
-
-    // Destroy any stale character feed list from a prior navigation.
-    if (_charFeedList) {
-      _charFeedList.destroy();
-      _charFeedList = null;
-    }
-
     window.removeEventListener("hashchange", _onHashChange);
     window.addEventListener("hashchange", _onHashChange);
 

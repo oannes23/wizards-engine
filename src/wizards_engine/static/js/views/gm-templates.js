@@ -63,7 +63,6 @@ window.views.gmTemplates = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-
   /**
    * Return templates filtered by _activeFilter.
    * @returns {Array}
@@ -696,14 +695,12 @@ window.views.gmTemplates = (function () {
     if (!_viewEl) return;
 
     // Guard: GM only
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      if (!Alpine.store("app").isGm()) {
-        _viewEl.innerHTML =
-          '<div class="gm-templates">' +
-            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-          '</div>';
-        return;
-      }
+    if (!window.utils.isGm()) {
+      _viewEl.innerHTML =
+        '<div class="gm-templates">' +
+          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+        '</div>';
+      return;
     }
 
     // Reset state for a fresh mount

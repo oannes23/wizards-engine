@@ -77,7 +77,6 @@ window.views.gmClocks = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-
   /**
    * Resolve an entity display name given its type and ID.
    * Returns the name if found, or the raw ID as a fallback.
@@ -870,7 +869,13 @@ window.views.gmClocks = (function () {
     if (!_viewEl) return;
 
     // Guard: GM only
-    if (!window.utils.requireGm(_viewEl)) return;
+    if (!window.utils.isGm()) {
+      _viewEl.innerHTML =
+        '<div class="gm-clocks">' +
+          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+        '</div>';
+      return;
+    }
 
     // Reset state for a fresh mount
     _mounted = true;

@@ -42,19 +42,6 @@ window.views.storyDetail = (function () {
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
 
   /**
-   * Return true if the current user is a GM.
-   * Reads from the Alpine store.
-   * @returns {boolean}
-   */
-  function _isGm() {
-    if (typeof Alpine !== "undefined") {
-      var store = Alpine.store("app");
-      if (store) return store.isGm();
-    }
-    return false;
-  }
-
-  /**
    * Return the current user's ID from the Alpine store, or null.
    * @returns {string|null}
    */
@@ -265,7 +252,7 @@ window.views.storyDetail = (function () {
     var owners    = story.owners || [];
     var entries   = story.entries || [];
 
-    var isGm          = _isGm();
+    var isGm          = window.utils.isGm();
     var currentUserId = _currentUserId();
     var statusInfo    = _statusInfo(status);
 
@@ -568,7 +555,7 @@ window.views.storyDetail = (function () {
 
         _viewEl.innerHTML = _buildDetailHtml(story);
 
-        var isGm          = _isGm();
+        var isGm          = window.utils.isGm();
         var currentUserId = _currentUserId();
 
         _bindEditButtons(_viewEl);

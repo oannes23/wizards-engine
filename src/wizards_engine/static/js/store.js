@@ -57,6 +57,12 @@ document.addEventListener("alpine:init", function () {
         .get("/api/v1/me")
         .then(function (data) {
           store.setUser(data);
+          // Signal the nav component to re-render now that user is known.
+          // nav.mount() runs synchronously during alpine:initialized (before
+          // this async callback fires), so store.user is still null at mount
+          // time and the nav is hidden. Dispatching nav:refresh here causes
+          // nav._render() to run again with the populated user state.
+          document.dispatchEvent(new CustomEvent("nav:refresh"));
         })
         .catch(function () {
           // 401 is handled by api.js (redirect + clearUser call).

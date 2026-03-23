@@ -70,7 +70,6 @@ window.views = window.views || {};
   // Helpers
   // --------------------------------------------------------------------------
 
-  var _esc = function (s) { return window.utils.esc(s); };
 
   // --------------------------------------------------------------------------
   // Shell rendering
@@ -91,11 +90,11 @@ window.views = window.views || {};
       var tab = tabs[i];
       var isActive = tab.key === activeKey;
       html +=
-        '<a href="' + _esc(tab.hash) + '"' +
+        '<a href="' + window.utils.esc(tab.hash) + '"' +
         '   class="feed-tab' + (isActive ? ' feed-tab--active' : '') + '"' +
         '   role="tab"' +
         '   aria-selected="' + (isActive ? 'true' : 'false') + '">' +
-        _esc(tab.label) +
+        window.utils.esc(tab.label) +
         '</a>';
     }
 
@@ -139,7 +138,7 @@ window.views = window.views || {};
     // Render the shell.
     viewEl.innerHTML =
       '<div class="feed-view">' +
-        '<h2 class="feed-view__heading">' + _esc(opts.heading) + '</h2>' +
+        '<h2 class="feed-view__heading">' + window.utils.esc(opts.heading) + '</h2>' +
         _buildTabBar(opts.tabs, opts.activeKey) +
         '<div id="feed-view-container" class="feed-view__container"></div>' +
       '</div>';

@@ -32,29 +32,6 @@ window.views.world = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Escape a string for safe use in HTML attribute values and text content.
-   * Delegates to window.utils.esc; also escapes single quotes for use inside
-   * Alpine attribute strings.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str).replace(/'/g, "&#39;");
-  }
-
-  /**
-   * Truncate a string to at most maxLen characters, appending an ellipsis.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
-  function _snippet(text, maxLen) {
-    if (!text) return "";
-    var s = String(text);
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen).trimEnd() + "\u2026";
-  }
 
   // ---------------------------------------------------------------------------
   // Alpine data factory
@@ -259,7 +236,7 @@ window.views.world = (function () {
     }
 
     if (items.length === 0) {
-      container.innerHTML = '<p class="world-empty">No ' + _esc(tab) + ' found.</p>';
+      container.innerHTML = '<p class="world-empty">No ' + window.utils.escAttr(tab) + ' found.</p>';
       return;
     }
 
@@ -380,7 +357,7 @@ window.views.world = (function () {
     var name    = story.name || "Untitled";
     var status  = story.status || "active";
     var tags    = story.tags || [];
-    var summary = _snippet(story.summary || story.description || "", 120);
+    var summary = window.utils.snippet(story.summary || story.description || "", 120);
     var hash    = "#/world/stories/" + encodeURIComponent(id);
 
     var statusMod = {
@@ -393,27 +370,27 @@ window.views.world = (function () {
     if (tags.length > 0) {
       var tagParts = [];
       for (var i = 0; i < tags.length; i++) {
-        tagParts.push('<span class="world-story-card__tag">' + _esc(tags[i]) + '</span>');
+        tagParts.push('<span class="world-story-card__tag">' + window.utils.escAttr(tags[i]) + '</span>');
       }
       tagHtml = '<div class="world-story-card__tags">' + tagParts.join("") + "</div>";
     }
 
     return (
-      '<article class="world-story-card world-story-card--' + _esc(statusMod) + '"' +
-               ' data-story-id="' + _esc(id) + '"' +
-               ' data-story-hash="' + _esc(hash) + '"' +
+      '<article class="world-story-card world-story-card--' + window.utils.escAttr(statusMod) + '"' +
+               ' data-story-id="' + window.utils.escAttr(id) + '"' +
+               ' data-story-hash="' + window.utils.escAttr(hash) + '"' +
                ' role="button"' +
                ' tabindex="0"' +
-               ' aria-label="' + _esc(name) + '">' +
+               ' aria-label="' + window.utils.escAttr(name) + '">' +
         '<header class="world-story-card__header">' +
-          '<strong class="world-story-card__name">' + _esc(name) + '</strong>' +
-          '<mark class="world-story-card__status world-story-card__status--' + _esc(statusMod) + '">' +
-            _esc(status) +
+          '<strong class="world-story-card__name">' + window.utils.escAttr(name) + '</strong>' +
+          '<mark class="world-story-card__status world-story-card__status--' + window.utils.escAttr(statusMod) + '">' +
+            window.utils.escAttr(status) +
           '</mark>' +
         '</header>' +
         (tagHtml) +
         (summary
-          ? '<p class="world-story-card__summary">' + _esc(summary) + '</p>'
+          ? '<p class="world-story-card__summary">' + window.utils.escAttr(summary) + '</p>'
           : '') +
       '</article>'
     );
@@ -474,8 +451,8 @@ window.views.world = (function () {
                 ' :class="{ \'world-tab--active\': activeTab === \'' + t.key + '\' }"' +
                 ' @click="switchTab(\'' + t.key + '\'); _renderCards()"' +
                 ' :aria-current="activeTab === \'' + t.key + '\' ? \'page\' : undefined"' +
-                ' aria-label="' + _esc(t.label) + ' tab">' +
-          _esc(t.label) +
+                ' aria-label="' + window.utils.escAttr(t.label) + ' tab">' +
+          window.utils.escAttr(t.label) +
         '</button>'
       );
     }).join("\n");

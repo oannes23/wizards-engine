@@ -7,13 +7,17 @@
  *
  * API:
  *   window.utils.esc(str)                    — HTML-escape a value
+ *   window.utils.escAttr(str)                — HTML-escape + single-quote escape (for Alpine attrs)
+ *   window.utils.snippet(text, maxLen)       — truncate with ellipsis
  *   window.utils.relativeTime(isoString)     — e.g. "just now", "2m ago"
  *   window.utils.clamp(value, min, max)      — numeric clamp
+ *   window.utils.showSuccess(message)        — dispatch api:success toast event
+ *   window.utils.requireGm(viewEl)           — render access-denied and return false if not GM
  */
 
 window.utils = (function () {
   /**
-   * Escape a value for safe insertion into HTML attribute or text content.
+   * Escape a value for safe insertion into HTML text content or double-quoted attributes.
    * Handles null / undefined gracefully (returns empty string).
    * @param {*} str
    * @returns {string}
@@ -24,6 +28,31 @@ window.utils = (function () {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /**
+   * Escape a value for safe use inside Alpine attribute strings (also escapes single quotes).
+   * Use this wherever the escaped value appears inside a single-quoted Alpine expression,
+   * e.g. @click="doSomething('VALUE')" or :class="{ 'foo': x === 'VALUE' }".
+   * @param {*} str
+   * @returns {string}
+   */
+  function escAttr(str) {
+    return esc(str).replace(/'/g, "&#39;");
+  }
+
+  /**
+   * Truncate a string to at most maxLen characters, appending a Unicode ellipsis.
+   * Returns an empty string for falsy input.
+   * @param {string} text
+   * @param {number} maxLen
+   * @returns {string}
+   */
+  function snippet(text, maxLen) {
+    if (!text) return "";
+    var s = String(text);
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen).trimEnd() + "\u2026";
   }
 
   /**
@@ -68,5 +97,51 @@ window.utils = (function () {
     return Math.min(max, Math.max(min, value));
   }
 
-  return { esc: esc, relativeTime: relativeTime, clamp: clamp };
+  /**
+   * Dispatch an api:success custom event so the success toast is shown.
+   * Equivalent to the _showSuccess pattern used in many view files.
+   * @param {string} message
+   */
+  function showSuccess(message) {
+    document.dispatchEvent(
+      new CustomEvent("api:success", {
+        detail: { message: message },
+        bubbles: true,
+      })
+    );
+  }
+
+  /**
+   * GM access guard. If the current user is not a GM, renders an
+   * "Access denied — GM only." message into viewEl and returns false.
+   * Returns true when the user is a GM (view should proceed normally).
+   *
+   * Usage:
+   *   if (!window.utils.requireGm(viewEl)) return;
+   *
+   * @param {HTMLElement} viewEl — the #view element (or any container)
+   * @returns {boolean}
+   */
+  function requireGm(viewEl) {
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      if (!Alpine.store("app").isGm()) {
+        viewEl.innerHTML =
+          '<div class="access-denied">' +
+            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+          '</div>';
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return {
+    esc: esc,
+    escAttr: escAttr,
+    snippet: snippet,
+    relativeTime: relativeTime,
+    clamp: clamp,
+    showSuccess: showSuccess,
+    requireGm: requireGm,
+  };
 })();

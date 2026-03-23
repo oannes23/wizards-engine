@@ -50,20 +50,11 @@ window.views.gmSessions = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  function _esc(str) { return window.utils.esc(str); }
-
   function _isGm() {
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       return Alpine.store("app").isGm();
     }
     return false;
-  }
-
-  function _showSuccess(message) {
-    document.dispatchEvent(new CustomEvent("api:success", {
-      detail: { message: message },
-      bubbles: true,
-    }));
   }
 
   /** Find a session by id from _sessions. */
@@ -105,7 +96,7 @@ window.views.gmSessions = (function () {
       ended:   { label: "Ended",   cls: "session-badge--ended"   },
     };
     var info = map[status] || { label: status || "Unknown", cls: "session-badge--unknown" };
-    return '<mark class="session-badge ' + _esc(info.cls) + '">' + _esc(info.label) + '</mark>';
+    return '<mark class="session-badge ' + window.utils.esc(info.cls) + '">' + window.utils.esc(info.label) + '</mark>';
   }
 
   // ---------------------------------------------------------------------------
@@ -128,7 +119,7 @@ window.views.gmSessions = (function () {
     _viewEl.innerHTML =
       '<div class="sessions-view">' +
         '<hgroup><h2>Sessions</h2></hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg || "Failed to load sessions.") + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg || "Failed to load sessions.") + '</p>' +
         '<button id="sessions-retry">Retry</button>' +
       '</div>';
     var btn = document.getElementById("sessions-retry");
@@ -150,31 +141,31 @@ window.views.gmSessions = (function () {
     var isEnded  = status === "ended";
 
     var summaryHtml = summary
-      ? '<p class="session-card__summary">' + _esc(summary) + '</p>'
+      ? '<p class="session-card__summary">' + window.utils.esc(summary) + '</p>'
       : "";
 
     var metaHtml = "";
     if (date || timeNow !== "") {
       metaHtml = '<p class="session-card__meta">';
-      if (date)        metaHtml += '<span>Date: ' + _esc(date) + '</span> ';
-      if (timeNow !== "") metaHtml += '<span>Time: ' + _esc(String(timeNow)) + '</span>';
+      if (date)        metaHtml += '<span>Date: ' + window.utils.esc(date) + '</span> ';
+      if (timeNow !== "") metaHtml += '<span>Time: ' + window.utils.esc(String(timeNow)) + '</span>';
       metaHtml += '</p>';
     }
 
     var actionsHtml = '<div class="session-card__actions">';
-    actionsHtml += '<a href="#/gm/sessions/' + _esc(id) + '" class="outline secondary">View</a> ';
-    actionsHtml += '<a href="#/gm/sessions/' + _esc(id) + '/timeline" class="outline secondary">Timeline</a> ';
+    actionsHtml += '<a href="#/gm/sessions/' + window.utils.esc(id) + '" class="outline secondary">View</a> ';
+    actionsHtml += '<a href="#/gm/sessions/' + window.utils.esc(id) + '/timeline" class="outline secondary">Timeline</a> ';
 
     if (isDraft) {
-      actionsHtml += '<button class="outline" data-action="edit-session" data-id="' + _esc(id) + '">Edit</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + _esc(id) + '">Participants</button> ';
-      actionsHtml += '<button data-action="confirm-start" data-id="' + _esc(id) + '">Start</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="confirm-delete" data-id="' + _esc(id) + '">Delete</button> ';
+      actionsHtml += '<button class="outline" data-action="edit-session" data-id="' + window.utils.esc(id) + '">Edit</button> ';
+      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + window.utils.esc(id) + '">Participants</button> ';
+      actionsHtml += '<button data-action="confirm-start" data-id="' + window.utils.esc(id) + '">Start</button> ';
+      actionsHtml += '<button class="outline secondary" data-action="confirm-delete" data-id="' + window.utils.esc(id) + '">Delete</button> ';
     }
 
     if (isActive) {
-      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + _esc(id) + '">Participants</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="confirm-end" data-id="' + _esc(id) + '">End Session</button> ';
+      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + window.utils.esc(id) + '">Participants</button> ';
+      actionsHtml += '<button class="outline secondary" data-action="confirm-end" data-id="' + window.utils.esc(id) + '">End Session</button> ';
     }
 
     actionsHtml += '</div>';
@@ -183,10 +174,10 @@ window.views.gmSessions = (function () {
     var inflightAttr = inflight ? ' aria-busy="true"' : "";
 
     return (
-      '<article class="session-card session-card--' + _esc(status) + '"' + inflightAttr + '>' +
+      '<article class="session-card session-card--' + window.utils.esc(status) + '"' + inflightAttr + '>' +
         '<header class="session-card__header">' +
           _statusBadge(status) +
-          (summary ? '<strong class="session-card__name">' + _esc(summary.slice(0, 60)) + '</strong>' : '<em class="session-card__name">Untitled Session</em>') +
+          (summary ? '<strong class="session-card__name">' + window.utils.esc(summary.slice(0, 60)) + '</strong>' : '<em class="session-card__name">Untitled Session</em>') +
         '</header>' +
         metaHtml +
         actionsHtml +
@@ -328,7 +319,7 @@ window.views.gmSessions = (function () {
         if (!_mounted) return;
         _sessions.unshift(session);
         _mode = "list";
-        _showSuccess("Session created.");
+        window.utils.showSuccess("Session created.");
         _renderList();
       })
       .catch(function () {
@@ -361,16 +352,16 @@ window.views.gmSessions = (function () {
         '<hgroup><h2>Edit Session</h2></hgroup>' +
         '<form id="session-edit-form">' +
           '<label for="se-summary">Summary<br>' +
-            '<input type="text" id="se-summary" name="summary" value="' + _esc(session.summary || "") + '" maxlength="200">' +
+            '<input type="text" id="se-summary" name="summary" value="' + window.utils.esc(session.summary || "") + '" maxlength="200">' +
           '</label>' +
           '<label for="se-date">Date<br>' +
-            '<input type="date" id="se-date" name="date" value="' + _esc(dateValue) + '">' +
+            '<input type="date" id="se-date" name="date" value="' + window.utils.esc(dateValue) + '">' +
           '</label>' +
           '<label for="se-time-now">Time Now (hours)<br>' +
-            '<input type="number" id="se-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + _esc(session.time_now != null ? String(session.time_now) : "") + '">' +
+            '<input type="number" id="se-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + window.utils.esc(session.time_now != null ? String(session.time_now) : "") + '">' +
           '</label>' +
           '<label for="se-notes">Notes<br>' +
-            '<textarea id="se-notes" name="notes" rows="3">' + _esc(session.notes || "") + '</textarea>' +
+            '<textarea id="se-notes" name="notes" rows="3">' + window.utils.esc(session.notes || "") + '</textarea>' +
           '</label>' +
           '<div class="sessions-form__actions">' +
             '<button type="submit" id="session-edit-submit">Save Changes</button> ' +
@@ -428,7 +419,7 @@ window.views.gmSessions = (function () {
           }
         }
         _mode = "list";
-        _showSuccess("Session updated.");
+        window.utils.showSuccess("Session updated.");
         _renderList();
       })
       .catch(function () {
@@ -453,7 +444,7 @@ window.views.gmSessions = (function () {
     var infoHtml =
       '<p>Starting this session will:</p>' +
       '<ul>' +
-        '<li>Distribute <strong>' + _esc(String(timeNow)) + '</strong> hour(s) of Free Time to all participants</li>' +
+        '<li>Distribute <strong>' + window.utils.esc(String(timeNow)) + '</strong> hour(s) of Free Time to all participants</li>' +
         '<li>Award 1 Plot point to each participant</li>' +
         '<li>Move the session from <em>Draft</em> to <em>Active</em></li>' +
       '</ul>';
@@ -497,11 +488,11 @@ window.views.gmSessions = (function () {
     if (!_viewEl || !_mounted) return;
     _viewEl.innerHTML =
       '<div class="sessions-view">' +
-        '<hgroup><h2>' + _esc(opts.title) + '</h2></hgroup>' +
+        '<hgroup><h2>' + window.utils.esc(opts.title) + '</h2></hgroup>' +
         opts.body +
         '<div class="sessions-form__actions">' +
-          '<button id="confirm-yes">' + _esc(opts.confirm) + '</button> ' +
-          '<button id="confirm-no" class="outline secondary">' + _esc(opts.cancel) + '</button>' +
+          '<button id="confirm-yes">' + window.utils.esc(opts.confirm) + '</button> ' +
+          '<button id="confirm-no" class="outline secondary">' + window.utils.esc(opts.cancel) + '</button>' +
         '</div>' +
       '</div>';
 
@@ -537,7 +528,7 @@ window.views.gmSessions = (function () {
           if (_sessions[i].id === id) { _sessions[i] = updated; break; }
         }
         _mode = "list";
-        _showSuccess("Session started.");
+        window.utils.showSuccess("Session started.");
         _renderList();
       })
       .catch(function () {
@@ -561,7 +552,7 @@ window.views.gmSessions = (function () {
           if (_sessions[i].id === id) { _sessions[i] = updated; break; }
         }
         _mode = "list";
-        _showSuccess("Session ended.");
+        window.utils.showSuccess("Session ended.");
         _renderList();
       })
       .catch(function () {
@@ -583,7 +574,7 @@ window.views.gmSessions = (function () {
         delete _inflightIds[id];
         _sessions = _sessions.filter(function (s) { return s.id !== id; });
         _mode = "list";
-        _showSuccess("Session deleted.");
+        window.utils.showSuccess("Session deleted.");
         _renderList();
       })
       .catch(function () {
@@ -644,16 +635,16 @@ window.views.gmSessions = (function () {
       var charName = chr ? chr.name : (p.character_id || "Unknown");
       var addlChecked = p.additional_contribution ? ' checked' : '';
       var removeBtn = isDraft
-        ? '<button class="outline secondary sm" data-action="remove-participant" data-session-id="' + _esc(id) + '" data-char-id="' + _esc(p.character_id) + '">Remove</button>'
+        ? '<button class="outline secondary sm" data-action="remove-participant" data-session-id="' + window.utils.esc(id) + '" data-char-id="' + window.utils.esc(p.character_id) + '">Remove</button>'
         : "";
 
       participantRows +=
         '<tr>' +
-          '<td>' + _esc(charName) + '</td>' +
+          '<td>' + window.utils.esc(charName) + '</td>' +
           '<td>' +
             '<input type="checkbox" class="participant-addl" aria-label="Additional contribution"' +
-            ' data-session-id="' + _esc(id) + '"' +
-            ' data-char-id="' + _esc(p.character_id) + '"' +
+            ' data-session-id="' + window.utils.esc(id) + '"' +
+            ' data-char-id="' + window.utils.esc(p.character_id) + '"' +
             (isDraft ? '' : ' disabled') +
             addlChecked + '>' +
           '</td>' +
@@ -665,7 +656,7 @@ window.views.gmSessions = (function () {
     var available = _characters.filter(function (c) { return !addedIds[c.id]; });
     var addOptions = '<option value="">Select a character...</option>';
     for (var k = 0; k < available.length; k++) {
-      addOptions += '<option value="' + _esc(available[k].id) + '">' + _esc(available[k].name) + '</option>';
+      addOptions += '<option value="' + window.utils.esc(available[k].id) + '">' + window.utils.esc(available[k].name) + '</option>';
     }
 
     var addRowHtml = (isDraft || status === "active")
@@ -826,13 +817,7 @@ window.views.gmSessions = (function () {
     _viewEl = document.getElementById("view");
     if (!_viewEl) return;
 
-    if (!_isGm()) {
-      _viewEl.innerHTML =
-        '<div class="sessions-view">' +
-          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-        '</div>';
-      return;
-    }
+    if (!window.utils.requireGm(_viewEl)) return;
 
     _mounted = true;
     _sessions = [];

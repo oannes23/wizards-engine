@@ -909,9 +909,9 @@ window.views.proposalSubmit = (function () {
     for (var g = 0; g < ACTION_GROUPS.length; g++) {
       var group = ACTION_GROUPS[g];
       html.push('<section class="proposal-group">');
-      html.push('<h3 class="proposal-group__heading">' + _esc(group.label) + '</h3>');
+      html.push('<h3 class="proposal-group__heading">' + window.utils.escAttr(group.label) + '</h3>');
       if (group.note) {
-        html.push('<p class="proposal-group__note">' + _esc(group.note) + '</p>');
+        html.push('<p class="proposal-group__note">' + window.utils.escAttr(group.note) + '</p>');
       }
       html.push('<ul class="proposal-action-list">');
 
@@ -922,9 +922,9 @@ window.views.proposalSubmit = (function () {
             '<li>' +
             '<button class="proposal-action proposal-action--enabled"' +
             ' @click="selectType(\'' + action.type + '\')"' +
-            ' aria-label="' + _esc(action.label) + ': ' + _esc(action.desc) + '">' +
-            '<span class="proposal-action__label">' + _esc(action.label) + '</span>' +
-            '<span class="proposal-action__desc">' + _esc(action.desc) + '</span>' +
+            ' aria-label="' + window.utils.escAttr(action.label) + ': ' + window.utils.escAttr(action.desc) + '">' +
+            '<span class="proposal-action__label">' + window.utils.escAttr(action.label) + '</span>' +
+            '<span class="proposal-action__desc">' + window.utils.escAttr(action.desc) + '</span>' +
             '</button>' +
             '</li>'
           );
@@ -933,8 +933,8 @@ window.views.proposalSubmit = (function () {
             '<li>' +
             '<div class="proposal-action proposal-action--disabled"' +
             ' aria-disabled="true">' +
-            '<span class="proposal-action__label">' + _esc(action.label) + '</span>' +
-            '<span class="proposal-action__desc">' + _esc(action.desc) + '</span>' +
+            '<span class="proposal-action__label">' + window.utils.escAttr(action.label) + '</span>' +
+            '<span class="proposal-action__desc">' + window.utils.escAttr(action.desc) + '</span>' +
             '<span class="proposal-action__soon">(coming soon)</span>' +
             '</div>' +
             '</li>'
@@ -955,7 +955,7 @@ window.views.proposalSubmit = (function () {
    */
   function _buildStep2UseSkillHtml() {
     var skillOptions = SKILLS.map(function (s) {
-      return '<option value="' + _esc(s.value) + '">' + _esc(s.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(s.value) + '">' + window.utils.escAttr(s.label) + '</option>';
     }).join("");
 
     return [
@@ -1028,12 +1028,12 @@ window.views.proposalSubmit = (function () {
    */
   function _buildMagicStatSelectorHtml(fieldId) {
     var statOptions = MAGIC_STATS.map(function (s) {
-      return '<option value="' + _esc(s.value) + '">' + _esc(s.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(s.value) + '">' + window.utils.escAttr(s.label) + '</option>';
     }).join("");
 
     return [
-      '  <label for="' + _esc(fieldId) + '">Magic Stat <span aria-hidden="true">*</span></label>',
-      '  <select id="' + _esc(fieldId) + '" name="magic_stat" x-model="selectedMagicStat" required',
+      '  <label for="' + window.utils.escAttr(fieldId) + '">Magic Stat <span aria-hidden="true">*</span></label>',
+      '  <select id="' + window.utils.escAttr(fieldId) + '" name="magic_stat" x-model="selectedMagicStat" required',
       '          :aria-invalid="magicStatError ? \'true\' : \'false\'">',
       '    <option value="" disabled>Select a magic stat...</option>',
       statOptions,
@@ -1095,7 +1095,7 @@ window.views.proposalSubmit = (function () {
       { value: "trait",      label: "Trait (destroys)"         },
       { value: "other",      label: "Other (GM assigns value)" },
     ].map(function (opt) {
-      return '<option value="' + _esc(opt.value) + '">' + _esc(opt.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(opt.value) + '">' + window.utils.escAttr(opt.label) + '</option>';
     }).join("");
 
     return [
@@ -1914,16 +1914,6 @@ window.views.proposalSubmit = (function () {
   // -------------------------------------------------------------------------
   // HTML escape helper
   // -------------------------------------------------------------------------
-
-  /**
-   * Escape a string for safe inclusion in HTML attribute values and text.
-   * Delegates to window.utils.esc and additionally escapes single quotes.
-   * @param {string} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str).replace(/'/g, "&#39;");
-  }
 
   // -------------------------------------------------------------------------
   // Render

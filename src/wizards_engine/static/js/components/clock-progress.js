@@ -37,16 +37,10 @@ window.components.clockProgress = (function () {
   // --------------------------------------------------------------------------
 
   /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
-  var _esc = function (str) { return window.utils.esc(str); };
-
-  /**
-   * Clamp a value to [0, max].
+   * Clamp a value to [0, max]. Delegates to window.utils.clamp.
    */
   function _clamp(value, max) {
-    var v = Number(value) || 0;
-    return Math.min(Math.max(v, 0), max);
+    return window.utils.clamp(value, 0, max);
   }
 
   /**

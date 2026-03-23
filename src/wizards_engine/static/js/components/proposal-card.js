@@ -51,10 +51,6 @@ window.components.proposalCard = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
-  var _esc = function (str) { return window.utils.esc(str); };
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
 
   /**
@@ -133,8 +129,8 @@ window.components.proposalCard = (function () {
         var label = k.replace(/_/g, " ");
         label = label.charAt(0).toUpperCase() + label.slice(1);
         return (
-          '<tr><th scope="row">' + _esc(label) + '</th>' +
-          '<td>' + _esc(_formatValue(selections[k])) + '</td></tr>'
+          '<tr><th scope="row">' + window.utils.esc(label) + '</th>' +
+          '<td>' + window.utils.esc(_formatValue(selections[k])) + '</td></tr>'
         );
       })
       .join("");
@@ -193,8 +189,8 @@ window.components.proposalCard = (function () {
         var label = k.replace(/_/g, " ");
         label = label.charAt(0).toUpperCase() + label.slice(1);
         return (
-          '<tr><th scope="row">' + _esc(label) + '</th>' +
-          '<td>' + _esc(_formatEffectValue(k, effect[k])) + '</td></tr>'
+          '<tr><th scope="row">' + window.utils.esc(label) + '</th>' +
+          '<td>' + window.utils.esc(_formatEffectValue(k, effect[k])) + '</td></tr>'
         );
       })
       .join("");
@@ -239,12 +235,12 @@ window.components.proposalCard = (function () {
   function _renderResolveClockAdvanced(id) {
     return (
       '<div class="proposal-card__advanced-fields">' +
-        '<label for="adv-narrative-' + _esc(id) + '">Resolution narrative (required)' +
-          '<textarea id="adv-narrative-' + _esc(id) + '" name="gm_narrative" ' +
+        '<label for="adv-narrative-' + window.utils.esc(id) + '">Resolution narrative (required)' +
+          '<textarea id="adv-narrative-' + window.utils.esc(id) + '" name="gm_narrative" ' +
                     'rows="3" placeholder="Describe what happens when this clock resolves..." required></textarea>' +
         '</label>' +
-        '<label for="adv-rider-' + _esc(id) + '">Rider event narrative (optional)' +
-          '<input type="text" id="adv-rider-' + _esc(id) + '" name="rider_event" ' +
+        '<label for="adv-rider-' + window.utils.esc(id) + '">Rider event narrative (optional)' +
+          '<input type="text" id="adv-rider-' + window.utils.esc(id) + '" name="rider_event" ' +
                  'placeholder="Narrative for any follow-on consequence..." />' +
         '</label>' +
       '</div>'
@@ -264,9 +260,9 @@ window.components.proposalCard = (function () {
       stressInfo = (
         '<p class="proposal-card__stress-state">' +
           '<strong>Stress state:</strong> ' +
-          _esc(String(proposal.calculated_effect.current_stress)) +
+          window.utils.esc(String(proposal.calculated_effect.current_stress)) +
           ' / ' +
-          _esc(String(proposal.calculated_effect.max_stress || "?")) +
+          window.utils.esc(String(proposal.calculated_effect.max_stress || "?")) +
         '</p>'
       );
     }
@@ -274,16 +270,16 @@ window.components.proposalCard = (function () {
     return (
       '<div class="proposal-card__advanced-fields">' +
         stressInfo +
-        '<label for="adv-bond-' + _esc(id) + '">Bond that becomes trauma' +
-          '<input type="text" id="adv-bond-' + _esc(id) + '" name="bond_id" ' +
+        '<label for="adv-bond-' + window.utils.esc(id) + '">Bond that becomes trauma' +
+          '<input type="text" id="adv-bond-' + window.utils.esc(id) + '" name="bond_id" ' +
                  'placeholder="Bond ID or name..." />' +
         '</label>' +
-        '<label for="adv-trauma-name-' + _esc(id) + '">Trauma name' +
-          '<input type="text" id="adv-trauma-name-' + _esc(id) + '" name="trauma_name" ' +
+        '<label for="adv-trauma-name-' + window.utils.esc(id) + '">Trauma name' +
+          '<input type="text" id="adv-trauma-name-' + window.utils.esc(id) + '" name="trauma_name" ' +
                  'placeholder="e.g. Cursed Mark" />' +
         '</label>' +
-        '<label for="adv-trauma-desc-' + _esc(id) + '">Trauma description' +
-          '<textarea id="adv-trauma-desc-' + _esc(id) + '" name="trauma_description" ' +
+        '<label for="adv-trauma-desc-' + window.utils.esc(id) + '">Trauma description' +
+          '<textarea id="adv-trauma-desc-' + window.utils.esc(id) + '" name="trauma_description" ' +
                     'rows="2" placeholder="Describe the trauma condition..."></textarea>' +
         '</label>' +
       '</div>'
@@ -356,24 +352,24 @@ window.components.proposalCard = (function () {
 
     var actionBadge =
       '<span class="proposal-card__badge proposal-card__badge--action">' +
-        _esc(_actionLabel(p.action_type)) +
+        window.utils.esc(_actionLabel(p.action_type)) +
       '</span>';
 
-    var narrativePreview = _esc(_truncate(p.narrative, 80));
+    var narrativePreview = window.utils.esc(_truncate(p.narrative, 80));
 
     var collapsedContent =
       '<div class="proposal-card__header" role="button" tabindex="0" ' +
            'aria-expanded="' + (expanded ? "true" : "false") + '" ' +
-           'data-toggle-id="' + _esc(p.id) + '">' +
+           'data-toggle-id="' + window.utils.esc(p.id) + '">' +
         '<div class="proposal-card__meta">' +
-          '<strong class="proposal-card__character">' + _esc(p.character_name) + '</strong>' +
+          '<strong class="proposal-card__character">' + window.utils.esc(p.character_name) + '</strong>' +
           '<div class="proposal-card__badges">' + systemBadge + actionBadge + '</div>' +
         '</div>' +
         '<div class="proposal-card__preview">' +
           (narrativePreview
             ? '<span class="proposal-card__narrative-preview">' + narrativePreview + '</span>'
             : '<span class="proposal-card__narrative-preview proposal-card__narrative-preview--empty">(no narrative)</span>') +
-          '<span class="proposal-card__time">' + _esc(_relativeTime(p.created_at)) + '</span>' +
+          '<span class="proposal-card__time">' + window.utils.esc(_relativeTime(p.created_at)) + '</span>' +
         '</div>' +
       '</div>';
 
@@ -384,7 +380,7 @@ window.components.proposalCard = (function () {
       if (p.action_type === "resolve_clock" && p.selections && p.selections.clock_id) {
         specialDetails = (
           '<div class="proposal-card__special-details">' +
-            '<p><strong>Clock:</strong> ' + _esc(String(p.selections.clock_id)) + '</p>' +
+            '<p><strong>Clock:</strong> ' + window.utils.esc(String(p.selections.clock_id)) + '</p>' +
           '</div>'
         );
       } else if (p.action_type === "resolve_trauma" && p.calculated_effect) {
@@ -394,7 +390,7 @@ window.components.proposalCard = (function () {
           specialDetails = (
             '<div class="proposal-card__special-details">' +
               '<p><strong>Stress:</strong> ' +
-                _esc(String(stress)) + ' / ' + _esc(String(maxStress)) +
+                window.utils.esc(String(stress)) + ' / ' + window.utils.esc(String(maxStress)) +
               '</p>' +
             '</div>'
           );
@@ -402,25 +398,25 @@ window.components.proposalCard = (function () {
       }
 
       var fullNarrative = p.narrative
-        ? '<p class="proposal-card__narrative">' + _esc(p.narrative) + '</p>'
+        ? '<p class="proposal-card__narrative">' + window.utils.esc(p.narrative) + '</p>'
         : '<p class="proposal-card__narrative proposal-card__narrative--empty"><em>No narrative provided.</em></p>';
 
       expandedContent = (
-        '<div class="proposal-card__expanded" id="expanded-' + _esc(p.id) + '">' +
+        '<div class="proposal-card__expanded" id="expanded-' + window.utils.esc(p.id) + '">' +
           fullNarrative +
           specialDetails +
           _renderSelections(p.selections) +
           _renderEffect(p.calculated_effect) +
 
           // GM narrative override (shared across all types)
-          '<label for="gm-narrative-' + _esc(p.id) + '" class="proposal-card__gm-narrative-label">' +
+          '<label for="gm-narrative-' + window.utils.esc(p.id) + '" class="proposal-card__gm-narrative-label">' +
             'GM narrative (optional)' +
-            '<textarea id="gm-narrative-' + _esc(p.id) + '" name="gm_narrative" ' +
+            '<textarea id="gm-narrative-' + window.utils.esc(p.id) + '" name="gm_narrative" ' +
                       'rows="2" placeholder="Add a GM narrative..."></textarea>' +
           '</label>' +
 
           // Advanced section
-          '<details class="proposal-card__advanced" id="advanced-' + _esc(p.id) + '">' +
+          '<details class="proposal-card__advanced" id="advanced-' + window.utils.esc(p.id) + '">' +
             '<summary>Advanced options</summary>' +
             _renderAdvancedFields(p) +
             '<label>' +
@@ -430,15 +426,15 @@ window.components.proposalCard = (function () {
           '</details>' +
 
           // Reject section
-          '<details class="proposal-card__reject-section" id="reject-' + _esc(p.id) + '">' +
+          '<details class="proposal-card__reject-section" id="reject-' + window.utils.esc(p.id) + '">' +
             '<summary class="proposal-card__reject-toggle">Reject...</summary>' +
-            '<label for="reject-note-' + _esc(p.id) + '">' +
+            '<label for="reject-note-' + window.utils.esc(p.id) + '">' +
               'Rejection note (optional)' +
-              '<input type="text" id="reject-note-' + _esc(p.id) + '" name="reject_note" ' +
+              '<input type="text" id="reject-note-' + window.utils.esc(p.id) + '" name="reject_note" ' +
                      'placeholder="Reason for rejection..." />' +
             '</label>' +
             '<button type="button" class="outline contrast proposal-card__reject-btn" ' +
-                    'data-action="reject" data-id="' + _esc(p.id) + '" ' +
+                    'data-action="reject" data-id="' + window.utils.esc(p.id) + '" ' +
                     (inflight ? "disabled" : "") + '>' +
               'Reject proposal' +
             '</button>' +
@@ -446,7 +442,7 @@ window.components.proposalCard = (function () {
 
           // Primary approve button
           '<button type="button" class="proposal-card__approve-btn" ' +
-                  'data-action="approve" data-id="' + _esc(p.id) + '" ' +
+                  'data-action="approve" data-id="' + window.utils.esc(p.id) + '" ' +
                   (inflight ? "disabled" : "") + '>' +
             (inflight ? '<span aria-busy="true"></span> Processing...' : 'Approve') +
           '</button>' +
@@ -455,8 +451,8 @@ window.components.proposalCard = (function () {
     }
 
     return (
-      '<article class="' + _esc(cardClasses) + '" id="card-' + _esc(p.id) + '" ' +
-               'data-proposal-id="' + _esc(p.id) + '">' +
+      '<article class="' + window.utils.esc(cardClasses) + '" id="card-' + window.utils.esc(p.id) + '" ' +
+               'data-proposal-id="' + window.utils.esc(p.id) + '">' +
         collapsedContent +
         expandedContent +
       '</article>'

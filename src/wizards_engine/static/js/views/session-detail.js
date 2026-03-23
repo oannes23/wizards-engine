@@ -65,20 +65,11 @@ window.views.sessionDetail = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  function _esc(str) { return window.utils.esc(str); }
-
   function _isGm() {
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       return Alpine.store("app").isGm();
     }
     return false;
-  }
-
-  function _showSuccess(message) {
-    document.dispatchEvent(new CustomEvent("api:success", {
-      detail: { message: message },
-      bubbles: true,
-    }));
   }
 
   function _formatDate(dateStr) {
@@ -97,7 +88,7 @@ window.views.sessionDetail = (function () {
       ended:   { label: "Ended",   cls: "session-badge--ended"   },
     };
     var info = map[status] || { label: status || "Unknown", cls: "session-badge--unknown" };
-    return '<mark class="session-badge ' + _esc(info.cls) + '">' + _esc(info.label) + '</mark>';
+    return '<mark class="session-badge ' + window.utils.esc(info.cls) + '">' + window.utils.esc(info.label) + '</mark>';
   }
 
   // ---------------------------------------------------------------------------
@@ -116,7 +107,7 @@ window.views.sessionDetail = (function () {
     if (!_viewEl) return;
     _viewEl.innerHTML =
       '<div class="session-detail">' +
-        '<p class="error-text" role="alert">' + _esc(msg || "Failed to load session.") + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg || "Failed to load session.") + '</p>' +
         '<a href="#/gm/sessions" class="outline secondary">Back to Sessions</a>' +
       '</div>';
   }
@@ -137,7 +128,7 @@ window.views.sessionDetail = (function () {
           '<a href="#/gm/sessions">&larr; Sessions</a>' +
         '</div>' +
         '<hgroup>' +
-          '<h2>' + _esc(summary) + '</h2>' +
+          '<h2>' + window.utils.esc(summary) + '</h2>' +
           _statusBadge(status) +
         '</hgroup>' +
         '<nav class="session-detail__tabs" role="tablist">' +
@@ -230,10 +221,10 @@ window.views.sessionDetail = (function () {
     var isActive = status === "active";
 
     var metaHtml = '<dl class="session-detail__meta">';
-    if (date)        metaHtml += '<dt>Date</dt><dd>' + _esc(date) + '</dd>';
-    if (timeNow !== "") metaHtml += '<dt>Time Now</dt><dd>' + _esc(String(timeNow)) + ' hours</dd>';
-    if (summary)     metaHtml += '<dt>Summary</dt><dd>' + _esc(summary) + '</dd>';
-    if (notes)       metaHtml += '<dt>Notes</dt><dd>' + _esc(notes) + '</dd>';
+    if (date)        metaHtml += '<dt>Date</dt><dd>' + window.utils.esc(date) + '</dd>';
+    if (timeNow !== "") metaHtml += '<dt>Time Now</dt><dd>' + window.utils.esc(String(timeNow)) + ' hours</dd>';
+    if (summary)     metaHtml += '<dt>Summary</dt><dd>' + window.utils.esc(summary) + '</dd>';
+    if (notes)       metaHtml += '<dt>Notes</dt><dd>' + window.utils.esc(notes) + '</dd>';
     metaHtml += '</dl>';
 
     // Participants table
@@ -247,7 +238,7 @@ window.views.sessionDetail = (function () {
         var charName = p.character_id || "Unknown";
         partHtml +=
           '<tr>' +
-            '<td>' + _esc(charName) + '</td>' +
+            '<td>' + window.utils.esc(charName) + '</td>' +
             '<td>' + (p.additional_contribution ? "Yes" : "No") + '</td>' +
           '</tr>';
       }
@@ -314,16 +305,16 @@ window.views.sessionDetail = (function () {
     return (
       '<form id="sd-edit-form">' +
         '<label for="sd-summary">Summary<br>' +
-          '<input type="text" id="sd-summary" name="summary" value="' + _esc(_session.summary || "") + '" maxlength="200">' +
+          '<input type="text" id="sd-summary" name="summary" value="' + window.utils.esc(_session.summary || "") + '" maxlength="200">' +
         '</label>' +
         '<label for="sd-date">Date<br>' +
-          '<input type="date" id="sd-date" name="date" value="' + _esc(dateValue) + '">' +
+          '<input type="date" id="sd-date" name="date" value="' + window.utils.esc(dateValue) + '">' +
         '</label>' +
         '<label for="sd-time-now">Time Now (hours)<br>' +
-          '<input type="number" id="sd-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + _esc(_session.time_now != null ? String(_session.time_now) : "") + '">' +
+          '<input type="number" id="sd-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + window.utils.esc(_session.time_now != null ? String(_session.time_now) : "") + '">' +
         '</label>' +
         '<label for="sd-notes">Notes<br>' +
-          '<textarea id="sd-notes" name="notes" rows="3">' + _esc(_session.notes || "") + '</textarea>' +
+          '<textarea id="sd-notes" name="notes" rows="3">' + window.utils.esc(_session.notes || "") + '</textarea>' +
         '</label>' +
         '<div class="sessions-form__actions">' +
           '<button type="submit" id="sd-edit-save">Save</button> ' +
@@ -374,7 +365,7 @@ window.views.sessionDetail = (function () {
         if (!_mounted) return;
         _session = Object.assign({}, _session, updated, { participants: _session.participants });
         _editMode = false;
-        _showSuccess("Session updated.");
+        window.utils.showSuccess("Session updated.");
         _renderShell();
       })
       .catch(function () {
@@ -392,7 +383,7 @@ window.views.sessionDetail = (function () {
       .then(function (updated) {
         if (!_mounted) return;
         _session = Object.assign({}, _session, updated, { participants: _session.participants });
-        _showSuccess("Session started.");
+        window.utils.showSuccess("Session started.");
         _renderShell();
       })
       .catch(function () { /* toast shown by api.js */ });
@@ -404,7 +395,7 @@ window.views.sessionDetail = (function () {
       .then(function (updated) {
         if (!_mounted) return;
         _session = Object.assign({}, _session, updated, { participants: _session.participants });
-        _showSuccess("Session ended.");
+        window.utils.showSuccess("Session ended.");
         _renderShell();
       })
       .catch(function () { /* toast shown by api.js */ });
@@ -416,7 +407,7 @@ window.views.sessionDetail = (function () {
       .del("/api/v1/sessions/" + encodeURIComponent(id))
       .then(function () {
         if (!_mounted) return;
-        _showSuccess("Session deleted.");
+        window.utils.showSuccess("Session deleted.");
         window.location.hash = "#/gm/sessions";
       })
       .catch(function () { /* toast shown by api.js */ });
@@ -458,10 +449,10 @@ window.views.sessionDetail = (function () {
         html +=
           '<div class="feed-item feed-item--event">' +
             '<div class="feed-item__meta">' +
-              '<span class="feed-item__action">' + _esc(eventType) + '</span>' +
-              (ts ? '<time class="feed-item__time">' + _esc(ts) + '</time>' : '') +
+              '<span class="feed-item__action">' + window.utils.esc(eventType) + '</span>' +
+              (ts ? '<time class="feed-item__time">' + window.utils.esc(ts) + '</time>' : '') +
             '</div>' +
-            (narrative ? '<p class="feed-item__narrative">' + _esc(narrative) + '</p>' : '') +
+            (narrative ? '<p class="feed-item__narrative">' + window.utils.esc(narrative) + '</p>' : '') +
           '</div>';
       }
     }

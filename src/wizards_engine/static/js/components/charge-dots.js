@@ -35,21 +35,14 @@ window.components.chargeDots = (function () {
   // --------------------------------------------------------------------------
 
   /**
-   * Clamp a value to [0, max].
+   * Clamp a value to [0, max]. Delegates to window.utils.clamp.
    * @param {number} value
    * @param {number} max
    * @returns {number}
    */
   function _clamp(value, max) {
-    var v = Number(value) || 0;
-    var m = Number(max) || 0;
-    return Math.min(Math.max(v, 0), m);
+    return window.utils.clamp(value, 0, max);
   }
-
-  /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
-  var _esc = function (str) { return window.utils.esc(str); };
 
   /**
    * Determine the BEM modifier class for this dot based on its position.
@@ -115,7 +108,7 @@ window.components.chargeDots = (function () {
       for (var i = 0; i < max; i++) {
         var cls = _dotClass(i, current, effectiveMax, variant);
         var ch  = _dotChar(i, current, effectiveMax);
-        dots.push('<span class="' + _esc(cls) + '" aria-hidden="true">' + ch + '</span>');
+        dots.push('<span class="' + window.utils.esc(cls) + '" aria-hidden="true">' + ch + '</span>');
       }
 
       var ariaLabel = current + " of " + max + " charges";
@@ -126,7 +119,7 @@ window.components.chargeDots = (function () {
       return (
         '<span class="charge-dots charge-dots--' + variant + '"' +
               ' role="img"' +
-              ' aria-label="' + _esc(ariaLabel) + '">' +
+              ' aria-label="' + window.utils.esc(ariaLabel) + '">' +
           dots.join("") +
         '</span>'
       );

@@ -363,30 +363,32 @@ def test_world_js_navigation_routes_are_correct():
 
 
 def test_world_js_search_is_case_insensitive_substring():
-    """world.js filteredItems() applies case-insensitive substring match on name.
+    """Search filter uses case-insensitive substring matching.
 
-    The acceptance criterion specifies case-insensitive substring match.
-    Verify the implementation in world.js uses .toLowerCase() on both the
-    query and the item name and uses indexOf() (substring match).
+    In Story 8.4.2 the search filter migrated from world.js filteredItems() to
+    the DataTable component's built-in global filter.  The DataTable component
+    (data-table.js) implements case-insensitive substring matching via
+    .toLowerCase() and .indexOf().  This test verifies that the DataTable
+    component provides that capability.
     """
     import os
 
-    world_js = os.path.abspath(
+    data_table_js = os.path.abspath(
         os.path.join(
             os.path.dirname(__file__),
-            "../src/wizards_engine/static/js/views/world.js",
+            "../src/wizards_engine/static/js/components/data-table.js",
         )
     )
-    with open(world_js) as f:
+    with open(data_table_js) as f:
         source = f.read()
 
-    # The implementation must lower-case both the query and the name
+    # DataTable must lower-case values for case-insensitive comparison
     assert ".toLowerCase()" in source, (
-        "world.js filteredItems() must use .toLowerCase() for case-insensitive search"
+        "data-table.js must use .toLowerCase() for case-insensitive search"
     )
-    # Must use indexOf (substring match, not exact match)
-    assert ".indexOf(q)" in source or "indexOf(q)" in source, (
-        "world.js filteredItems() must use indexOf() for substring matching"
+    # Must use indexOf for substring matching
+    assert ".indexOf(" in source, (
+        "data-table.js must use .indexOf() for substring matching"
     )
 
 

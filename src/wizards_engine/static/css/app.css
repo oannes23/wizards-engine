@@ -3862,6 +3862,12 @@ main.container {
    DataTable component (.dt-*)
    --------------------------------------------------------------------------- */
 
+   DataTable component — Story 8.1.7
+   Sortable, filterable table with responsive card layout for mobile.
+   Used by Game Objects browser, Sessions, GM Feed, and Queue Groups.
+   --------------------------------------------------------------------------- */
+
+/* Root wrapper — contains filter bar + table/card views */
 .dt-root {
   width: 100%;
 }
@@ -3871,6 +3877,7 @@ main.container {
    --------------------------------------------------------------------------- */
 
 /* Filter bar */
+>>>>>>> worktree-agent-a46b9548
 .dt-filters {
   display: flex;
   flex-wrap: wrap;
@@ -3939,6 +3946,7 @@ main.container {
   letter-spacing: 0.03em;
   color: var(--pico-muted-color, #aaa);
   border-bottom: 2px solid var(--pico-muted-border-color, #444);
+<<<<<<< HEAD
 }
 
 .dt-search-input {
@@ -3996,6 +4004,7 @@ main.container {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+=======
   white-space: nowrap;
   user-select: none;
 }
@@ -4136,6 +4145,7 @@ main.container {
     min-height: 40px;
     font-size: 0.85rem;
   }
+>>>>>>> worktree-agent-a46b9548
 /* Currently sorted column */
 .dt-th--sorted {
   color: var(--pico-primary, #7c6aff);
@@ -4147,6 +4157,7 @@ main.container {
 }
 
 /* Table rows */
+<<<<<<< HEAD
 /* Sortable header cells */
 .dt-th[data-sort] {
   cursor: pointer;
@@ -4171,6 +4182,7 @@ main.container {
 }
 
 /* Body rows */
+=======
 .dt-row {
   border-bottom: 1px solid var(--pico-muted-border-color, #333);
   transition: background 0.1s;
@@ -4342,6 +4354,7 @@ main.container {
 
 /* In-cell links */
 .gm-feed__link {
+>>>>>>> worktree-agent-a46b9548
   color: var(--pico-primary, #7c6aff);
   text-decoration: none;
 }
@@ -4396,8 +4409,10 @@ main.container {
   .dt-cards-wrap {
     display: block;
   }
+<<<<<<< HEAD
 
   /* Columns flagged as mobile-hidden are already excluded from cards via JS */
+=======
 }
 
 /* Mobile card */
@@ -4679,4 +4694,114 @@ main.container {
 
 .gm-feed__load-more button {
   min-width: 140px;
+   Game Objects browser — Character sub-tabs (All | PCs | NPCs)
+   Story 8.4.2
+   --------------------------------------------------------------------------- */
+
+.world-sub-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color, #444);
+}
+
+.world-sub-tab {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.85rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  min-height: 36px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.world-sub-tab:hover {
+  color: var(--pico-primary, #7c6aff);
+}
+
+.world-sub-tab--active {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+}
+
+/* DataTable container inside the world browser */
+.world-dt-container {
+  width: 100%;
+}
+
+/* Badges in DataTable cells — PC/NPC, Tier */
+.world-dt-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  line-height: 1.4;
+}
+
+.world-dt-badge--pc {
+  background: rgba(39, 174, 96, 0.2);
+  color: var(--we-ft-green, #27ae60);
+  border: 1px solid rgba(39, 174, 96, 0.4);
+}
+
+.world-dt-badge--npc {
+  background: rgba(170, 170, 170, 0.1);
+  color: var(--pico-muted-color, #aaa);
+  border: 1px solid rgba(170, 170, 170, 0.25);
+}
+
+.world-dt-badge--tier {
+  background: rgba(41, 128, 185, 0.15);
+  color: var(--we-gnosis-blue, #2980b9);
+  border: 1px solid rgba(41, 128, 185, 0.35);
+}
+
+/* Star button inside DataTable cells */
+.world-dt-star-btn {
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--pico-muted-color, #aaa);
+  line-height: 1;
+  min-height: 32px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: color 0.15s;
+}
+
+.world-dt-star-btn:hover {
+  color: var(--we-plot-amber, #f39c12);
+}
+
+.world-dt-star-btn[data-starred="true"] {
+  color: var(--we-plot-amber, #f39c12);
+}
+
+.world-dt-star-btn:focus-visible {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  outline-offset: 1px;
+}
+
+/* Mobile touch target for star in cards */
+@media (max-width: 599px) {
+  .world-dt-star-btn {
+    min-height: 40px;
+    min-width: 40px;
+    font-size: 1.25rem;
+  }
 }

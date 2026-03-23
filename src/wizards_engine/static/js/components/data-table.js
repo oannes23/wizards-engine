@@ -1,30 +1,41 @@
 /* Wizards Engine — DataTable component
  *
- * Reusable sortable, filterable data table component.
+ * Sortable, filterable table with responsive card layout for mobile.
+ * Used by GM Feed, Game Objects browser, Sessions, and Queue Groups.
  *
  * Usage:
- *   var dt = new window.components.DataTable(containerEl, {
- *     columns: [
- *       { key: 'name', label: 'Name', sortable: true },
- *       { key: 'type', label: 'Type', sortable: true, filter: 'select' },
- *       { key: 'note', label: 'Note', render: function(val, row) { return '<em>' + val + '</em>'; } },
- *     ],
- *     onRowClick: function(row) { router.navigate('#/detail/' + row.id); },
- *     emptyMessage: 'No items found.',
+ *   var table = new window.components.DataTable(containerEl, {
+ *     columns:    [...],        // column config array (required)
+ *     onRowClick: fn,           // called with rowData when a row is activated
+ *     rowActions: [...],        // action button config array (optional)
+ *     emptyMessage: '...',      // shown when no rows match filters (optional)
  *   });
- *   dt.setRows(arrayOfObjects);   // renders / replaces all rows
- *   dt.appendRows(arrayOfObjects); // appends without clearing
- *   dt.destroy();                 // unmount and remove listeners
+ *   table.setRows(arrayOfObjects);  // populate or replace data
+ *   table.setLoading(true|false);   // show/hide loading skeleton
+ *   table.destroy();                // remove listeners, clear container
  *
- * Column config keys:
- *   key         {string}   — property name from row data object
- *   label       {string}   — column header text
- *   sortable    {boolean}  — click header to sort (default false)
- *   filter      {string}   — 'text' | 'select' | undefined — per-column filter
- *   render      {function} — (value, row) => HTML string
- *   width       {string}   — CSS width e.g. '120px'
- *   hideMobile  {boolean}  — hide column below 600px (default false)
- *   linkTo      {function} — (row) => hash string for row-level link
+ * Column config object:
+ *   {
+ *     key:      'fieldName',          // property name on row data
+ *     label:    'Column Header',      // display label
+ *     sortable: true|false,           // click header to sort (default false)
+ *     filter:   'text'|'select'|null, // filter control type (default null)
+ *     render:   function(value, row), // optional custom renderer; returns HTML string
+ *     width:    '120px',             // optional CSS width
+ *     linkTo:   function(row),        // optional; if provided, wraps cell in <a href>
+ *     hideMobile: true|false,         // hide column on mobile (<600px) (default false)
+ *   }
+ *
+ * Row action config object:
+ *   {
+ *     label:    'Edit',              // button text
+ *     callback: function(rowData),   // called when button is clicked
+ *     className: 'outline secondary', // optional extra classes on the <button>
+ *   }
+ *
+ * ARIA: role="grid", aria-sort on sorted header, scope="col" on all headers.
+ * Keyboard: arrow keys navigate rows, Enter activates onRowClick, tab between filters.
+ * Responsive: table on desktop (>=600px), stacked cards on mobile (<600px).
  *
  * Registers as window.components.DataTable.
  *
@@ -37,154 +48,200 @@ window.components = window.components || {};
 /**
  * DataTable constructor.
  *
- * @param {HTMLElement} containerEl — element to render into
- * @param {object} opts
- * @param {Array}    opts.columns      — column config array (see above)
- * @param {function} [opts.onRowClick] — called with row data on row click
- * @param {string}   [opts.emptyMessage] — message when no rows match filters
+ * @param {HTMLElement} containerEl — the element to render into
+ * @param {object}      options
+ * @param {Array}       options.columns       — column config array
+ * @param {function}    [options.onRowClick]  — called with row data on activation
+ * @param {Array}       [options.rowActions]  — action button config array
+ * @param {string}      [options.emptyMessage] — empty state text
  */
-window.components.DataTable = function DataTable(containerEl, opts) {
-  var _container = containerEl;
-  var _columns   = (opts && opts.columns)      || [];
-  var _onRowClick = (opts && opts.onRowClick)  || null;
-  var _emptyMsg  = (opts && opts.emptyMessage) || "No items found.";
-  var _alive     = true;
+window.components.DataTable = function DataTable(containerEl, options) {
+  var _container   = containerEl;
+  var _alive       = true;
+  var _options     = options || {};
+  var _columns     = _options.columns || [];
+  var _onRowClick  = typeof _options.onRowClick === "function" ? _options.onRowClick : null;
+  var _rowActions  = Array.isArray(_options.rowActions) ? _options.rowActions : [];
+  var _emptyMsg    = _options.emptyMessage || "No items found.";
 
-  // All rows (unfiltered, unsorted).
-  var _rows = [];
+  // Internal state
+  var _rows        = [];   // full dataset supplied by caller
+  var _loading     = false;
+  var _sortKey     = null; // currently sorted column key
+  var _sortDir     = "asc"; // "asc" | "desc"
+  var _globalFilter = "";  // global text search value
+  var _colFilters  = {};   // per-column select filter values { key: value }
 
-  // Current sort state.
-  var _sortKey = null;
-  var _sortDir = "asc"; // 'asc' | 'desc'
+  // Track delegated event listener so we can remove it on destroy
+  var _clickListener = null;
+  var _keydownListener = null;
+  var _filterListeners = []; // { el, type, fn } tuples
 
-  // Current global text filter value.
-  var _globalFilter = "";
-
-  // Per-column select filter values { columnKey: selectedValue }.
-  var _selectFilters = {};
-
-  // Derived: rows after applying all filters and sort.
-  var _visibleRows = [];
+  // --------------------------------------------------------------------------
+  // Private helpers
+  // --------------------------------------------------------------------------
 
   var _esc = function (s) { return window.utils.esc(s); };
 
-  // --------------------------------------------------------------------------
-  // Filter + sort logic
-  // --------------------------------------------------------------------------
+  /**
+   * Return the value of a nested key path like "a.b.c" from an object.
+   * Also handles flat keys.
+   * @param {object} obj
+   * @param {string} key
+   * @returns {*}
+   */
+  function _getValue(obj, key) {
+    if (!obj || !key) return "";
+    if (key.indexOf(".") === -1) return obj[key];
+    var parts = key.split(".");
+    var val = obj;
+    for (var i = 0; i < parts.length; i++) {
+      if (val == null) return "";
+      val = val[parts[i]];
+    }
+    return val;
+  }
 
   /**
-   * Recompute _visibleRows from _rows, current filters, and current sort.
+   * Convert a value to a lowercase string for comparison.
+   * @param {*} v
+   * @returns {string}
    */
-  function _recompute() {
-    var rows = _rows.slice();
+  function _str(v) {
+    if (v == null) return "";
+    return String(v).toLowerCase();
+  }
 
-    // Global text filter — case-insensitive match against all string values.
+  /**
+   * Apply current sort, global filter, and per-column filters to _rows.
+   * @returns {Array} filtered and sorted subset
+   */
+  function _applyFilters() {
+    var result = _rows.slice();
+
+    // Per-column select filters
+    var colKeys = Object.keys(_colFilters);
+    for (var c = 0; c < colKeys.length; c++) {
+      var ck = colKeys[c];
+      var cv = _colFilters[ck];
+      if (!cv) continue;
+      result = result.filter(function (row) {
+        return _str(_getValue(row, ck)) === _str(cv);
+      });
+    }
+
+    // Global text filter — searches all column values
     if (_globalFilter) {
       var needle = _globalFilter.toLowerCase();
-      rows = rows.filter(function (row) {
-        for (var i = 0; i < _columns.length; i++) {
-          var col = _columns[i];
-          var val = row[col.key];
-          if (val !== undefined && val !== null) {
-            if (String(val).toLowerCase().indexOf(needle) !== -1) {
-              return true;
-            }
-          }
+      result = result.filter(function (row) {
+        for (var ci = 0; ci < _columns.length; ci++) {
+          var cellVal = _getValue(row, _columns[ci].key);
+          if (_str(cellVal).indexOf(needle) !== -1) return true;
         }
         return false;
       });
     }
 
-    // Per-column select filters.
-    for (var key in _selectFilters) {
-      if (!_selectFilters.hasOwnProperty(key)) continue;
-      var filterVal = _selectFilters[key];
-      if (!filterVal) continue;
-      rows = rows.filter(function (row) {
-        return String(row[key] === undefined || row[key] === null ? "" : row[key]) === filterVal;
-      });
-    }
-
-    // Sort.
+    // Sort
     if (_sortKey) {
-      var dir = _sortDir === "desc" ? -1 : 1;
       var sk = _sortKey;
-      rows.sort(function (a, b) {
-        var av = a[sk] === undefined || a[sk] === null ? "" : a[sk];
-        var bv = b[sk] === undefined || b[sk] === null ? "" : b[sk];
-        if (typeof av === "number" && typeof bv === "number") {
-          return dir * (av - bv);
-        }
-        av = String(av).toLowerCase();
-        bv = String(bv).toLowerCase();
-        if (av < bv) return -dir;
-        if (av > bv) return dir;
+      var dir = _sortDir === "asc" ? 1 : -1;
+      result.sort(function (a, b) {
+        var av = _str(_getValue(a, sk));
+        var bv = _str(_getValue(b, sk));
+        if (av < bv) return -1 * dir;
+        if (av > bv) return 1 * dir;
         return 0;
       });
     }
 
-    _visibleRows = rows;
+    return result;
+  }
+
+  /**
+   * Collect distinct display values for a column (for select filter options).
+   * @param {string} key
+   * @returns {Array<string>}
+   */
+  function _distinctValues(key) {
+    var seen = {};
+    var vals = [];
+    for (var i = 0; i < _rows.length; i++) {
+      var v = String(_getValue(_rows[i], key) || "");
+      if (!seen[v]) {
+        seen[v] = true;
+        vals.push(v);
+      }
+    }
+    vals.sort();
+    return vals;
   }
 
   // --------------------------------------------------------------------------
-  // HTML building helpers
+  // Rendering — filter bar
   // --------------------------------------------------------------------------
 
   /**
-   * Build the filter bar HTML (global text + per-column selects).
-   * @returns {string}
+   * Build the filter bar HTML (global search + per-column selects).
+   * @returns {string} HTML
    */
-  function _buildFilterBar() {
-    var hasSelectFilters = false;
+  function _renderFilterBar() {
+    var hasAnyFilter = false;
     for (var i = 0; i < _columns.length; i++) {
-      if (_columns[i].filter === "select") { hasSelectFilters = true; break; }
+      if (_columns[i].filter) { hasAnyFilter = true; break; }
     }
 
-    var html = '<div class="dt-filters">';
+    var html = '<div class="dt-filters" role="search">';
 
-    // Global text search input.
+    // Global text filter
     html +=
-      '<div class="dt-filter-global">' +
-        '<input type="search" id="dt-global-filter" class="dt-search-input"' +
-          ' placeholder="Filter..." aria-label="Filter rows"' +
-          ' value="' + _esc(_globalFilter) + '">' +
-      '</div>';
+      '<label class="dt-filter-global">' +
+        '<span class="dt-filter-label">Search</span>' +
+        '<input type="search"' +
+        '       class="dt-filter-input"' +
+        '       data-dt-filter="global"' +
+        '       placeholder="Filter..."' +
+        '       value="' + _esc(_globalFilter) + '"' +
+        '       aria-label="Filter all columns">' +
+      '</label>';
 
-    // Per-column select dropdowns.
-    if (hasSelectFilters) {
-      for (var j = 0; j < _columns.length; j++) {
-        var col = _columns[j];
-        if (col.filter !== "select") continue;
+    // Per-column filters
+    for (var ci = 0; ci < _columns.length; ci++) {
+      var col = _columns[ci];
+      if (!col.filter) continue;
 
-        // Collect distinct values.
-        var seen = {};
-        var vals = [];
-        for (var k = 0; k < _rows.length; k++) {
-          var v = _rows[k][col.key];
-          var sv = v === undefined || v === null ? "" : String(v);
-          if (!seen[sv]) {
-            seen[sv] = true;
-            vals.push(sv);
-          }
-        }
-        vals.sort();
-
-        var current = _selectFilters[col.key] || "";
+      if (col.filter === "select") {
+        var vals = _distinctValues(col.key);
+        var current = _colFilters[col.key] || "";
         html +=
-          '<div class="dt-filter-select">' +
-            '<select id="dt-filter-' + _esc(col.key) + '" class="dt-select"' +
-              ' aria-label="Filter by ' + _esc(col.label) + '"' +
-              ' data-col="' + _esc(col.key) + '">' +
-              '<option value="">All ' + _esc(col.label) + '</option>';
-
-        for (var m = 0; m < vals.length; m++) {
+          '<label class="dt-filter-select-wrap">' +
+            '<span class="dt-filter-label">' + _esc(col.label) + '</span>' +
+            '<select class="dt-filter-select"' +
+            '        data-dt-filter="select"' +
+            '        data-dt-col="' + _esc(col.key) + '"' +
+            '        aria-label="Filter by ' + _esc(col.label) + '">' +
+              '<option value="">All</option>';
+        for (var vi = 0; vi < vals.length; vi++) {
           html +=
-            '<option value="' + _esc(vals[m]) + '"' +
-            (vals[m] === current ? ' selected' : '') +
-            '>' + _esc(vals[m] || "(blank)") + '</option>';
+            '<option value="' + _esc(vals[vi]) + '"' +
+            (current === vals[vi] ? ' selected' : '') + '>' +
+            _esc(vals[vi]) +
+            '</option>';
         }
+        html += '</select></label>';
 
-        html += '</select></div>';
+      } else if (col.filter === "text") {
+        html +=
+          '<label class="dt-filter-col-wrap">' +
+            '<span class="dt-filter-label">' + _esc(col.label) + '</span>' +
+            '<input type="search"' +
+            '       class="dt-filter-input"' +
+            '       data-dt-filter="col-text"' +
+            '       data-dt-col="' + _esc(col.key) + '"' +
+            '       placeholder="' + _esc(col.label) + '..."' +
+            '       value="' + _esc(_colFilters[col.key] || "") + '"' +
+            '       aria-label="Filter by ' + _esc(col.label) + '">' +
+          '</label>';
       }
     }
 
@@ -192,119 +249,257 @@ window.components.DataTable = function DataTable(containerEl, opts) {
     return html;
   }
 
+  // --------------------------------------------------------------------------
+  // Rendering — table (desktop)
+  // --------------------------------------------------------------------------
+
   /**
-   * Build the table header HTML.
-   * @returns {string}
+   * Build the <thead> HTML.
+   * @returns {string} HTML
    */
-  function _buildHeader() {
-    var html = '<thead><tr role="row">';
+  function _renderThead() {
+    var html = '<thead><tr>';
     for (var i = 0; i < _columns.length; i++) {
       var col = _columns[i];
-      var mobileClass = col.hideMobile ? " dt-th--hide-mobile" : "";
-      var sortAttr = "";
+      var ariaSortAttr = "";
       var sortIndicator = "";
-
+      var sortClass = "";
       if (col.sortable) {
-        var isSorted = col.key === _sortKey;
-        var ariaSortVal = isSorted ? (_sortDir === "asc" ? "ascending" : "descending") : "none";
-        sortAttr =
-          ' tabindex="0"' +
-          ' data-sort="' + _esc(col.key) + '"' +
-          ' aria-sort="' + ariaSortVal + '"' +
-          ' role="columnheader button"';
-        if (isSorted) {
-          sortIndicator = _sortDir === "asc" ? " &#x25B2;" : " &#x25BC;";
+        if (_sortKey === col.key) {
+          ariaSortAttr = ' aria-sort="' + (_sortDir === "asc" ? "ascending" : "descending") + '"';
+          sortIndicator = _sortDir === "asc" ? " \u25b2" : " \u25bc"; // ▲ or ▼
+          sortClass = " dt-th--sorted";
         } else {
-          sortIndicator = ' <span class="dt-sort-icon">&#x21C5;</span>';
+          ariaSortAttr = ' aria-sort="none"';
         }
       }
-
-      var widthAttr = col.width ? ' style="width:' + _esc(col.width) + '"' : "";
-
+      var hideClass = col.hideMobile ? " dt-th--hide-mobile" : "";
+      var widthStyle = col.width ? ' style="width:' + _esc(col.width) + '"' : "";
       html +=
-        '<th class="dt-th' + mobileClass + '"' +
-        widthAttr +
-        sortAttr +
-        ' scope="col">' +
-        _esc(col.label) +
-        sortIndicator +
+        '<th class="dt-th' + sortClass + hideClass + '"' +
+            ' scope="col"' +
+            ariaSortAttr +
+            widthStyle +
+            (col.sortable ? ' data-dt-sort="' + _esc(col.key) + '" tabindex="0" role="columnheader"' : ' role="columnheader"') +
+            '>' +
+          _esc(col.label) + sortIndicator +
         '</th>';
+    }
+    if (_rowActions.length > 0) {
+      html += '<th class="dt-th dt-th--actions" scope="col" role="columnheader">Actions</th>';
     }
     html += '</tr></thead>';
     return html;
   }
 
   /**
-   * Build the table body HTML from _visibleRows.
-   * @returns {string}
+   * Render a single table cell's content.
+   * If the column has a render() function, delegate to it.
+   * If the column has linkTo(), wrap in an <a>.
+   * @param {object} col
+   * @param {object} row
+   * @returns {string} HTML
    */
-  function _buildBody() {
-    if (_visibleRows.length === 0) {
-      var colspan = _columns.length;
+  function _renderCell(col, row) {
+    var rawVal = _getValue(row, col.key);
+    var cellHtml;
+    if (typeof col.render === "function") {
+      cellHtml = col.render(rawVal, row);
+    } else {
+      cellHtml = _esc(rawVal == null ? "" : String(rawVal));
+    }
+    if (typeof col.linkTo === "function") {
+      var href = col.linkTo(row);
+      cellHtml = '<a href="' + _esc(href) + '" class="dt-cell-link">' + cellHtml + '</a>';
+    }
+    return cellHtml;
+  }
+
+  /**
+   * Build action buttons HTML for a row.
+   * @param {object} row
+   * @param {number} rowIdx — index in the filtered rows array (for data attributes)
+   * @returns {string} HTML
+   */
+  function _renderRowActions(row, rowIdx) {
+    if (_rowActions.length === 0) return "";
+    var html = '<td class="dt-td dt-td--actions">';
+    for (var ai = 0; ai < _rowActions.length; ai++) {
+      var action = _rowActions[ai];
+      var extraClass = action.className ? " " + action.className : "";
+      html +=
+        '<button class="dt-action-btn' + _esc(extraClass) + '"' +
+        '        data-dt-action="' + ai + '"' +
+        '        data-dt-row="' + rowIdx + '">' +
+          _esc(action.label) +
+        '</button>';
+    }
+    html += '</td>';
+    return html;
+  }
+
+  /**
+   * Build the <tbody> HTML for the filtered/sorted rows.
+   * @param {Array} rows — filtered and sorted rows
+   * @returns {string} HTML
+   */
+  function _renderTbody(rows) {
+    if (rows.length === 0) {
+      var colspan = _columns.length + (_rowActions.length > 0 ? 1 : 0);
       return (
         '<tbody>' +
-          '<tr class="dt-empty-row"><td colspan="' + colspan + '" class="dt-empty-cell">' +
-          _esc(_emptyMsg) +
-          '</td></tr>' +
+          '<tr class="dt-row dt-row--empty">' +
+            '<td class="dt-td dt-td--empty" colspan="' + colspan + '">' +
+              _esc(_emptyMsg) +
+            '</td>' +
+          '</tr>' +
         '</tbody>'
       );
     }
 
     var html = '<tbody>';
-    for (var i = 0; i < _visibleRows.length; i++) {
-      var row = _visibleRows[i];
-      var rowId = row.id ? ' data-row-id="' + _esc(String(row.id)) + '"' : "";
-      var clickable = _onRowClick ? ' class="dt-row dt-row--clickable" tabindex="0"' : ' class="dt-row"';
-
-      html += '<tr' + clickable + rowId + ' role="row">';
-
-      for (var j = 0; j < _columns.length; j++) {
-        var col = _columns[j];
-        var mobileClass = col.hideMobile ? " dt-td--hide-mobile" : "";
-        var val = row[col.key];
-        var cellHtml;
-
-        if (col.render) {
-          // Custom render function — may return raw HTML.
-          cellHtml = col.render(val, row);
-        } else if (val === undefined || val === null) {
-          cellHtml = '<span class="dt-null">—</span>';
-        } else {
-          cellHtml = _esc(String(val));
-        }
-
-        html += '<td class="dt-td' + mobileClass + '">' + cellHtml + '</td>';
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      var clickable = _onRowClick ? ' tabindex="0" data-dt-row="' + ri + '"' : "";
+      html += '<tr class="dt-row' + (_onRowClick ? " dt-row--clickable" : "") + '"' + clickable + '>';
+      for (var ci = 0; ci < _columns.length; ci++) {
+        var col = _columns[ci];
+        var hideClass = col.hideMobile ? " dt-td--hide-mobile" : "";
+        html +=
+          '<td class="dt-td' + hideClass + '">' +
+            _renderCell(col, row) +
+          '</td>';
       }
-
+      html += _renderRowActions(row, ri);
       html += '</tr>';
     }
-
     html += '</tbody>';
     return html;
   }
 
   // --------------------------------------------------------------------------
-  // Full render
+  // Rendering — mobile card layout
   // --------------------------------------------------------------------------
 
   /**
-   * Re-render the entire DataTable into _container.
+   * Build stacked card HTML for a single row (mobile view).
+   * @param {object} row
+   * @param {number} rowIdx
+   * @returns {string} HTML
+   */
+  function _renderCard(row, rowIdx) {
+    var clickable = _onRowClick
+      ? ' tabindex="0" data-dt-row="' + rowIdx + '" role="button"'
+      : "";
+    var html = '<div class="dt-card' + (_onRowClick ? " dt-card--clickable" : "") + '"' + clickable + '>';
+    for (var ci = 0; ci < _columns.length; ci++) {
+      var col = _columns[ci];
+      html +=
+        '<div class="dt-card__field">' +
+          '<span class="dt-card__label">' + _esc(col.label) + '</span>' +
+          '<span class="dt-card__value">' + _renderCell(col, row) + '</span>' +
+        '</div>';
+    }
+    if (_rowActions.length > 0) {
+      html += '<div class="dt-card__actions">';
+      for (var ai = 0; ai < _rowActions.length; ai++) {
+        var action = _rowActions[ai];
+        var extraClass = action.className ? " " + action.className : "";
+        html +=
+          '<button class="dt-action-btn' + _esc(extraClass) + '"' +
+          '        data-dt-action="' + ai + '"' +
+          '        data-dt-row="' + rowIdx + '">' +
+            _esc(action.label) +
+          '</button>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * Build the card list HTML for all filtered/sorted rows.
+   * @param {Array} rows
+   * @returns {string} HTML
+   */
+  function _renderCardList(rows) {
+    if (rows.length === 0) {
+      return '<p class="dt-empty">' + _esc(_emptyMsg) + '</p>';
+    }
+    var html = '<div class="dt-cards">';
+    for (var ri = 0; ri < rows.length; ri++) {
+      html += _renderCard(rows[ri], ri);
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // --------------------------------------------------------------------------
+  // Rendering — loading skeleton
+  // --------------------------------------------------------------------------
+
+  /**
+   * Build a loading skeleton shimmer HTML.
+   * @returns {string} HTML
+   */
+  function _renderSkeleton() {
+    var html = '<div class="dt-skeleton" aria-busy="true" aria-label="Loading...">';
+    for (var i = 0; i < 5; i++) {
+      html += '<div class="dt-skeleton__row">';
+      for (var ci = 0; ci < Math.min(_columns.length, 4); ci++) {
+        html += '<div class="dt-skeleton__cell"></div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // --------------------------------------------------------------------------
+  // Rendering — main render
+  // --------------------------------------------------------------------------
+
+  /**
+   * Stores a reference to the filtered rows used in the last render.
+   * Used by event handlers to look up row data by index.
+   */
+  var _filteredRows = [];
+
+  /**
+   * Re-render the entire component into _container.
    */
   function _render() {
     if (!_container || !_alive) return;
 
-    _recompute();
+    _unwireEvents();
 
-    var html =
-      '<div class="dt-root">' +
-        _buildFilterBar() +
-        '<div class="dt-table-wrapper">' +
-          '<table class="dt-table" role="grid">' +
-            _buildHeader() +
-            _buildBody() +
-          '</table>' +
-        '</div>' +
+    if (_loading && _rows.length === 0) {
+      _container.innerHTML = _renderSkeleton();
+      return;
+    }
+
+    _filteredRows = _applyFilters();
+
+    var html = '<div class="dt-root">';
+    html += _renderFilterBar();
+
+    // Table layout (hidden on mobile via CSS, shown on desktop)
+    html +=
+      '<div class="dt-table-wrap">' +
+        '<table class="dt-table" role="grid">' +
+          _renderThead() +
+          _renderTbody(_filteredRows) +
+        '</table>' +
       '</div>';
+
+    // Card layout (shown on mobile, hidden on desktop via CSS)
+    html +=
+      '<div class="dt-cards-wrap">' +
+        _renderCardList(_filteredRows) +
+      '</div>';
+
+    html += '</div>'; // .dt-root
 
     _container.innerHTML = html;
     _wireEvents();
@@ -315,84 +510,177 @@ window.components.DataTable = function DataTable(containerEl, opts) {
   // --------------------------------------------------------------------------
 
   /**
-   * Wire all interactive listeners after render.
-   * All listeners are delegated to _container for safe rebinding.
+   * Remove all delegated listeners previously added by _wireEvents().
+   */
+  function _unwireEvents() {
+    if (_clickListener) {
+      _container.removeEventListener("click", _clickListener);
+      _clickListener = null;
+    }
+    if (_keydownListener) {
+      _container.removeEventListener("keydown", _keydownListener);
+      _keydownListener = null;
+    }
+    for (var i = 0; i < _filterListeners.length; i++) {
+      var item = _filterListeners[i];
+      item.el.removeEventListener(item.type, item.fn);
+    }
+    _filterListeners = [];
+  }
+
+  /**
+   * Activate a row by index — fires onRowClick if set.
+   * @param {number} rowIdx — index into _filteredRows
+   */
+  function _activateRow(rowIdx) {
+    if (!_onRowClick) return;
+    var row = _filteredRows[rowIdx];
+    if (row != null) {
+      _onRowClick(row);
+    }
+  }
+
+  /**
+   * Wire delegated click and keyboard listeners on the container.
    */
   function _wireEvents() {
-    if (!_container) return;
+    // ---- Click delegation ------------------------------------------------
+    _clickListener = function (evt) {
+      var target = evt.target;
 
-    // Global text filter.
-    var searchEl = _container.querySelector("#dt-global-filter");
-    if (searchEl) {
-      searchEl.addEventListener("input", function (e) {
-        _globalFilter = e.target.value;
-        _render();
-        // Restore focus to the search input after re-render.
-        var el = _container.querySelector("#dt-global-filter");
-        if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
-      });
-    }
-
-    // Per-column select filters.
-    var selects = _container.querySelectorAll(".dt-select");
-    for (var i = 0; i < selects.length; i++) {
-      selects[i].addEventListener("change", function (e) {
-        var colKey = e.target.getAttribute("data-col");
-        if (colKey) {
-          _selectFilters[colKey] = e.target.value;
-          _render();
+      // Row action button
+      var actionBtn = target.closest ? target.closest("[data-dt-action]") : null;
+      if (actionBtn) {
+        evt.stopPropagation();
+        var actionIdx = parseInt(actionBtn.getAttribute("data-dt-action"), 10);
+        var rowIdx    = parseInt(actionBtn.getAttribute("data-dt-row"), 10);
+        var action = _rowActions[actionIdx];
+        var row    = _filteredRows[rowIdx];
+        if (action && typeof action.callback === "function" && row != null) {
+          action.callback(row);
         }
-      });
-    }
-
-    // Sortable column headers.
-    var headers = _container.querySelectorAll("[data-sort]");
-    for (var h = 0; h < headers.length; h++) {
-      (function (thEl) {
-        function doSort() {
-          var key = thEl.getAttribute("data-sort");
-          if (_sortKey === key) {
-            _sortDir = _sortDir === "asc" ? "desc" : "asc";
-          } else {
-            _sortKey = key;
-            _sortDir = "asc";
-          }
-          _render();
-        }
-        thEl.addEventListener("click", doSort);
-        thEl.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            doSort();
-          }
-        });
-      })(headers[h]);
-    }
-
-    // Row click / keyboard.
-    if (_onRowClick) {
-      var rows = _container.querySelectorAll(".dt-row--clickable");
-      for (var r = 0; r < rows.length; r++) {
-        (function (trEl) {
-          function doRowClick(e) {
-            // Don't fire if the click landed on a link or button inside the cell.
-            if (e.target.tagName === "A" || e.target.tagName === "BUTTON") return;
-            var rowId = trEl.getAttribute("data-row-id");
-            if (!rowId) return;
-            // Find the row object.
-            for (var i = 0; i < _visibleRows.length; i++) {
-              if (String(_visibleRows[i].id) === rowId) {
-                _onRowClick(_visibleRows[i]);
-                break;
-              }
-            }
-          }
-          trEl.addEventListener("click", doRowClick);
-          trEl.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") { e.preventDefault(); doRowClick(e); }
-          });
-        })(rows[r]);
+        return;
       }
+
+      // Sortable column header
+      var th = target.closest ? target.closest("[data-dt-sort]") : null;
+      if (th) {
+        var key = th.getAttribute("data-dt-sort");
+        if (key === _sortKey) {
+          _sortDir = _sortDir === "asc" ? "desc" : "asc";
+        } else {
+          _sortKey = key;
+          _sortDir = "asc";
+        }
+        _render();
+        return;
+      }
+
+      // Clickable table row (tbody tr)
+      var tr = target.closest ? target.closest("tr[data-dt-row]") : null;
+      if (tr && !target.closest("[data-dt-action]")) {
+        _activateRow(parseInt(tr.getAttribute("data-dt-row"), 10));
+        return;
+      }
+
+      // Clickable card (mobile)
+      var card = target.closest ? target.closest(".dt-card[data-dt-row]") : null;
+      if (card && !target.closest("[data-dt-action]")) {
+        _activateRow(parseInt(card.getAttribute("data-dt-row"), 10));
+        return;
+      }
+    };
+    _container.addEventListener("click", _clickListener);
+
+    // ---- Keyboard delegation ---------------------------------------------
+    _keydownListener = function (evt) {
+      var target = evt.target;
+
+      // Sortable header — Enter or Space to sort
+      if (target.hasAttribute && target.hasAttribute("data-dt-sort")) {
+        if (evt.key === "Enter" || evt.key === " ") {
+          evt.preventDefault();
+          target.click();
+          return;
+        }
+      }
+
+      // Row / card — Enter to activate
+      if (evt.key === "Enter" &&
+          (target.hasAttribute("data-dt-row") || (target.closest && target.closest("[data-dt-row]")))) {
+        var rowEl = target.hasAttribute("data-dt-row")
+          ? target
+          : (target.closest ? target.closest("[data-dt-row]") : null);
+        if (rowEl && !target.closest("[data-dt-action]")) {
+          evt.preventDefault();
+          _activateRow(parseInt(rowEl.getAttribute("data-dt-row"), 10));
+          return;
+        }
+      }
+
+      // Arrow key navigation between table rows / cards
+      if (evt.key === "ArrowDown" || evt.key === "ArrowUp") {
+        var focusedRow = target.closest ? target.closest("[data-dt-row]") : null;
+        if (!focusedRow) return;
+        evt.preventDefault();
+        var allRows = _container.querySelectorAll(
+          "tr[data-dt-row], .dt-card[data-dt-row]"
+        );
+        var currentIdx = -1;
+        for (var i = 0; i < allRows.length; i++) {
+          if (allRows[i] === focusedRow || allRows[i].contains(target)) {
+            currentIdx = i;
+            break;
+          }
+        }
+        var delta = evt.key === "ArrowDown" ? 1 : -1;
+        var nextIdx = currentIdx + delta;
+        if (nextIdx >= 0 && nextIdx < allRows.length) {
+          allRows[nextIdx].focus();
+        }
+      }
+    };
+    _container.addEventListener("keydown", _keydownListener);
+
+    // ---- Filter inputs ---------------------------------------------------
+
+    // Global search
+    var globalInput = _container.querySelector('[data-dt-filter="global"]');
+    if (globalInput) {
+      var globalFn = function (evt) {
+        _globalFilter = evt.target.value;
+        _render();
+      };
+      globalInput.addEventListener("input", globalFn);
+      _filterListeners.push({ el: globalInput, type: "input", fn: globalFn });
+    }
+
+    // Per-column text filters
+    var colTextInputs = _container.querySelectorAll('[data-dt-filter="col-text"]');
+    for (var ti = 0; ti < colTextInputs.length; ti++) {
+      (function (input) {
+        var fn = function (evt) {
+          var col = input.getAttribute("data-dt-col");
+          _colFilters[col] = evt.target.value;
+          _render();
+        };
+        input.addEventListener("input", fn);
+        _filterListeners.push({ el: input, type: "input", fn: fn });
+      })(colTextInputs[ti]);
+    }
+
+    // Per-column select filters
+    var selects = _container.querySelectorAll('[data-dt-filter="select"]');
+    for (var si = 0; si < selects.length; si++) {
+      (function (select) {
+        var fn = function (evt) {
+          var col = select.getAttribute("data-dt-col");
+          _colFilters[col] = evt.target.value;
+          _render();
+        };
+        select.addEventListener("change", fn);
+        _filterListeners.push({ el: select, type: "change", fn: fn });
+      })(selects[si]);
     }
   }
 
@@ -402,47 +690,42 @@ window.components.DataTable = function DataTable(containerEl, opts) {
 
   var _self = {
     /**
-     * Replace all rows and re-render.
-     * @param {Array} rows — array of plain objects
+     * Replace the table data and re-render.
+     * @param {Array} rows — array of row data objects
      */
     setRows: function (rows) {
-      _rows = Array.isArray(rows) ? rows : [];
+      _rows    = Array.isArray(rows) ? rows : [];
+      _loading = false;
       _render();
     },
 
     /**
-     * Append rows to the existing set and re-render.
-     * @param {Array} rows
+     * Toggle the loading skeleton state.
+     * Pass true before fetching data; false (or call setRows) when done.
+     * @param {boolean} isLoading
      */
-    appendRows: function (rows) {
-      if (Array.isArray(rows)) {
-        _rows = _rows.concat(rows);
+    setLoading: function (isLoading) {
+      _loading = !!isLoading;
+      if (_loading) {
+        _rows = [];
+        _render();
       }
-      _render();
     },
 
     /**
-     * Programmatically set the sort column and direction without re-fetching.
-     * Useful for syncing UI state when the parent component controls server-side sorting.
-     * @param {string} key
-     * @param {string} dir — 'asc' | 'desc'
-     */
-    setSort: function (key, dir) {
-      _sortKey = key;
-      _sortDir = dir === "desc" ? "desc" : "asc";
-      _render();
-    },
-
-    /**
-     * Destroy this instance. Clears the container and prevents further updates.
+     * Destroy this instance: remove listeners and clear the container.
      */
     destroy: function () {
       _alive = false;
+      _unwireEvents();
       if (_container) {
         _container.innerHTML = "";
       }
     },
   };
+
+  // Perform an initial render (shows empty or skeleton state)
+  _render();
 
   return _self;
 };

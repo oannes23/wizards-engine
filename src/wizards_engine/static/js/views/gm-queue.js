@@ -45,6 +45,12 @@ window.views.gmQueue = (function () {
   /** PC cards from /gm/queue-summary — array of PCQueueCard objects. */
   var _pcCards = [];
 
+  /** Group cards from /gm/queue-summary — array of GroupQueueCard objects. */
+  var _groupCards = [];
+
+  /** DataTable instance for the Groups section, or null when not mounted. */
+  var _groupsTable = null;
+
   /** ID of the currently expanded proposal card, or null. */
   var _expandedId = null;
 
@@ -245,6 +251,178 @@ window.views.gmQueue = (function () {
   }
 
   // ---------------------------------------------------------------------------
+  // Groups section rendering (DataTable)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Render the tier number as a small badge.
+   * @param {number} tier
+   * @returns {string} HTML
+   */
+  function _renderTierBadge(tier) {
+    var esc = window.utils.esc;
+    return (
+      '<span class="queue-groups__tier-badge">' +
+        esc(tier != null ? "Tier " + tier : "—") +
+      '</span>'
+    );
+  }
+
+  /**
+   * Render a group's active clocks as a series of compact ClockProgress
+   * components, one per clock, with the clock name as a label.
+   * Returns "—" if there are no active clocks.
+   *
+   * @param {Array} activeClocks — array of ActiveClockSummary objects
+   * @returns {string} HTML
+   */
+  function _renderActiveClocks(activeClocks) {
+    if (!activeClocks || activeClocks.length === 0) {
+      return '<span class="queue-groups__no-clocks">—</span>';
+    }
+    var esc = window.utils.esc;
+    var parts = [];
+    for (var i = 0; i < activeClocks.length; i++) {
+      var clock = activeClocks[i];
+      parts.push(
+        '<span class="queue-groups__clock-row">' +
+          '<span class="queue-groups__clock-name">' + esc(clock.name) + '</span>' +
+          window.components.clockProgress.render({
+            current: clock.progress,
+            total: clock.segments,
+            mode: "compact",
+          }) +
+        '</span>'
+      );
+    }
+    return '<span class="queue-groups__clocks">' + parts.join("") + '</span>';
+  }
+
+  /**
+   * Render the last-activity cell: relative timestamp or "No activity" if null.
+   * @param {string|null} mostRecentEventAt — ISO timestamp or null
+   * @returns {string} HTML
+   */
+  function _renderLastActivity(mostRecentEventAt) {
+    if (!mostRecentEventAt) {
+      return '<span class="queue-groups__no-activity">No recent activity</span>';
+    }
+    return (
+      '<span class="queue-groups__last-activity">' +
+        window.utils.esc(window.utils.relativeTime(mostRecentEventAt)) +
+      '</span>'
+    );
+  }
+
+  /**
+   * Mount or update the Groups DataTable.
+   * If _groupsTable already exists, call setRows() to update without
+   * destroying the table (preserves sort state).
+   * If groupCards is empty and there are no groups, render an empty-state
+   * message inside the container instead.
+   *
+   * @param {HTMLElement} container — the .queue-groups__table-wrap element
+   * @param {Array}       groupCards — array of GroupQueueCard objects
+   */
+  function _mountGroupsTable(container, groupCards) {
+    if (!container) return;
+
+    if (_groupsTable) {
+      // Table already exists — just update the rows
+      _groupsTable.setRows(groupCards);
+      return;
+    }
+
+    var columns = [
+      {
+        key: "name",
+        label: "Group Name",
+        sortable: true,
+        filter: "text",
+        render: function (value) {
+          return '<span class="queue-groups__name">' + window.utils.esc(value) + '</span>';
+        },
+      },
+      {
+        key: "tier",
+        label: "Tier",
+        sortable: true,
+        filter: "select",
+        width: "80px",
+        render: function (value) {
+          return _renderTierBadge(value);
+        },
+      },
+      {
+        key: "active_clocks",
+        label: "Active Clocks",
+        sortable: false,
+        render: function (value) {
+          return _renderActiveClocks(value);
+        },
+        hideMobile: true,
+      },
+      {
+        key: "most_recent_event_at",
+        label: "Last Activity",
+        sortable: true,
+        render: function (value) {
+          return _renderLastActivity(value);
+        },
+      },
+    ];
+
+    _groupsTable = new window.components.DataTable(container, {
+      columns: columns,
+      emptyMessage: "No groups found.",
+      onRowClick: function (row) {
+        window.location.hash = "#/gm/world/groups/" + row.id;
+      },
+    });
+
+    _groupsTable.setRows(groupCards);
+  }
+
+  /**
+   * Destroy the groups DataTable if it exists.
+   * Called on teardown and before full re-render when the table container
+   * is about to be removed from the DOM.
+   */
+  function _destroyGroupsTable() {
+    if (_groupsTable) {
+      _groupsTable.destroy();
+      _groupsTable = null;
+    }
+  }
+
+  /**
+   * Render the Groups section HTML wrapper.
+   * The DataTable is mounted into the container after innerHTML is set.
+   *
+   * @returns {string} HTML string for the section wrapper
+   */
+  function _renderGroupsSectionHtml() {
+    return (
+      '<p class="queue-section-heading">Groups</p>' +
+      '<div class="queue-groups" id="queue-groups-section">' +
+        '<div class="queue-groups__table-wrap" id="queue-groups-table"></div>' +
+      '</div>'
+    );
+  }
+
+  /**
+   * After _renderList() has written the Groups section HTML to the DOM,
+   * mount the DataTable into the container element.
+   *
+   * @param {Array} groupCards
+   */
+  function _mountGroupsTableInDom(groupCards) {
+    var container = document.getElementById("queue-groups-table");
+    if (!container) return;
+    _mountGroupsTable(container, groupCards);
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -254,6 +432,10 @@ window.views.gmQueue = (function () {
    */
   function _renderList() {
     if (!_viewEl || !_mounted) return;
+
+    // Destroy the DataTable before wiping innerHTML so its listeners
+    // are properly removed before the container element disappears.
+    _destroyGroupsTable();
 
     var sorted = _sortProposals(_proposals);
 
@@ -268,6 +450,9 @@ window.views.gmQueue = (function () {
           '</p>' +
         '</hgroup>' +
         _renderPcGrid(_pcCards);
+
+    // Groups section — DataTable placeholder (table mounted after innerHTML)
+    html += _renderGroupsSectionHtml();
 
     html += '<p class="queue-section-heading">Pending Proposals</p>';
 
@@ -296,7 +481,10 @@ window.views.gmQueue = (function () {
 
     _viewEl.innerHTML = html;
 
-    // Attach event listeners to all rendered cards
+    // Mount the Groups DataTable now that the container is in the DOM
+    _mountGroupsTableInDom(_groupCards);
+
+    // Attach event listeners to all rendered proposal cards
     for (var j = 0; j < sorted.length; j++) {
       window.components.proposalCard.attach(_viewEl, {
         proposal: sorted[j],
@@ -435,6 +623,7 @@ window.views.gmQueue = (function () {
       .then(function (data) {
         if (!_mounted) return;
         _pcCards = (data && data.pc_cards) ? data.pc_cards : [];
+        _groupCards = (data && data.group_cards) ? data.group_cards : [];
         _renderList();
       })
       .catch(function () {
@@ -444,11 +633,13 @@ window.views.gmQueue = (function () {
 
   /**
    * Poll callback for queue-summary.
+   * Updates PC cards and group cards, then re-renders.
    * @param {object} data — parsed response from GET /api/v1/gm/queue-summary
    */
   function _queueSummaryPollCallback(data) {
     if (!_mounted) return;
     _pcCards = (data && data.pc_cards) ? data.pc_cards : [];
+    _groupCards = (data && data.group_cards) ? data.group_cards : [];
     _renderList();
   }
 
@@ -630,6 +821,10 @@ window.views.gmQueue = (function () {
     _expandedId = null;
     _inflightIds = {};
     _pcCards = [];
+    _groupCards = [];
+
+    // Destroy the DataTable to remove its event listeners
+    _destroyGroupsTable();
 
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       Alpine.store("app").unregisterPoll(POLL_KEY);
@@ -672,8 +867,10 @@ window.views.gmQueue = (function () {
     _mounted = true;
     _proposals = [];
     _pcCards = [];
+    _groupCards = [];
     _expandedId = null;
     _inflightIds = {};
+    _destroyGroupsTable();
 
     // Initial fetch — proposals (shows loading state) + queue-summary (background)
     _fetchProposals(true);

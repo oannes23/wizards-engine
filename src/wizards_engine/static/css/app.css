@@ -1484,6 +1484,85 @@ main.container {
   font-weight: 600;
 }
 
+/* ---------------------------------------------------------------------------
+   Groups section — GM Queue view (DataTable with groups sorted by activity)
+   --------------------------------------------------------------------------- */
+
+/* Outer wrapper for the Groups section */
+.queue-groups {
+  margin-bottom: 1.5rem;
+}
+
+/* DataTable container within the groups section */
+.queue-groups__table-wrap {
+  width: 100%;
+}
+
+/* Tier badge — coloured pill matching Pico badge style */
+.queue-groups__tier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--pico-secondary-background, #2d2d4e);
+  color: var(--pico-secondary-color, #b4b4d5);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  white-space: nowrap;
+}
+
+/* Group name inside the Name column */
+.queue-groups__name {
+  font-weight: 500;
+  color: var(--pico-color, #eee);
+}
+
+/* Clocks column — vertical stack of clock-name + progress pairs */
+.queue-groups__clocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* A single clock name + progress indicator row */
+.queue-groups__clock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+
+/* The clock name label within the clock row */
+.queue-groups__clock-name {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* Placeholder when a group has no active clocks */
+.queue-groups__no-clocks {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.85rem;
+}
+
+/* Relative timestamp for last activity */
+.queue-groups__last-activity {
+  color: var(--pico-color, #eee);
+  font-size: 0.85rem;
+}
+
+/* Muted label when a group has no events */
+.queue-groups__no-activity {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 /* Success toast — dispatched by gm-queue view on approve/reject */
 #api-success-toast {
   position: fixed;

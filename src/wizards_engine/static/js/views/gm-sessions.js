@@ -3,12 +3,16 @@
  * Route:  #/gm/sessions  and  #/gm/sessions/new
  * Access: GM only
  *
- * Displays a session list grouped by status (active → draft → ended).
+ * Displays a DataTable of sessions (active → draft → ended order).
  * Supports creating new sessions, starting/ending sessions, editing draft
  * sessions, managing participants, and navigating to session detail/timeline.
  *
  * Registers as:  window.views.gmSessions
  * Called by:     router.js route entries for "/gm/sessions" and "/gm/sessions/new"
+ *
+ * Dependencies (loaded before this file):
+ *   data-table.js  — window.components.DataTable
+ *   utils.js       — window.utils.esc, window.utils.requireGm, window.utils.showSuccess
  */
 
 window.views = window.views || {};
@@ -25,7 +29,7 @@ window.views.gmSessions = (function () {
   // Private state
   // ---------------------------------------------------------------------------
 
-  /** All loaded sessions, flat. Grouped on render. */
+  /** All loaded sessions, flat. */
   var _sessions = [];
 
   /** All characters loaded for participant picker. */
@@ -46,16 +50,12 @@ window.views.gmSessions = (function () {
   /** In-flight flag map keyed by session id. */
   var _inflightIds = {};
 
+  /** DataTable instance for the session list. Null when not in list mode. */
+  var _table = null;
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
-
-  function _isGm() {
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      return Alpine.store("app").isGm();
-    }
-    return false;
-  }
 
   /** Find a session by id from _sessions. */
   function _findSession(id) {
@@ -85,18 +85,125 @@ window.views.gmSessions = (function () {
     }
   }
 
+  /** Destroy the DataTable instance if it exists. */
+  function _destroyTable() {
+    if (_table) {
+      _table.destroy();
+      _table = null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
-  // Status badge helpers
+  // Status badge helper
   // ---------------------------------------------------------------------------
 
+  /**
+   * Return HTML for a session status badge.
+   * Uses the .session-status-badge base class with a status-specific modifier.
+   * @param {string} status — "active" | "draft" | "ended"
+   * @returns {string} HTML string
+   */
   function _statusBadge(status) {
     var map = {
-      active:  { label: "Active",  cls: "session-badge--active"  },
-      draft:   { label: "Draft",   cls: "session-badge--draft"   },
-      ended:   { label: "Ended",   cls: "session-badge--ended"   },
+      active: { label: "Active", cls: "session-status-badge--active" },
+      draft:  { label: "Draft",  cls: "session-status-badge--draft"  },
+      ended:  { label: "Ended",  cls: "session-status-badge--ended"  },
     };
-    var info = map[status] || { label: status || "Unknown", cls: "session-badge--unknown" };
-    return '<mark class="session-badge ' + window.utils.esc(info.cls) + '">' + window.utils.esc(info.label) + '</mark>';
+    var info = map[status] || { label: status || "Unknown", cls: "session-status-badge--unknown" };
+    return (
+      '<mark class="session-status-badge ' +
+      window.utils.esc(info.cls) +
+      '">' +
+      window.utils.esc(info.label) +
+      '</mark>'
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Participant avatar helper
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Return HTML for overlapping initials circles for a participants array.
+   * Shows up to 4 avatars; if more, shows "+N" overflow pill.
+   * @param {Array} participants — array of participant objects with character_id
+   * @returns {string} HTML string
+   */
+  function _participantAvatars(participants) {
+    if (!participants || participants.length === 0) {
+      return '<span class="session-participants--empty">—</span>';
+    }
+
+    var MAX_VISIBLE = 4;
+    var html = '<span class="session-participants">';
+
+    var visible = participants.slice(0, MAX_VISIBLE);
+    for (var i = 0; i < visible.length; i++) {
+      var p = visible[i];
+      var chr = _findCharacter(p.character_id);
+      var name = chr ? (chr.name || chr.display_name || "") : "";
+      var initial = name ? name.charAt(0).toUpperCase() : "?";
+      var title = name ? window.utils.esc(name) : window.utils.esc(p.character_id || "");
+      html +=
+        '<span class="session-avatar" title="' + title + '">' +
+          window.utils.esc(initial) +
+        '</span>';
+    }
+
+    if (participants.length > MAX_VISIBLE) {
+      var overflow = participants.length - MAX_VISIBLE;
+      html +=
+        '<span class="session-avatar session-avatar--overflow">+' +
+          window.utils.esc(String(overflow)) +
+        '</span>';
+    }
+
+    html += '</span>';
+    return html;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Row actions renderer
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Return HTML for per-row action buttons based on session status.
+   * Rendered inside a custom DataTable cell (not via rowActions API, because
+   * the button set differs by status).
+   * @param {object} session
+   * @returns {string} HTML string
+   */
+  function _rowActionsHtml(session) {
+    var id     = session.id || "";
+    var status = session.status || "draft";
+    var esc    = window.utils.esc;
+    var html   = '<div class="session-row-actions">';
+
+    if (status === "draft") {
+      html +=
+        '<button class="session-row-btn outline secondary" ' +
+        'data-action="edit-session" data-id="' + esc(id) + '">Edit</button> ' +
+        '<button class="session-row-btn outline secondary" ' +
+        'data-action="manage-participants" data-id="' + esc(id) + '">Participants</button> ' +
+        '<button class="session-row-btn" ' +
+        'data-action="confirm-start" data-id="' + esc(id) + '">Start</button> ' +
+        '<button class="session-row-btn outline secondary" ' +
+        'data-action="confirm-delete" data-id="' + esc(id) + '">Delete</button>';
+    } else if (status === "active") {
+      html +=
+        '<button class="session-row-btn outline secondary" ' +
+        'data-action="manage-participants" data-id="' + esc(id) + '">Participants</button> ' +
+        '<button class="session-row-btn outline secondary" ' +
+        'data-action="confirm-end" data-id="' + esc(id) + '">End Session</button>';
+    } else {
+      // ended — view/timeline only (row click handles primary navigation)
+      html +=
+        '<a href="#/gm/sessions/' + esc(id) + '/timeline" ' +
+        'class="session-row-btn outline secondary">Timeline</a>';
+    }
+
+    html += '</div>';
+    return html;
   }
 
   // ---------------------------------------------------------------------------
@@ -119,7 +226,9 @@ window.views.gmSessions = (function () {
     _viewEl.innerHTML =
       '<div class="sessions-view">' +
         '<hgroup><h2>Sessions</h2></hgroup>' +
-        '<p class="error-text" role="alert">' + window.utils.esc(msg || "Failed to load sessions.") + '</p>' +
+        '<p class="error-text" role="alert">' +
+          window.utils.esc(msg || "Failed to load sessions.") +
+        '</p>' +
         '<button id="sessions-retry">Retry</button>' +
       '</div>';
     var btn = document.getElementById("sessions-retry");
@@ -127,116 +236,70 @@ window.views.gmSessions = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Session list render
+  // Session list render (DataTable)
   // ---------------------------------------------------------------------------
 
-  function _renderSessionCard(session) {
-    var id       = session.id || "";
-    var status   = session.status || "draft";
-    var summary  = session.summary || "";
-    var date     = _formatDate(session.date);
-    var timeNow  = session.time_now != null ? session.time_now : "";
-    var isActive = status === "active";
-    var isDraft  = status === "draft";
-    var isEnded  = status === "ended";
+  /**
+   * Return a display name for a session row.
+   * Uses summary if available, otherwise falls back to "Untitled Session".
+   * @param {object} session
+   * @returns {string}
+   */
+  function _sessionDisplayName(session) {
+    return session.summary ? session.summary.slice(0, 80) : "Untitled Session";
+  }
 
-    var summaryHtml = summary
-      ? '<p class="session-card__summary">' + window.utils.esc(summary) + '</p>'
-      : "";
-
-    var metaHtml = "";
-    if (date || timeNow !== "") {
-      metaHtml = '<p class="session-card__meta">';
-      if (date)        metaHtml += '<span>Date: ' + window.utils.esc(date) + '</span> ';
-      if (timeNow !== "") metaHtml += '<span>Time: ' + window.utils.esc(String(timeNow)) + '</span>';
-      metaHtml += '</p>';
-    }
-
-    var actionsHtml = '<div class="session-card__actions">';
-    actionsHtml += '<a href="#/gm/sessions/' + window.utils.esc(id) + '" class="outline secondary">View</a> ';
-    actionsHtml += '<a href="#/gm/sessions/' + window.utils.esc(id) + '/timeline" class="outline secondary">Timeline</a> ';
-
-    if (isDraft) {
-      actionsHtml += '<button class="outline" data-action="edit-session" data-id="' + window.utils.esc(id) + '">Edit</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + window.utils.esc(id) + '">Participants</button> ';
-      actionsHtml += '<button data-action="confirm-start" data-id="' + window.utils.esc(id) + '">Start</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="confirm-delete" data-id="' + window.utils.esc(id) + '">Delete</button> ';
-    }
-
-    if (isActive) {
-      actionsHtml += '<button class="outline secondary" data-action="manage-participants" data-id="' + window.utils.esc(id) + '">Participants</button> ';
-      actionsHtml += '<button class="outline secondary" data-action="confirm-end" data-id="' + window.utils.esc(id) + '">End Session</button> ';
-    }
-
-    actionsHtml += '</div>';
-
-    var inflight = !!_inflightIds[id];
-    var inflightAttr = inflight ? ' aria-busy="true"' : "";
-
-    return (
-      '<article class="session-card session-card--' + window.utils.esc(status) + '"' + inflightAttr + '>' +
-        '<header class="session-card__header">' +
-          _statusBadge(status) +
-          (summary ? '<strong class="session-card__name">' + window.utils.esc(summary.slice(0, 60)) + '</strong>' : '<em class="session-card__name">Untitled Session</em>') +
-        '</header>' +
-        metaHtml +
-        actionsHtml +
-      '</article>'
-    );
+  /**
+   * Sort sessions so Active comes first, then Draft, then Ended.
+   * @param {Array} sessions
+   * @returns {Array}
+   */
+  function _sortedSessions(sessions) {
+    var order = { active: 0, draft: 1, ended: 2 };
+    return sessions.slice().sort(function (a, b) {
+      var oa = order[a.status] != null ? order[a.status] : 3;
+      var ob = order[b.status] != null ? order[b.status] : 3;
+      return oa - ob;
+    });
   }
 
   function _renderList() {
     if (!_viewEl || !_mounted) return;
 
-    var active  = _sessions.filter(function (s) { return s.status === "active";  });
-    var draft   = _sessions.filter(function (s) { return s.status === "draft";   });
-    var ended   = _sessions.filter(function (s) { return s.status === "ended";   });
+    _destroyTable();
 
-    var html = '<div class="sessions-view">';
-    html += '<hgroup><h2>Sessions</h2></hgroup>';
-    html += '<div class="sessions-view__toolbar"><button id="sessions-create-btn">+ New Session</button></div>';
-
-    if (_sessions.length === 0) {
-      html += '<p class="sessions-view__empty" role="status">No sessions yet. Create one to get started.</p>';
-    } else {
-      if (active.length > 0) {
-        html += '<h3 class="sessions-view__group-heading">Active</h3>';
-        for (var i = 0; i < active.length; i++) html += _renderSessionCard(active[i]);
-      }
-      if (draft.length > 0) {
-        html += '<h3 class="sessions-view__group-heading">Draft</h3>';
-        for (var j = 0; j < draft.length; j++) html += _renderSessionCard(draft[j]);
-      }
-      if (ended.length > 0) {
-        html += '<h3 class="sessions-view__group-heading">Ended</h3>';
-        for (var k = 0; k < ended.length; k++) html += _renderSessionCard(ended[k]);
-      }
-    }
-
-    html += '</div>';
+    var html =
+      '<div class="sessions-view">' +
+        '<div class="sessions-view__header">' +
+          '<h2>Sessions</h2>' +
+          '<button id="sessions-create-btn">+ New Session</button>' +
+        '</div>' +
+        '<div id="sessions-table-container"></div>' +
+      '</div>';
 
     _viewEl.innerHTML = html;
-    _bindListEvents();
-  }
 
-  function _bindListEvents() {
+    // Wire create button
     var createBtn = document.getElementById("sessions-create-btn");
     if (createBtn) {
       createBtn.addEventListener("click", function () {
         _mode = "create";
         _activeSessionId = null;
+        _destroyTable();
         _renderCreateForm();
       });
     }
 
-    // Delegate action buttons
-    if (_viewEl) {
-      _viewEl.addEventListener("click", function (evt) {
+    // Wire delegated action buttons (inside the table container)
+    var tableContainer = document.getElementById("sessions-table-container");
+    if (tableContainer) {
+      tableContainer.addEventListener("click", function (evt) {
         var btn = evt.target.closest("[data-action]");
         if (!btn) return;
         var action = btn.getAttribute("data-action");
         var id     = btn.getAttribute("data-id");
         if (!action || !id) return;
+        evt.stopPropagation(); // prevent row-click handler
 
         if (action === "edit-session")        { _openEdit(id); }
         if (action === "confirm-start")       { _openConfirmStart(id); }
@@ -245,6 +308,66 @@ window.views.gmSessions = (function () {
         if (action === "manage-participants") { _openParticipants(id); }
       });
     }
+
+    if (!tableContainer) return;
+
+    // Build DataTable columns
+    var columns = [
+      {
+        key:      "summary",
+        label:    "Session",
+        sortable: true,
+        render:   function (val, row) {
+          return window.utils.esc(_sessionDisplayName(row));
+        },
+      },
+      {
+        key:      "status",
+        label:    "Status",
+        sortable: true,
+        filter:   "select",
+        width:    "90px",
+        render:   function (val) {
+          return _statusBadge(val);
+        },
+      },
+      {
+        key:        "date",
+        label:      "Date",
+        sortable:   true,
+        hideMobile: true,
+        render:     function (val) {
+          return window.utils.esc(_formatDate(val));
+        },
+      },
+      {
+        key:        "participants",
+        label:      "Participants",
+        hideMobile: true,
+        render:     function (val) {
+          return _participantAvatars(val);
+        },
+      },
+      {
+        key:    "_actions",
+        label:  "Actions",
+        width:  "260px",
+        render: function (val, row) {
+          return _rowActionsHtml(row);
+        },
+      },
+    ];
+
+    _table = new window.components.DataTable(tableContainer, {
+      columns:      columns,
+      emptyMessage: "No sessions yet. Click '+ New Session' to create one.",
+      onRowClick: function (session) {
+        window.location.hash = "#/gm/sessions/" + encodeURIComponent(session.id);
+      },
+    });
+
+    var sorted = _sortedSessions(_sessions);
+    _table.setRows(sorted);
   }
 
   // ---------------------------------------------------------------------------
@@ -256,17 +379,17 @@ window.views.gmSessions = (function () {
     _viewEl.innerHTML =
       '<div class="sessions-view">' +
         '<hgroup><h2>New Session</h2></hgroup>' +
-        '<form id="session-create-form">' +
-          '<label for="sc-summary">Summary<br>' +
+        '<form id="session-create-form" class="sessions-form">' +
+          '<label for="sc-summary">Summary' +
             '<input type="text" id="sc-summary" name="summary" placeholder="Brief description of the session" maxlength="200">' +
           '</label>' +
-          '<label for="sc-date">Date<br>' +
+          '<label for="sc-date">Date' +
             '<input type="date" id="sc-date" name="date">' +
           '</label>' +
-          '<label for="sc-time-now">Time Now (hours)<br>' +
+          '<label for="sc-time-now">Time Now (hours)' +
             '<input type="number" id="sc-time-now" name="time_now" min="0" max="999" step="1" placeholder="e.g. 4" inputmode="numeric">' +
           '</label>' +
-          '<label for="sc-notes">Notes<br>' +
+          '<label for="sc-notes">Notes' +
             '<textarea id="sc-notes" name="notes" rows="3" placeholder="GM notes (not shown to players)"></textarea>' +
           '</label>' +
           '<div class="sessions-form__actions">' +
@@ -301,10 +424,10 @@ window.views.gmSessions = (function () {
       submitBtn.disabled = true;
     }
 
-    var summaryEl  = form.querySelector('[name="summary"]');
-    var dateEl     = form.querySelector('[name="date"]');
-    var timeNowEl  = form.querySelector('[name="time_now"]');
-    var notesEl    = form.querySelector('[name="notes"]');
+    var summaryEl = form.querySelector('[name="summary"]');
+    var dateEl    = form.querySelector('[name="date"]');
+    var timeNowEl = form.querySelector('[name="time_now"]');
+    var notesEl   = form.querySelector('[name="notes"]');
 
     var body = {
       summary:  summaryEl  ? summaryEl.value.trim()  : null,
@@ -339,6 +462,7 @@ window.views.gmSessions = (function () {
     if (!session) return;
     _mode = "edit";
     _activeSessionId = id;
+    _destroyTable();
     _renderEditForm(session);
   }
 
@@ -350,17 +474,17 @@ window.views.gmSessions = (function () {
     _viewEl.innerHTML =
       '<div class="sessions-view">' +
         '<hgroup><h2>Edit Session</h2></hgroup>' +
-        '<form id="session-edit-form">' +
-          '<label for="se-summary">Summary<br>' +
+        '<form id="session-edit-form" class="sessions-form">' +
+          '<label for="se-summary">Summary' +
             '<input type="text" id="se-summary" name="summary" value="' + window.utils.esc(session.summary || "") + '" maxlength="200">' +
           '</label>' +
-          '<label for="se-date">Date<br>' +
+          '<label for="se-date">Date' +
             '<input type="date" id="se-date" name="date" value="' + window.utils.esc(dateValue) + '">' +
           '</label>' +
-          '<label for="se-time-now">Time Now (hours)<br>' +
+          '<label for="se-time-now">Time Now (hours)' +
             '<input type="number" id="se-time-now" name="time_now" min="0" max="999" step="1" inputmode="numeric" value="' + window.utils.esc(session.time_now != null ? String(session.time_now) : "") + '">' +
           '</label>' +
-          '<label for="se-notes">Notes<br>' +
+          '<label for="se-notes">Notes' +
             '<textarea id="se-notes" name="notes" rows="3">' + window.utils.esc(session.notes || "") + '</textarea>' +
           '</label>' +
           '<div class="sessions-form__actions">' +
@@ -395,10 +519,10 @@ window.views.gmSessions = (function () {
       submitBtn.disabled = true;
     }
 
-    var summaryEl  = form.querySelector('[name="summary"]');
-    var dateEl     = form.querySelector('[name="date"]');
-    var timeNowEl  = form.querySelector('[name="time_now"]');
-    var notesEl    = form.querySelector('[name="notes"]');
+    var summaryEl = form.querySelector('[name="summary"]');
+    var dateEl    = form.querySelector('[name="date"]');
+    var timeNowEl = form.querySelector('[name="time_now"]');
+    var notesEl   = form.querySelector('[name="notes"]');
 
     var body = {
       summary:  summaryEl  ? summaryEl.value.trim()  : null,
@@ -411,7 +535,6 @@ window.views.gmSessions = (function () {
       .patch(SESSIONS_URL + "/" + encodeURIComponent(id), body)
       .then(function (updated) {
         if (!_mounted) return;
-        // Update the local list
         for (var i = 0; i < _sessions.length; i++) {
           if (_sessions[i].id === id) {
             _sessions[i] = updated;
@@ -439,8 +562,9 @@ window.views.gmSessions = (function () {
     if (!session) return;
     _mode = "confirm-start";
     _activeSessionId = id;
+    _destroyTable();
 
-    var timeNow  = session.time_now != null ? session.time_now : 0;
+    var timeNow = session.time_now != null ? session.time_now : 0;
     var infoHtml =
       '<p>Starting this session will:</p>' +
       '<ul>' +
@@ -461,6 +585,7 @@ window.views.gmSessions = (function () {
   function _openConfirmEnd(id) {
     _mode = "confirm-end";
     _activeSessionId = id;
+    _destroyTable();
 
     _renderConfirmDialog({
       title:   "End Session",
@@ -474,6 +599,7 @@ window.views.gmSessions = (function () {
   function _openConfirmDelete(id) {
     _mode = "confirm-delete";
     _activeSessionId = id;
+    _destroyTable();
 
     _renderConfirmDialog({
       title:   "Delete Session",
@@ -592,6 +718,7 @@ window.views.gmSessions = (function () {
   function _openParticipants(id) {
     _mode = "participants";
     _activeSessionId = id;
+    _destroyTable();
 
     // Fetch session detail and characters in parallel
     var sessionDetailP = api.get(SESSIONS_URL + "/" + encodeURIComponent(id));
@@ -602,8 +729,8 @@ window.views.gmSessions = (function () {
     Promise.all([sessionDetailP, charactersP])
       .then(function (results) {
         if (!_mounted) return;
-        var detail     = results[0];
-        var charData   = results[1];
+        var detail   = results[0];
+        var charData = results[1];
         _characters = (charData && charData.items) ? charData.items : _characters;
         _renderParticipants(detail);
       })
@@ -704,8 +831,8 @@ window.views.gmSessions = (function () {
     for (var m = 0; m < checkboxes.length; m++) {
       (function (cb) {
         cb.addEventListener("change", function () {
-          var sId   = cb.getAttribute("data-session-id");
-          var cId   = cb.getAttribute("data-char-id");
+          var sId = cb.getAttribute("data-session-id");
+          var cId = cb.getAttribute("data-char-id");
           _doUpdateParticipant(sId, cId, cb.checked);
         });
       })(checkboxes[m]);
@@ -732,7 +859,6 @@ window.views.gmSessions = (function () {
       })
       .then(function () {
         if (!_mounted) return;
-        // Re-open participants view to refresh
         _openParticipants(sessionId);
       })
       .catch(function () {
@@ -758,7 +884,6 @@ window.views.gmSessions = (function () {
         additional_contribution: additionalContribution,
       })
       .catch(function () {
-        // On failure, re-render to restore the checkbox state
         if (_mounted) _openParticipants(sessionId);
       });
   }
@@ -789,6 +914,7 @@ window.views.gmSessions = (function () {
   // ---------------------------------------------------------------------------
 
   function _teardown() {
+    _destroyTable();
     _mounted = false;
     _mode = "list";
     _activeSessionId = null;
@@ -811,7 +937,7 @@ window.views.gmSessions = (function () {
   /**
    * Mount the GM Sessions view.
    * @param {object} [opts]
-   * @param {boolean} [opts.mode] - 'new' to open create form immediately
+   * @param {string} [opts.mode] - 'new' to open create form immediately
    */
   return function render(opts) {
     _viewEl = document.getElementById("view");
@@ -826,13 +952,13 @@ window.views.gmSessions = (function () {
     window.removeEventListener("hashchange", _onHashChange);
     window.addEventListener("hashchange", _onHashChange);
 
-    _fetchSessions(true);
-
-    // If launched with mode: 'new', open create form after fetch
+    // If launched with mode: 'new', open create form immediately
     if (opts && opts.mode === "new") {
-      // Show create form immediately (no loading wait needed)
       _mode = "create";
       _renderCreateForm();
+      return;
     }
+
+    _fetchSessions(true);
   };
 })();

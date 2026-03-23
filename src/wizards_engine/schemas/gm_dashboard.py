@@ -51,12 +51,20 @@ class PCSummary(BaseModel):
         Display name.
     stress:
         Current stress value (0 if the DB column is null).
+    stress_max:
+        Effective stress maximum: 9 minus the count of active trauma bonds.
     free_time:
         Current free-time tokens (0 if null).
+    free_time_max:
+        Maximum free time.  Always 20 (game rule).
     plot:
         Current plot tokens (0 if null).
+    plot_max:
+        Maximum plot at session end (clamped to 5).  Always 5 (game rule).
     gnosis:
         Current gnosis level (0 if null).
+    gnosis_max:
+        Maximum gnosis.  Always 23 (game rule).
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -64,9 +72,13 @@ class PCSummary(BaseModel):
     id: str
     name: str
     stress: int
+    stress_max: int
     free_time: int
+    free_time_max: int
     plot: int
+    plot_max: int
     gnosis: int
+    gnosis_max: int
 
 
 class NearCompletionClock(BaseModel):

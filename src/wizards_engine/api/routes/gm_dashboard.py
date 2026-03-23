@@ -29,6 +29,7 @@ from wizards_engine.services.gm_dashboard import (
     get_pending_proposals,
     get_stress_proximity,
 )
+from wizards_engine.services.shared import count_trauma_bonds
 
 router = APIRouter()
 
@@ -78,9 +79,13 @@ def gm_dashboard(
                 id=c.id,
                 name=c.name,
                 stress=c.stress or 0,
+                stress_max=9 - count_trauma_bonds(db, c.id),
                 free_time=c.free_time or 0,
+                free_time_max=20,
                 plot=c.plot or 0,
+                plot_max=5,
                 gnosis=c.gnosis or 0,
+                gnosis_max=23,
             )
             for c in characters
         ],

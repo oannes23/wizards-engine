@@ -111,6 +111,35 @@ YAML-based campaign import/export system (CLI-only tool, no new API endpoints). 
 
 ---
 
+## Phase 8: UI Cleanup & UX Modernization
+
+| Epic | File | Stories | Depends On | Blocks |
+|------|------|---------|------------|--------|
+| **8.1** — Shared Infrastructure & Bug Fixes | [phase8-ui-infrastructure.md](phase8-ui-infrastructure.md) | 8 | Phase 6 | 8.2–8.6 |
+| **8.2** — GM Queue Tab Redesign | [phase8-queue-redesign.md](phase8-queue-redesign.md) | 4 | 8.1.2, 8.1.4, 8.1.7 | — |
+| **8.3** — Event Feed Redesign | [phase8-feed-redesign.md](phase8-feed-redesign.md) | 3 | 8.1.5, 8.1.7 | — |
+| **8.4** — Game Objects Browser Redesign | [phase8-objects-browser.md](phase8-objects-browser.md) | 4 | 8.1.5, 8.1.6, 8.1.7 | 8.6 |
+| **8.5** — Character Detail View Overhaul | [phase8-character-detail.md](phase8-character-detail.md) | 4 | 8.1.3, 8.1.6, 8.1.8 | — |
+| **8.6** — Game Object CRUD Forms | [phase8-crud-forms.md](phase8-crud-forms.md) | 3 | 8.4.4 | — |
+| **8.7** — Comprehensive Example Campaign Data | [phase8-example-data.md](phase8-example-data.md) | 3 | 7.1 | — |
+
+Fix reported UI bugs (nav bar, meter maximums, bond dyad duplication, description truncation, text readability), build shared reusable components (DataTable, ExpandableItem), redesign GM views for information density, add CRUD forms for all game objects, overhaul character detail views, and enrich example campaign data for full-system visibility.
+
+**Parallelism**: All 8 stories in 8.1 are independent (max parallelism = 8). After 8.1, epics 8.2–8.5 can run in parallel (max 4 parallel tracks). 8.6 waits for 8.4. 8.7 is fully independent.
+
+**Critical path**: 8.1.7 (DataTable) → 8.4.2 (Game Objects browser) → 8.4.4 (CRUD buttons) → 8.6.x (CRUD forms)
+
+**Per-story dependency arrows**:
+- 8.1.7 DataTable → blocks 8.2.4, 8.3.2, 8.4.2, 8.4.3
+- 8.1.8 ExpandableItem → blocks 8.5.1, 8.5.2
+- 8.1.3 Bond fix → blocks 8.5.2
+- 8.2.1 Queue-summary endpoint → blocks 8.2.3, 8.2.4
+- 8.3.1 Events API enrichment → blocks 8.3.2, 8.3.3
+- 8.4.1 Sort/filter API → blocks 8.4.2
+- 8.4.4 CRUD buttons → blocks 8.6.1, 8.6.2, 8.6.3
+
+---
+
 ## Dependency Graph
 
 ```
@@ -160,17 +189,27 @@ Phase 7 (sequential, depends on all prior phases)
                                                                │
     7.1.1 Schemas ──────────────────────> 7.1.6 Notes Data ───┘
     7.1.5 CLI ──> 7.1.7 Documentation
+
+Phase 8 (infrastructure first, then 4 parallel tracks, then CRUD)
+  8.1 Infrastructure ──┬──> 8.2 Queue Redesign
+    8.1.1 Nav fix      ├──> 8.3 Feed Redesign
+    8.1.2 Meter fix    ├──> 8.4 Objects Browser ──> 8.6 CRUD Forms
+    8.1.3 Bond fix     └──> 8.5 Character Detail
+    8.1.4 Constants
+    8.1.5 Tab rename     8.7 Example Data (independent, parallel with all)
+    8.1.6 Readability      8.7.1 Enrich YAML ──> 8.7.2 Seed Events ──> 8.7.3 Verification
+    8.1.7 DataTable
+    8.1.8 ExpandableItem
 ```
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Phases | 6 complete (1–6) + Phase 7 |
-| Epics | 20 complete + 1 new (campaign tooling) |
-| Stories | 52 complete + 8 new (campaign tooling) |
-| Max parallel tracks | 2 (7.1.3 + 7.1.4 after 7.1.2) |
-| Estimated new backend tests | ~120 (across Phase 7) |
+| Phases | 7 complete (1–7) + Phase 8 |
+| Epics | 21 complete + 7 new (UI cleanup) |
+| Stories | 60 complete + 29 new (UI cleanup) |
+| Max parallel tracks | 8 (Phase 8A: all 8.1 stories) |
 
 ---
 
@@ -199,3 +238,10 @@ Phase 7 (sequential, depends on all prior phases)
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
 | 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |
+| 8.1 — Shared Infrastructure & Bug Fixes | 🔴 Not started | 0/8 |
+| 8.2 — GM Queue Tab Redesign | 🔴 Not started | 0/4 |
+| 8.3 — Event Feed Redesign | 🟡 In progress | 1/3 |
+| 8.4 — Game Objects Browser Redesign | 🔴 Not started | 0/4 |
+| 8.5 — Character Detail View Overhaul | 🔴 Not started | 0/4 |
+| 8.6 — Game Object CRUD Forms | 🔴 Not started | 0/3 |
+| 8.7 — Comprehensive Example Campaign Data | 🟡 In progress | 1/3 |

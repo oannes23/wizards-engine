@@ -13,8 +13,8 @@ PATCH  /events/{id}/visibility  — GM only.  Override visibility level.
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import and_, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import asc, and_, desc, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
@@ -31,6 +31,17 @@ from wizards_engine.services.visibility import (
 )
 
 router = APIRouter()
+
+# Allowed values for sort_by and sort_dir query parameters.
+_ALLOWED_SORT_BY = {"created_at", "type", "actor_type"}
+_ALLOWED_SORT_DIR = {"asc", "desc"}
+
+# Mapping from sort_by string to the SQLAlchemy Event column.
+_SORT_COLUMN = {
+    "created_at": Event.id,  # ULID order = chronological order
+    "type": Event.type,
+    "actor_type": Event.actor_type,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +61,10 @@ router = APIRouter()
         "Supports optional filters: ``type`` (prefix wildcard via ``*``), "
         "``target_type``, ``target_id``, ``session_id``, ``actor_type``, "
         "``proposal_id``, ``since`` (inclusive), ``until`` (inclusive).  "
-        "ULID cursor pagination via ``?after=<ulid>&limit=N``."
+        "ULID cursor pagination via ``?after=<ulid>&limit=N``.  "
+        "Sort via ``?sort_by=<field>&sort_dir=<asc|desc>``.  "
+        "Allowed ``sort_by`` values: ``created_at`` (default), ``type``, "
+        "``actor_type``.  Default ``sort_dir`` is ``desc``."
     ),
 )
 def list_events(
@@ -64,6 +78,8 @@ def list_events(
     until: datetime | None = None,
     after: str | None = None,
     limit: int = 50,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[EventResponse]:
@@ -87,12 +103,32 @@ def list_events(
         until: Optional upper bound on ``created_at`` (inclusive).
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
+        sort_by: Column to sort by.  Allowed values: ``created_at``
+            (default), ``type``, ``actor_type``.
+        sort_dir: Sort direction.  Allowed values: ``asc``, ``desc``
+            (default).
         current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
         ``PaginatedResponse`` wrapping a list of ``EventResponse`` objects.
+
+    Raises:
+        HTTPException(422): If ``sort_by`` or ``sort_dir`` contains an
+            invalid value.
     """
+    # Validate sort parameters.
+    if sort_by not in _ALLOWED_SORT_BY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"sort_by must be one of: {sorted(_ALLOWED_SORT_BY)}",
+        )
+    if sort_dir not in _ALLOWED_SORT_DIR:
+        raise HTTPException(
+            status_code=422,
+            detail=f"sort_dir must be one of: {sorted(_ALLOWED_SORT_DIR)}",
+        )
+
     q = select(Event)
 
     # Exclude silent events from normal feed.
@@ -136,8 +172,17 @@ def list_events(
             and_(EventTarget.event_id == Event.id, *target_conditions),
         ).distinct()
 
-    # Paginate (applies ORDER BY id DESC and cursor filter internally).
-    page = paginate(db, q, model=Event, after=after, limit=limit)
+    # Build the order_by expression.  For the default (created_at desc),
+    # pass None so paginate() uses its own default (ORDER BY id DESC),
+    # preserving the existing ULID-order semantics.
+    if sort_by == "created_at" and sort_dir == "desc":
+        order_by_expr = None
+    else:
+        col = _SORT_COLUMN[sort_by]
+        order_by_expr = asc(col) if sort_dir == "asc" else desc(col)
+
+    # Paginate (applies ORDER BY and cursor filter internally).
+    page = paginate(db, q, model=Event, after=after, limit=limit, order_by=order_by_expr)
 
     # Visibility filter — applied after DB fetch since it requires bond-graph
     # traversal that cannot be expressed as SQL.  For small groups (4–6 players)
@@ -150,7 +195,7 @@ def list_events(
     # DB-fetched item's id (not the last visible item's id).  This ensures that
     # subsequent pages skip past already-seen rows regardless of visibility.
     return PaginatedResponse[EventResponse](
-        items=[EventResponse.model_validate(e) for e in visible_items],
+        items=[EventResponse.from_event(db, e) for e in visible_items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
     )
@@ -206,7 +251,7 @@ def get_event(
     if not can_user_see_event(db, current_user, event):
         raise_not_found("Event", event_id)
 
-    return EventResponse.model_validate(event)
+    return EventResponse.from_event(db, event)
 
 
 # ---------------------------------------------------------------------------
@@ -255,4 +300,4 @@ def update_event_visibility(
     db.flush()
     db.refresh(event)
 
-    return EventResponse.model_validate(event)
+    return EventResponse.from_event(db, event)

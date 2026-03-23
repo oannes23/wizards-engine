@@ -13,6 +13,12 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import require_gm
 from wizards_engine.db import get_db
+from wizards_engine.services.proposal.constants import (
+    FREE_TIME_MAX,
+    GNOSIS_MAX,
+    PLOT_MAX,
+    STRESS_MAX,
+)
 from wizards_engine.models.user import User
 from wizards_engine.schemas.gm_dashboard import (
     ActiveClockSummary,
@@ -84,13 +90,13 @@ def gm_dashboard(
                 id=c.id,
                 name=c.name,
                 stress=c.stress or 0,
-                stress_max=9 - count_trauma_bonds(db, c.id),
+                stress_max=STRESS_MAX - count_trauma_bonds(db, c.id),
                 free_time=c.free_time or 0,
-                free_time_max=20,
+                free_time_max=FREE_TIME_MAX,
                 plot=c.plot or 0,
-                plot_max=5,
+                plot_max=PLOT_MAX,
                 gnosis=c.gnosis or 0,
-                gnosis_max=23,
+                gnosis_max=GNOSIS_MAX,
             )
             for c in characters
         ],

@@ -18,6 +18,12 @@ from wizards_engine.models.event import Event, EventTarget
 from wizards_engine.models.group import Group
 from wizards_engine.models.proposal import Proposal
 from wizards_engine.models.slot import Slot
+from wizards_engine.services.proposal.constants import (
+    FREE_TIME_MAX,
+    GNOSIS_MAX,
+    PLOT_MAX,
+    STRESS_MAX,
+)
 from wizards_engine.services.shared import count_trauma_bonds
 
 __all__ = [

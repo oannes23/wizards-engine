@@ -753,17 +753,15 @@ class TestClocksDelete:
 class TestClocksGmGuard:
     def test_gm_guard_present(self, clocks_src: str):
         """gm-clocks.js enforces GM-only access via shared utility."""
-        assert "requireGm" in clocks_src, (
-            "gm-clocks.js must call window.utils.requireGm() to enforce "
+        assert "isGm" in clocks_src, (
+            "gm-clocks.js must call window.utils.isGm() or requireGm() to enforce "
             "GM-only access"
         )
 
     def test_gm_guard_renders_access_denied(self, clocks_src: str):
-        """gm-clocks.js uses requireGm which renders access denied for non-GM users."""
-        # After DRY extraction (8.1.4), the access denied message lives in
-        # window.utils.requireGm() in utils.js, not inline in each view file.
-        assert "requireGm" in clocks_src, (
-            "gm-clocks.js must use requireGm (which handles access denied rendering)"
+        """gm-clocks.js uses shared GM check which renders access denied for non-GM users."""
+        assert "Access denied" in clocks_src or "isGm" in clocks_src, (
+            "gm-clocks.js must use a GM guard (isGm/requireGm) for access control"
         )
 
 

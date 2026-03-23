@@ -896,11 +896,17 @@ window.views.gmSessions = (function () {
     if (!_mounted) return;
     if (isInitial) _renderLoading();
 
-    api
-      .get(SESSIONS_URL)
-      .then(function (data) {
+    var sessionsP = api.get(SESSIONS_URL);
+    var charactersP = _characters.length > 0
+      ? Promise.resolve({ items: _characters })
+      : api.get(CHARACTERS_URL).catch(function () { return { items: [] }; });
+
+    Promise.all([sessionsP, charactersP])
+      .then(function (results) {
         if (!_mounted) return;
-        _sessions = (data && data.items) ? data.items : [];
+        _sessions = (results[0] && results[0].items) ? results[0].items : [];
+        var charData = results[1];
+        _characters = (charData && charData.items) ? charData.items : _characters;
         _renderList();
       })
       .catch(function () {

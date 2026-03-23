@@ -44,18 +44,7 @@ window.views.characterCreate = (function () {
    * @returns {string}
    */
 
-  /**
-   * Dispatch a success toast.
-   * @param {string} message
-   */
-  function window.utils.showSuccess(message) {
-    document.dispatchEvent(
-      new CustomEvent("api:success", {
-        detail: { message: message },
-        bubbles: true,
-      })
-    );
-  }
+  // showSuccess is available globally via window.utils.showSuccess
 
   // ---------------------------------------------------------------------------
   // Rendering

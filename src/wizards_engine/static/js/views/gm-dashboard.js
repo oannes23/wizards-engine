@@ -159,12 +159,7 @@ window.views.gmDashboard = (function () {
           '</p>' +
         '</hgroup>';
 
-    if (count === 0) {
-      html +=
-        '<div class="gm-dashboard__empty" role="status">' +
-          '<p>Queue is empty.</p>' +
-        '</div>';
-    } else {
+    if (count > 0) {
       html += '<ul class="gm-dashboard__proposal-list">';
       for (var i = 0; i < proposals.length; i++) {
         var p = proposals[i];

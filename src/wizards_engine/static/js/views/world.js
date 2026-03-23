@@ -30,22 +30,9 @@ window.views.world = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Escape a string for safe use in HTML attribute values and text content.
-   * Also escapes single quotes for use inside Alpine attribute strings.
-   * @param {*} str
-   * @returns {string}
-   */
-  function window.utils.esc(str) {
-    return window.utils.esc(str).replace(/'/g, "&#39;");
-  }
-
-  /**
-   * Truncate a string to at most maxLen characters, appending an ellipsis.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
+  // ---------------------------------------------------------------------------
+  // Local helpers
+  // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // DataTable column configurations

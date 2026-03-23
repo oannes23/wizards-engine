@@ -282,24 +282,16 @@ window.views.worldDetail = (function () {
    * @returns {string} HTML
    */
   function _buildPcSummary(c) {
-    // Determine whether this PC is the viewing user's own character
-    var isOwnCharacter = false;
-    var characterHash = "#/world";
+    // Show "View My Sheet" link only for the viewing user's own character
+    var viewLink = "";
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       var store = Alpine.store("app");
       if (store.character_id && store.character_id === c.id) {
-        isOwnCharacter = true;
-        characterHash = "#/character";
+        viewLink = '<a href="#/character" class="wd-pc-summary__view-link">View My Sheet</a>';
       }
     }
 
-    var viewLink = (
-      '<a href="' + window.utils.esc(characterHash) + '" class="wd-pc-summary__view-link">' +
-        (isOwnCharacter ? 'View My Sheet' : 'View Full Sheet') +
-      '</a>'
-    );
-
-    var descSnippet = window.utils.snippet(c.description || "", 160);
+    var descText = c.description || "";
 
     // Resource meters
     var STRESS_MAX         = 9;
@@ -396,8 +388,8 @@ window.views.worldDetail = (function () {
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
         '</div>' +
-        (descSnippet
-          ? '<p class="wd-pc-summary__desc">' + window.utils.esc(descSnippet) + '</p>'
+        (descText
+          ? '<p class="wd-pc-summary__desc">' + window.utils.esc(descText) + '</p>'
           : '') +
         '<div class="wd-pc-summary__meters">' +
           stressBar + ftBar + plotBar + gnosisBar +

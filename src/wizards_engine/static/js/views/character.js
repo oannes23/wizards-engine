@@ -43,7 +43,7 @@ window.views.character = (function () {
   var GNOSIS_DISPLAY_MAX = 23; // Gnosis has no hard cap; display up to 23
 
   // Tab identifiers
-  var TABS = ["traits", "bonds", "effects"];
+  var TABS = ["traits", "bonds", "effects", "skills"];
 
   var SKILL_LABELS = {
     awareness:  "Awareness",
@@ -183,7 +183,7 @@ window.views.character = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    var descSnippet = window.utils.snippet(c.description || "", 160);
+    var descText = c.description || "";
 
     return (
       '<div class="cs-header">' +
@@ -191,8 +191,8 @@ window.views.character = (function () {
           '<h2 class="cs-header__name">' + window.utils.esc(c.name) + '</h2>' +
           editBtn +
         '</div>' +
-        (descSnippet
-          ? '<p class="cs-header__desc">' + window.utils.esc(descSnippet) + '</p>'
+        (descText
+          ? '<p class="cs-header__desc">' + window.utils.esc(descText) + '</p>'
           : '') +
         '<div class="cs-meters">' +
           stressBar +

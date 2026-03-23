@@ -64,7 +64,7 @@ var router = (function () {
     "/gm/world/locations/new":  function () { if (typeof views !== "undefined" && views.locationEdit)    { views.locationEdit();    } else { _placeholder("New Location")(); } },
     "/gm/feed":            function () { if (typeof views !== "undefined" && views.gmFeed)        { views.gmFeed();        } else { _placeholder("GM Feed")(); } },
     "/gm/feed/silent":     function () { if (typeof views !== "undefined" && views.gmFeedSilent)  { views.gmFeedSilent();  } else { _placeholder("GM Silent Feed")(); } },
-    "/gm/more":            _placeholder("GM More"),
+    "/gm/more":            function () { window.location.hash = "#/gm/players"; },
     "/gm/character":       function () { if (typeof views !== "undefined" && views.character)  { views.character();  } else { _placeholder("GM Character Sheet")(); } },
     "/gm/actions":         function () { if (typeof views !== "undefined" && views.gmActions)    { views.gmActions();    } else { _placeholder("GM Direct Actions")(); } },
     "/gm/players":         function () { if (typeof views !== "undefined" && views.gmPlayers)   { views.gmPlayers();   } else { _placeholder("Player Roster")(); } },

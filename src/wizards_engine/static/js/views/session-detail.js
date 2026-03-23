@@ -61,6 +61,9 @@ window.views.sessionDetail = (function () {
   /** Whether the edit form is open. */
   var _editMode = false;
 
+  /** Map of character_id → character name for participant resolution. */
+  var _characterMap = {};
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -114,6 +117,7 @@ window.views.sessionDetail = (function () {
 
     var status  = _session.status || "draft";
     var summary = _session.summary || "Untitled Session";
+    var titleText = summary.length > 80 ? summary.slice(0, 80).trimEnd() + "\u2026" : summary;
 
     var html =
       '<div class="session-detail">' +
@@ -121,7 +125,7 @@ window.views.sessionDetail = (function () {
           '<a href="#/gm/sessions">&larr; Sessions</a>' +
         '</div>' +
         '<hgroup>' +
-          '<h2>' + window.utils.esc(summary) + '</h2>' +
+          '<h2>' + window.utils.esc(titleText) + '</h2>' +
           _statusBadge(status) +
         '</hgroup>' +
         '<nav class="session-detail__tabs" role="tablist">' +
@@ -228,10 +232,11 @@ window.views.sessionDetail = (function () {
       partHtml += '<table><thead><tr><th>Character</th><th>Extra Contribution</th></tr></thead><tbody>';
       for (var i = 0; i < participants.length; i++) {
         var p = participants[i];
-        var charName = p.character_id || "Unknown";
+        var charName = _characterMap[p.character_id] || p.character_id || "Unknown";
+        var charLink = '#/gm/world/characters/' + encodeURIComponent(p.character_id || '');
         partHtml +=
           '<tr>' +
-            '<td>' + window.utils.esc(charName) + '</td>' +
+            '<td><a href="' + window.utils.esc(charLink) + '">' + window.utils.esc(charName) + '</a></td>' +
             '<td>' + (p.additional_contribution ? "Yes" : "No") + '</td>' +
           '</tr>';
       }
@@ -561,20 +566,40 @@ window.views.sessionDetail = (function () {
   // Data fetching
   // ---------------------------------------------------------------------------
 
+  function _fetchCharacterMap() {
+    return api
+      .get("/api/v1/characters/summary")
+      .then(function (data) {
+        var items = (data && data.items) ? data.items : (Array.isArray(data) ? data : []);
+        var map = {};
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].id) {
+            map[items[i].id] = items[i].name || items[i].display_name || items[i].id;
+          }
+        }
+        _characterMap = map;
+      })
+      .catch(function () {
+        // Non-fatal — participants will show IDs as fallback
+      });
+  }
+
   function _fetchSessionDetail() {
     _renderLoading();
 
-    api
-      .get("/api/v1/sessions/" + encodeURIComponent(_sessionId))
-      .then(function (data) {
+    Promise.all([
+      api.get("/api/v1/sessions/" + encodeURIComponent(_sessionId)),
+      _fetchCharacterMap(),
+    ])
+      .then(function (results) {
         if (!_mounted) return;
-        _session = data;
+        _session = results[0];
         _renderShell();
 
         // If starting on timeline tab, kick off the timeline fetch and poll
         if (_activeTab === "timeline") {
           _fetchTimeline(true);
-          if (data && data.status === "active") {
+          if (_session && _session.status === "active") {
             _startTimelinePoll();
           }
         }
@@ -597,6 +622,7 @@ window.views.sessionDetail = (function () {
     _timelineCursor  = null;
     _timelineHasMore = false;
     _timelineLoading = false;
+    _characterMap    = {};
   }
 
   function _isOnThisView(path) {

@@ -1,27 +1,25 @@
-/* Wizards Engine — Feed views
+/* Wizards Engine — Player Feed views
  *
- * Handles four routes via a shared rendering core:
+ * Handles player feed routes via a shared rendering core:
  *
  *   Route                Hash                Tabs shown           Active tab
  *   ------------------- ------------------- -------------------- ----------
  *   Player dashboard     #/                  All | Starred        All
  *   Player starred       #/feed/starred      All | Starred        Starred
- *   GM full feed         #/gm/feed           Full | Silent        Full
- *   GM silent feed       #/gm/feed/silent    Full | Silent        Silent
  *
  * Tab switching updates the URL hash (so the browser back button works) and
  * swaps the FeedList's data URL without re-mounting the shell.
  *
+ * NOTE: GM feed routes (#/gm/feed, #/gm/feed/silent) are handled by
+ *       gm-feed.js, which provides a DataTable-based view.
+ *
  * API endpoints consumed:
  *   GET /api/v1/me/feed           — personal (All) feed
  *   GET /api/v1/me/feed/starred   — starred feed
- *   GET /api/v1/me/feed/silent    — GM silent feed (bookkeeping events)
  *
  * Registers:
  *   window.views.feed          — player dashboard (#/)
  *   window.views.feedStarred   — player starred feed (#/feed/starred)
- *   window.views.gmFeed        — GM full feed (#/gm/feed)
- *   window.views.gmFeedSilent  — GM silent feed (#/gm/feed/silent)
  *
  * Dependencies (must already be loaded):
  *   utils.js, api.js, store.js, feed-list.js, feed-item.js
@@ -37,20 +35,13 @@ window.views = window.views || {};
   var FEED_URLS = {
     all:     "/api/v1/me/feed",
     starred: "/api/v1/me/feed/starred",
-    full:    "/api/v1/me/feed",        // same endpoint as "all" for GMs
-    silent:  "/api/v1/me/feed/silent",
   };
 
-  // Tab configuration per view context.
+  // Tab configuration for player views.
   // Each tab: { key, label, url, hash }
   var PLAYER_TABS = [
     { key: "all",     label: "All",     url: FEED_URLS.all,     hash: "#/" },
     { key: "starred", label: "Starred", url: FEED_URLS.starred, hash: "#/feed/starred" },
-  ];
-
-  var GM_TABS = [
-    { key: "full",   label: "Full",   url: FEED_URLS.full,   hash: "#/gm/feed" },
-    { key: "silent", label: "Silent", url: FEED_URLS.silent, hash: "#/gm/feed/silent" },
   ];
 
   // --------------------------------------------------------------------------
@@ -234,28 +225,6 @@ window.views = window.views || {};
     });
   };
 
-  /**
-   * GM full feed — #/gm/feed.
-   */
-  window.views.gmFeed = function () {
-    _mount({
-      heading:   "GM Feed",
-      tabs:      GM_TABS,
-      activeKey: "full",
-      ownHashes: ["#/gm/feed", "#/gm/feed/silent"],
-    });
-  };
-
-  /**
-   * GM silent feed — #/gm/feed/silent.
-   */
-  window.views.gmFeedSilent = function () {
-    _mount({
-      heading:   "GM Feed",
-      tabs:      GM_TABS,
-      activeKey: "silent",
-      ownHashes: ["#/gm/feed", "#/gm/feed/silent"],
-    });
-  };
+  // NOTE: gmFeed and gmFeedSilent are registered by gm-feed.js using DataTable.
 
 })();

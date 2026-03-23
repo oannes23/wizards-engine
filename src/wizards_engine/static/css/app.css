@@ -3859,6 +3859,9 @@ main.container {
    --------------------------------------------------------------------------- */
 
 /* Root wrapper — contains filter bar + table/card views */
+   DataTable component (.dt-*)
+   --------------------------------------------------------------------------- */
+
 .dt-root {
   width: 100%;
 }
@@ -3867,6 +3870,7 @@ main.container {
    Filter bar
    --------------------------------------------------------------------------- */
 
+/* Filter bar */
 .dt-filters {
   display: flex;
   flex-wrap: wrap;
@@ -3935,6 +3939,63 @@ main.container {
   letter-spacing: 0.03em;
   color: var(--pico-muted-color, #aaa);
   border-bottom: 2px solid var(--pico-muted-border-color, #444);
+}
+
+.dt-search-input {
+  flex: 1 1 180px;
+  min-width: 140px;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.25rem;
+  color: var(--pico-color, #eee);
+}
+
+.dt-search-input:focus {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  border-color: var(--pico-primary, #7c6aff);
+}
+
+.dt-select {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 0.25rem;
+  color: var(--pico-color, #eee);
+  min-width: 120px;
+}
+
+.dt-select:focus {
+  outline: 2px solid var(--pico-primary, #7c6aff);
+  border-color: var(--pico-primary, #7c6aff);
+}
+
+/* Table wrapper */
+.dt-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* The table itself */
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+/* Header cells */
+.dt-th {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border-bottom: 2px solid var(--pico-muted-border-color, #444);
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   white-space: nowrap;
   user-select: none;
 }
@@ -4086,6 +4147,30 @@ main.container {
 }
 
 /* Table rows */
+/* Sortable header cells */
+.dt-th[data-sort] {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.dt-th[data-sort]:hover,
+.dt-th[data-sort]:focus-visible {
+  color: var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.dt-th[aria-sort="ascending"],
+.dt-th[aria-sort="descending"] {
+  color: var(--pico-primary, #7c6aff);
+  border-bottom-color: var(--pico-primary, #7c6aff);
+}
+
+.dt-sort-icon {
+  opacity: 0.4;
+  font-size: 0.7em;
+}
+
+/* Body rows */
 .dt-row {
   border-bottom: 1px solid var(--pico-muted-border-color, #333);
   transition: background 0.1s;
@@ -4132,6 +4217,131 @@ main.container {
 
 /* Inline cell link */
 .dt-cell-link {
+.dt-row--clickable:hover,
+.dt-row--clickable:focus-visible {
+  background: rgba(124, 106, 255, 0.07);
+  outline: none;
+}
+
+/* Body cells */
+.dt-td {
+  padding: 0.45rem 0.6rem;
+  vertical-align: middle;
+  color: var(--pico-color, #eee);
+}
+
+/* Null / empty cell placeholder */
+.dt-null {
+  color: var(--pico-muted-color, #666);
+}
+
+/* Empty state row */
+.dt-empty-row .dt-empty-cell {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+}
+
+/* Mobile: hide columns marked as mobile-hidden */
+@media (max-width: 599px) {
+  .dt-th--hide-mobile,
+  .dt-td--hide-mobile {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   GM Event Feed view (.gm-feed)
+   --------------------------------------------------------------------------- */
+
+.gm-feed {
+  padding-top: 0.25rem;
+}
+
+.gm-feed__heading {
+  margin-bottom: 0;
+}
+
+.gm-feed__subheading {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color, #aaa);
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+/* Category filter tab row */
+.gm-feed__category-tabs {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.gm-feed__cat-tab {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: 1px solid var(--pico-muted-border-color, #444);
+  border-radius: 1rem;
+  color: var(--pico-muted-color, #aaa);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.gm-feed__cat-tab:hover,
+.gm-feed__cat-tab:focus-visible {
+  border-color: var(--pico-primary, #7c6aff);
+  color: var(--pico-primary, #7c6aff);
+  outline: none;
+}
+
+.gm-feed__cat-tab--active {
+  background: var(--pico-primary, #7c6aff);
+  border-color: var(--pico-primary, #7c6aff);
+  color: #fff;
+}
+
+/* Extra filters row (actor type, session) */
+.gm-feed__extra-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+/* Source-type badges */
+.gm-feed__badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.gm-feed__badge--event {
+  background: rgba(124, 106, 255, 0.2);
+  color: var(--pico-primary, #7c6aff);
+}
+
+.gm-feed__badge--story {
+  background: rgba(41, 128, 185, 0.2);
+  color: var(--we-gnosis-blue, #2980b9);
+}
+
+.gm-feed__badge--proposal {
+  background: rgba(243, 156, 18, 0.2);
+  color: var(--we-plot-amber, #f39c12);
+}
+
+/* In-cell links */
+.gm-feed__link {
   color: var(--pico-primary, #7c6aff);
   text-decoration: none;
 }
@@ -4442,4 +4652,31 @@ main.container {
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 1rem;
+.gm-feed__link:hover {
+  text-decoration: underline;
+}
+
+/* Changes summary — truncated with tooltip */
+.gm-feed__changes {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color, #bbb);
+  cursor: default;
+}
+
+/* Narrative — truncated with tooltip */
+.gm-feed__narrative {
+  font-size: 0.8rem;
+  color: var(--pico-color, #eee);
+  font-style: italic;
+  cursor: default;
+}
+
+/* Load more button */
+.gm-feed__load-more {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.gm-feed__load-more button {
+  min-width: 140px;
 }

@@ -6,9 +6,14 @@
  * Available immediately (no defer required — load this script first).
  *
  * API:
- *   window.utils.esc(str)                    — HTML-escape a value
+ *   window.utils.esc(str)                    — HTML-escape a value (text / attr)
+ *   window.utils.escAttr(str)                — HTML-escape including single quotes
  *   window.utils.relativeTime(isoString)     — e.g. "just now", "2m ago"
  *   window.utils.clamp(value, min, max)      — numeric clamp
+ *   window.utils.snippet(text, maxLen)       — truncate with ellipsis
+ *   window.utils.showSuccess(message)        — dispatch api:success toast event
+ *   window.utils.isGm()                      — true if current Alpine store user is GM
+ *   window.utils.requireGm(viewEl)           — render access-denied and return false if not GM
  */
 
 window.utils = (function () {
@@ -24,6 +29,17 @@ window.utils = (function () {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /**
+   * Escape a value for use inside HTML attribute strings delimited by single
+   * quotes (e.g. Alpine x-data or onclick strings).  Extends esc() by also
+   * escaping single-quote characters.
+   * @param {*} str
+   * @returns {string}
+   */
+  function escAttr(str) {
+    return esc(str).replace(/'/g, "&#39;");
   }
 
   /**
@@ -68,5 +84,77 @@ window.utils = (function () {
     return Math.min(max, Math.max(min, value));
   }
 
-  return { esc: esc, relativeTime: relativeTime, clamp: clamp };
+  /**
+   * Truncate a string to at most maxLen characters, appending an ellipsis
+   * if the string was longer.
+   * @param {string} text
+   * @param {number} maxLen
+   * @returns {string}
+   */
+  function snippet(text, maxLen) {
+    if (!text) return "";
+    var s = String(text);
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen).trimEnd() + "\u2026";
+  }
+
+  /**
+   * Dispatch an api:success toast event so the global notification layer can
+   * display a success message. No-op when the document is unavailable.
+   * @param {string} message
+   */
+  function showSuccess(message) {
+    document.dispatchEvent(
+      new CustomEvent("api:success", {
+        detail: { message: message },
+        bubbles: true,
+      })
+    );
+  }
+
+  /**
+   * Return true if the current Alpine store user is a GM.
+   * Safe to call even before Alpine is initialised — returns false in that case.
+   * @returns {boolean}
+   */
+  function isGm() {
+    try {
+      return !!(typeof Alpine !== "undefined" && Alpine.store("app") && Alpine.store("app").isGm());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * Guard helper for GM-only views.
+   * If the current user is not a GM, renders an access-denied message into
+   * viewEl and returns false. Otherwise returns true.
+   *
+   * Usage:
+   *   if (!window.utils.requireGm(viewEl)) return;
+   *
+   * @param {HTMLElement} viewEl
+   * @returns {boolean}
+   */
+  function requireGm(viewEl) {
+    if (isGm()) return true;
+    if (viewEl) {
+      viewEl.innerHTML =
+        '<div class="access-denied">' +
+          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+        '</div>';
+    }
+    return false;
+  }
+
+  return {
+    esc: esc,
+    escAttr: escAttr,
+    relativeTime: relativeTime,
+    clamp: clamp,
+    snippet: snippet,
+    showSuccess: showSuccess,
+    isGm: isGm,
+    requireGm: requireGm,
+  };
 })();

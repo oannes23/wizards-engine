@@ -78,28 +78,6 @@ window.views.gmClocks = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * HTML-escape a value.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
-
-  /**
-   * Dispatch a success toast.
-   * @param {string} message
-   */
-  function _showSuccess(message) {
-    document.dispatchEvent(
-      new CustomEvent("api:success", {
-        detail: { message: message },
-        bubbles: true,
-      })
-    );
-  }
-
-  /**
    * Resolve an entity display name given its type and ID.
    * Returns the name if found, or the raw ID as a fallback.
    * @param {string|null} assocType
@@ -249,7 +227,7 @@ window.views.gmClocks = (function () {
     var label = GROUP_LABELS[groupKey] || "Other Clocks";
     var html =
       '<section class="gm-clocks__group">' +
-        '<h3 class="gm-clocks__group-heading">' + _esc(label) + '</h3>' +
+        '<h3 class="gm-clocks__group-heading">' + window.utils.esc(label) + '</h3>' +
         '<div class="gm-clocks__list" role="list">';
 
     for (var i = 0; i < clocks.length; i++) {
@@ -272,9 +250,9 @@ window.views.gmClocks = (function () {
     if (assocName) {
       var assocHash = _assocHash(clock.associated_type, clock.associated_id);
       assocLink =
-        '<a class="gm-clocks__assoc-link" href="' + _esc(assocHash) + '"' +
-           ' aria-label="View ' + _esc(clock.associated_type) + ': ' + _esc(assocName) + '">' +
-          _esc(assocName) +
+        '<a class="gm-clocks__assoc-link" href="' + window.utils.esc(assocHash) + '"' +
+           ' aria-label="View ' + window.utils.esc(clock.associated_type) + ': ' + window.utils.esc(assocName) + '">' +
+          window.utils.esc(assocName) +
         '</a>';
     }
 
@@ -293,18 +271,18 @@ window.views.gmClocks = (function () {
       expandedContent =
         '<div class="gm-clocks__detail">' +
           (clock.notes
-            ? '<p class="gm-clocks__notes"><em>' + _esc(clock.notes) + '</em></p>'
+            ? '<p class="gm-clocks__notes"><em>' + window.utils.esc(clock.notes) + '</em></p>'
             : '') +
           '<div class="gm-clocks__progress-controls">' +
             '<button class="gm-clocks__progress-btn secondary outline"' +
-                    ' data-progress-id="' + _esc(clock.id) + '"' +
+                    ' data-progress-id="' + window.utils.esc(clock.id) + '"' +
                     ' data-progress-delta="-1"' +
                     ' aria-label="Decrease progress"' +
                     (clock.progress <= 0 ? ' disabled' : '') + '>' +
               '&#x2212; 1' +
             '</button>' +
             '<button class="gm-clocks__progress-btn"' +
-                    ' data-progress-id="' + _esc(clock.id) + '"' +
+                    ' data-progress-id="' + window.utils.esc(clock.id) + '"' +
                     ' data-progress-delta="1"' +
                     ' aria-label="Increase progress"' +
                     (clock.is_completed ? ' disabled' : '') + '>' +
@@ -313,8 +291,8 @@ window.views.gmClocks = (function () {
           '</div>' +
           '<div class="gm-clocks__detail-actions">' +
             '<button class="gm-clocks__delete-btn contrast outline"' +
-                    ' data-delete-id="' + _esc(clock.id) + '"' +
-                    ' aria-label="Delete ' + _esc(clock.name) + '">' +
+                    ' data-delete-id="' + window.utils.esc(clock.id) + '"' +
+                    ' aria-label="Delete ' + window.utils.esc(clock.name) + '">' +
               'Delete' +
             '</button>' +
           '</div>' +
@@ -324,14 +302,14 @@ window.views.gmClocks = (function () {
     return (
       '<article class="gm-clocks__card' + (isExpanded ? ' gm-clocks__card--expanded' : '') + '"' +
                ' role="listitem"' +
-               ' data-clock-id="' + _esc(clock.id) + '">' +
+               ' data-clock-id="' + window.utils.esc(clock.id) + '">' +
         '<header class="gm-clocks__card-header"' +
                 ' role="button"' +
                 ' tabindex="0"' +
                 ' aria-expanded="' + (isExpanded ? 'true' : 'false') + '"' +
-                ' data-toggle-id="' + _esc(clock.id) + '">' +
+                ' data-toggle-id="' + window.utils.esc(clock.id) + '">' +
           '<div class="gm-clocks__card-title">' +
-            '<strong class="gm-clocks__card-name">' + _esc(clock.name) + '</strong>' +
+            '<strong class="gm-clocks__card-name">' + window.utils.esc(clock.name) + '</strong>' +
             completedBadge +
           '</div>' +
           (assocLink
@@ -425,16 +403,16 @@ window.views.gmClocks = (function () {
     return (
       '<dialog id="gm-clocks-delete-dialog" open aria-modal="true"' +
               ' role="alertdialog"' +
-              ' aria-label="Confirm deletion: ' + _esc(clock.name) + '">' +
+              ' aria-label="Confirm deletion: ' + window.utils.esc(clock.name) + '">' +
         '<article>' +
           '<header><h3>Delete Clock?</h3></header>' +
-          '<p>Delete <strong>' + _esc(clock.name) + '</strong>?</p>' +
+          '<p>Delete <strong>' + window.utils.esc(clock.name) + '</strong>?</p>' +
           '<p class="gm-clocks__delete-warning">' +
             'The clock will be hidden. This action cannot be undone.' +
           '</p>' +
           '<div class="gm-clocks__form-actions">' +
             '<button id="clk-delete-confirm" class="contrast"' +
-                    ' data-delete-id="' + _esc(clock.id) + '">' +
+                    ' data-delete-id="' + window.utils.esc(clock.id) + '">' +
               'Delete' +
             '</button>' +
             '<button id="clk-delete-cancel" class="secondary">Cancel</button>' +
@@ -628,7 +606,7 @@ window.views.gmClocks = (function () {
     });
     for (var i = 0; i < ids.length; i++) {
       options +=
-        '<option value="' + _esc(ids[i]) + '">' + _esc(nameMap[ids[i]]) + '</option>';
+        '<option value="' + window.utils.esc(ids[i]) + '">' + window.utils.esc(nameMap[ids[i]]) + '</option>';
     }
     select.innerHTML = options;
   }
@@ -764,7 +742,7 @@ window.views.gmClocks = (function () {
         _clocks.unshift(created);
         _showCreateForm = false;
         _render();
-        _showSuccess('Clock "' + created.name + '" created.');
+        window.utils.showSuccess('Clock "' + created.name + '" created.');
       })
       .catch(function () {
         if (!_mounted) return;
@@ -838,7 +816,7 @@ window.views.gmClocks = (function () {
         if (_expandedId === id) _expandedId = null;
         _deletingClock = null;
         _render();
-        _showSuccess('"' + name + '" deleted.');
+        window.utils.showSuccess('"' + name + '" deleted.');
       })
       .catch(function () {
         if (!_mounted) return;
@@ -891,14 +869,12 @@ window.views.gmClocks = (function () {
     if (!_viewEl) return;
 
     // Guard: GM only
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      if (!Alpine.store("app").isGm()) {
-        _viewEl.innerHTML =
-          '<div class="gm-clocks">' +
-            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-          '</div>';
-        return;
-      }
+    if (!window.utils.isGm()) {
+      _viewEl.innerHTML =
+        '<div class="gm-clocks">' +
+          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+        '</div>';
+      return;
     }
 
     // Reset state for a fresh mount

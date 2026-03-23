@@ -39,21 +39,7 @@ window.views.storyDetail = (function () {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  var _esc = function (str) { return window.utils.esc(str); };
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
-
-  /**
-   * Return true if the current user is a GM.
-   * Reads from the Alpine store.
-   * @returns {boolean}
-   */
-  function _isGm() {
-    if (typeof Alpine !== "undefined") {
-      var store = Alpine.store("app");
-      if (store) return store.isGm();
-    }
-    return false;
-  }
 
   /**
    * Return the current user's ID from the Alpine store, or null.
@@ -78,7 +64,7 @@ window.views.storyDetail = (function () {
       completed: { cssClass: "world-story-card__status--completed", label: "Completed" },
       abandoned: { cssClass: "world-story-card__status--abandoned", label: "Abandoned" },
     };
-    return map[status] || { cssClass: "", label: _esc(status) };
+    return map[status] || { cssClass: "", label: window.utils.esc(status) };
   }
 
   // ---------------------------------------------------------------------------
@@ -100,7 +86,7 @@ window.views.storyDetail = (function () {
         '<div class="story-detail__back">' +
           '<a href="#/world">&larr; World</a>' +
         '</div>' +
-        '<p class="error-text" role="alert">' + _esc(message || "Failed to load story.") + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(message || "Failed to load story.") + '</p>' +
       '</div>';
   }
 
@@ -127,10 +113,10 @@ window.views.storyDetail = (function () {
       var shortId = id.length > 8 ? id.slice(0, 8) + "\u2026" : id;
       return (
         '<li class="story-detail__owner">' +
-          '<span class="story-detail__owner-badge story-detail__owner-badge--' + _esc(type) + '">' +
-            _esc(type) +
+          '<span class="story-detail__owner-badge story-detail__owner-badge--' + window.utils.esc(type) + '">' +
+            window.utils.esc(type) +
           '</span>' +
-          '<span class="story-detail__owner-id">' + _esc(shortId) + '</span>' +
+          '<span class="story-detail__owner-id">' + window.utils.esc(shortId) + '</span>' +
         '</li>'
       );
     }).join("");
@@ -146,7 +132,7 @@ window.views.storyDetail = (function () {
   function _buildTagsHtml(tags) {
     if (!tags || tags.length === 0) return "";
     var chips = tags.map(function (tag) {
-      return '<span class="world-story-card__tag">' + _esc(tag) + '</span>';
+      return '<span class="world-story-card__tag">' + window.utils.esc(tag) + '</span>';
     }).join("");
     return '<div class="story-detail__tags">' + chips + '</div>';
   }
@@ -175,8 +161,8 @@ window.views.storyDetail = (function () {
 
     var editBtnHtml = canEdit
       ? '<button class="story-detail__entry-edit-btn"' +
-               ' data-entry-id="' + _esc(entryId) + '"' +
-               ' data-story-id="' + _esc(storyId) + '"' +
+               ' data-entry-id="' + window.utils.esc(entryId) + '"' +
+               ' data-story-id="' + window.utils.esc(storyId) + '"' +
                ' aria-label="Edit entry">' +
           'Edit' +
         '</button>'
@@ -187,19 +173,19 @@ window.views.storyDetail = (function () {
     if (updatedAt && createdAt && updatedAt !== createdAt) {
       var diff = Math.abs(new Date(updatedAt).getTime() - new Date(createdAt).getTime());
       if (diff > 1000) {
-        editedNote = ' <span class="story-detail__entry-edited">(edited ' + _esc(_relativeTime(updatedAt)) + ')</span>';
+        editedNote = ' <span class="story-detail__entry-edited">(edited ' + window.utils.esc(_relativeTime(updatedAt)) + ')</span>';
       }
     }
 
     return (
-      '<li class="story-detail__entry" data-entry-id="' + _esc(entryId) + '">' +
+      '<li class="story-detail__entry" data-entry-id="' + window.utils.esc(entryId) + '">' +
         '<div class="story-detail__entry-meta">' +
-          '<span class="story-detail__entry-author">' + _esc(shortAuthor) + '</span>' +
-          '<span class="story-detail__entry-time">' + _esc(_relativeTime(createdAt)) + editedNote + '</span>' +
+          '<span class="story-detail__entry-author">' + window.utils.esc(shortAuthor) + '</span>' +
+          '<span class="story-detail__entry-time">' + window.utils.esc(_relativeTime(createdAt)) + editedNote + '</span>' +
           editBtnHtml +
         '</div>' +
         '<div class="story-detail__entry-body">' +
-          '<p class="story-detail__entry-text">' + _esc(text) + '</p>' +
+          '<p class="story-detail__entry-text">' + window.utils.esc(text) + '</p>' +
         '</div>' +
       '</li>'
     );
@@ -266,12 +252,12 @@ window.views.storyDetail = (function () {
     var owners    = story.owners || [];
     var entries   = story.entries || [];
 
-    var isGm          = _isGm();
+    var isGm          = window.utils.isGm();
     var currentUserId = _currentUserId();
     var statusInfo    = _statusInfo(status);
 
     var summaryHtml = summary
-      ? '<p class="story-detail__summary">' + _esc(summary) + '</p>'
+      ? '<p class="story-detail__summary">' + window.utils.esc(summary) + '</p>'
       : '';
 
     var tagsHtml   = _buildTagsHtml(tags);
@@ -289,10 +275,10 @@ window.views.storyDetail = (function () {
 
         // Header
         '<hgroup class="story-detail__hgroup">' +
-          '<h2 class="story-detail__name">' + _esc(name) + '</h2>' +
+          '<h2 class="story-detail__name">' + window.utils.esc(name) + '</h2>' +
           '<p>' +
             '<mark class="world-story-card__status ' + statusInfo.cssClass + '">' +
-              _esc(statusInfo.label) +
+              window.utils.esc(statusInfo.label) +
             '</mark>' +
           '</p>' +
         '</hgroup>' +
@@ -343,7 +329,7 @@ window.views.storyDetail = (function () {
                  ' rows="4"' +
                  ' aria-label="Edit entry text"' +
                  ' required' +
-        '>' + _esc(originalText) + '</textarea>' +
+        '>' + window.utils.esc(originalText) + '</textarea>' +
         '<p class="story-detail__inline-edit-error error-text" role="alert" hidden></p>' +
         '<div class="story-detail__form-actions story-detail__form-actions--inline">' +
           '<button type="submit" class="story-detail__save-btn">Save</button>' +
@@ -367,7 +353,7 @@ window.views.storyDetail = (function () {
     // Cancel — restore original text
     cancelBtn.addEventListener("click", function () {
       bodyEl.innerHTML =
-        '<p class="story-detail__entry-text">' + _esc(originalText) + '</p>';
+        '<p class="story-detail__entry-text">' + window.utils.esc(originalText) + '</p>';
     });
 
     // Save — PATCH the entry
@@ -400,7 +386,7 @@ window.views.storyDetail = (function () {
           // Restore static display with new text
           var savedText = (updatedEntry && updatedEntry.text) ? updatedEntry.text : newText;
           bodyEl.innerHTML =
-            '<p class="story-detail__entry-text">' + _esc(savedText) + '</p>';
+            '<p class="story-detail__entry-text">' + window.utils.esc(savedText) + '</p>';
 
           document.dispatchEvent(
             new CustomEvent("api:success", {
@@ -569,7 +555,7 @@ window.views.storyDetail = (function () {
 
         _viewEl.innerHTML = _buildDetailHtml(story);
 
-        var isGm          = _isGm();
+        var isGm          = window.utils.isGm();
         var currentUserId = _currentUserId();
 
         _bindEditButtons(_viewEl);

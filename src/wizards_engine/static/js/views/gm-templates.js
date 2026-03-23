@@ -64,28 +64,6 @@ window.views.gmTemplates = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * HTML-escape a value for safe use in text content and attribute values.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
-
-  /**
-   * Dispatch an api:success toast event.
-   * @param {string} message
-   */
-  function _showSuccess(message) {
-    document.dispatchEvent(
-      new CustomEvent("api:success", {
-        detail: { message: message },
-        bubbles: true,
-      })
-    );
-  }
-
-  /**
    * Return templates filtered by _activeFilter.
    * @returns {Array}
    */
@@ -142,7 +120,7 @@ window.views.gmTemplates = (function () {
         '<p class="gm-templates__empty" role="status">' +
           ((_activeFilter === 'all' && _templates.length === 0)
             ? 'No templates yet. Create the first one above.'
-            : 'No ' + _esc(_activeFilter) + ' templates.') +
+            : 'No ' + window.utils.esc(_activeFilter) + ' templates.') +
         '</p>';
     } else {
       html += '<div class="gm-templates__list" role="list">';
@@ -189,10 +167,10 @@ window.views.gmTemplates = (function () {
     var active = _activeFilter === key;
     return (
       '<button class="gm-templates__tab' + (active ? ' gm-templates__tab--active' : '') + '"' +
-              ' data-filter="' + _esc(key) + '"' +
+              ' data-filter="' + window.utils.esc(key) + '"' +
               ' role="tab"' +
               ' aria-selected="' + (active ? 'true' : 'false') + '">' +
-        _esc(label) +
+        window.utils.esc(label) +
       '</button>'
     );
   }
@@ -204,26 +182,26 @@ window.views.gmTemplates = (function () {
    */
   function _renderTemplateCard(template) {
     var typeBadge =
-      '<span class="gm-templates__type-badge gm-templates__type-badge--' + _esc(template.type) + '">' +
-        _esc(template.type) +
+      '<span class="gm-templates__type-badge gm-templates__type-badge--' + window.utils.esc(template.type) + '">' +
+        window.utils.esc(template.type) +
       '</span>';
 
     return (
-      '<article class="gm-templates__card" role="listitem" data-template-id="' + _esc(template.id) + '">' +
+      '<article class="gm-templates__card" role="listitem" data-template-id="' + window.utils.esc(template.id) + '">' +
         '<header class="gm-templates__card-header">' +
-          '<strong class="gm-templates__card-name">' + _esc(template.name) + '</strong>' +
+          '<strong class="gm-templates__card-name">' + window.utils.esc(template.name) + '</strong>' +
           typeBadge +
         '</header>' +
-        '<p class="gm-templates__card-desc">' + _esc(template.description || '') + '</p>' +
+        '<p class="gm-templates__card-desc">' + window.utils.esc(template.description || '') + '</p>' +
         '<footer class="gm-templates__card-footer">' +
           '<button class="gm-templates__edit-btn secondary outline"' +
-                  ' data-edit-id="' + _esc(template.id) + '"' +
-                  ' aria-label="Edit ' + _esc(template.name) + '">' +
+                  ' data-edit-id="' + window.utils.esc(template.id) + '"' +
+                  ' aria-label="Edit ' + window.utils.esc(template.name) + '">' +
             'Edit' +
           '</button>' +
           '<button class="gm-templates__delete-btn contrast outline"' +
-                  ' data-delete-id="' + _esc(template.id) + '"' +
-                  ' aria-label="Delete ' + _esc(template.name) + '">' +
+                  ' data-delete-id="' + window.utils.esc(template.id) + '"' +
+                  ' aria-label="Delete ' + window.utils.esc(template.name) + '">' +
             'Delete' +
           '</button>' +
         '</footer>' +
@@ -276,7 +254,7 @@ window.views.gmTemplates = (function () {
   function _renderEditModal(template) {
     return (
       '<dialog id="gm-templates-edit-modal" open aria-modal="true"' +
-              ' aria-label="Edit template: ' + _esc(template.name) + '">' +
+              ' aria-label="Edit template: ' + window.utils.esc(template.name) + '">' +
         '<article>' +
           '<header>' +
             '<h3>Edit Template</h3>' +
@@ -286,22 +264,22 @@ window.views.gmTemplates = (function () {
             '</button>' +
           '</header>' +
           '<form id="gm-templates-edit-form" novalidate>' +
-            '<input type="hidden" id="tpl-edit-id" value="' + _esc(template.id) + '" />' +
+            '<input type="hidden" id="tpl-edit-id" value="' + window.utils.esc(template.id) + '" />' +
             '<label>' +
               'Type' +
-              '<input type="text" value="' + _esc(template.type) + '"' +
+              '<input type="text" value="' + window.utils.esc(template.type) + '"' +
                      ' disabled aria-readonly="true" />' +
             '</label>' +
             '<label>' +
               'Name <span aria-hidden="true">*</span>' +
               '<input type="text" id="tpl-edit-name" name="name"' +
                      ' required maxlength="100" autocomplete="off"' +
-                     ' value="' + _esc(template.name) + '" />' +
+                     ' value="' + window.utils.esc(template.name) + '" />' +
             '</label>' +
             '<label>' +
               'Description <span aria-hidden="true">*</span>' +
               '<textarea id="tpl-edit-desc" name="description"' +
-                        ' required maxlength="500" rows="3">' + _esc(template.description || '') + '</textarea>' +
+                        ' required maxlength="500" rows="3">' + window.utils.esc(template.description || '') + '</textarea>' +
             '</label>' +
             '<div class="gm-templates__form-actions">' +
               '<button type="submit" id="tpl-edit-submit">Save Changes</button>' +
@@ -322,19 +300,19 @@ window.views.gmTemplates = (function () {
     return (
       '<dialog id="gm-templates-delete-dialog" open aria-modal="true"' +
               ' role="alertdialog"' +
-              ' aria-label="Confirm deletion: ' + _esc(template.name) + '">' +
+              ' aria-label="Confirm deletion: ' + window.utils.esc(template.name) + '">' +
         '<article>' +
           '<header>' +
             '<h3>Delete Template?</h3>' +
           '</header>' +
-          '<p>Delete <strong>' + _esc(template.name) + '</strong>?</p>' +
+          '<p>Delete <strong>' + window.utils.esc(template.name) + '</strong>?</p>' +
           '<p class="gm-templates__delete-warning">' +
             'This will hide the template from the catalog. ' +
             'Existing traits using it are not affected.' +
           '</p>' +
           '<div class="gm-templates__form-actions">' +
             '<button id="tpl-delete-confirm" class="contrast"' +
-                    ' data-delete-id="' + _esc(template.id) + '">' +
+                    ' data-delete-id="' + window.utils.esc(template.id) + '">' +
               'Delete' +
             '</button>' +
             '<button id="tpl-delete-cancel" class="secondary">Cancel</button>' +
@@ -612,7 +590,7 @@ window.views.gmTemplates = (function () {
         _templates.unshift(created);
         _showCreateForm = false;
         _render();
-        _showSuccess('Template "' + created.name + '" created.');
+        window.utils.showSuccess('Template "' + created.name + '" created.');
       })
       .catch(function () {
         if (!_mounted) return;
@@ -641,7 +619,7 @@ window.views.gmTemplates = (function () {
         _updateInList(updated);
         _editingTemplate = null;
         _render();
-        _showSuccess('Template "' + updated.name + '" updated.');
+        window.utils.showSuccess('Template "' + updated.name + '" updated.');
       })
       .catch(function () {
         if (!_mounted) return;
@@ -667,7 +645,7 @@ window.views.gmTemplates = (function () {
         _removeFromList(id);
         _deletingTemplate = null;
         _render();
-        _showSuccess('"' + name + '" deleted.');
+        window.utils.showSuccess('"' + name + '" deleted.');
       })
       .catch(function () {
         if (!_mounted) return;
@@ -717,14 +695,12 @@ window.views.gmTemplates = (function () {
     if (!_viewEl) return;
 
     // Guard: GM only
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      if (!Alpine.store("app").isGm()) {
-        _viewEl.innerHTML =
-          '<div class="gm-templates">' +
-            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-          '</div>';
-        return;
-      }
+    if (!window.utils.isGm()) {
+      _viewEl.innerHTML =
+        '<div class="gm-templates">' +
+          '<p class="error-text" role="alert">Access denied — GM only.</p>' +
+        '</div>';
+      return;
     }
 
     // Reset state for a fresh mount

@@ -87,22 +87,6 @@ window.views.gmQueue = (function () {
   // DOM helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Dispatch a success toast event. Uses a custom 'api:success' event pattern
-   * similar to the existing 'api:error' event in api.js.
-   * Falls back to console.log if no listener handles it.
-   *
-   * @param {string} message
-   */
-  function _showSuccess(message) {
-    document.dispatchEvent(
-      new CustomEvent("api:success", {
-        detail: { message: message },
-        bubbles: true,
-      })
-    );
-  }
-
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -331,7 +315,7 @@ window.views.gmQueue = (function () {
       .post("/api/v1/proposals/" + id + "/approve", approveBody)
       .then(function () {
         delete _inflightIds[id];
-        _showSuccess("Proposal approved.");
+        window.utils.showSuccess("Proposal approved.");
         // List already updated optimistically — no re-render needed
       })
       .catch(function () {
@@ -377,7 +361,7 @@ window.views.gmQueue = (function () {
       .post("/api/v1/proposals/" + id + "/reject", rejectBody)
       .then(function () {
         delete _inflightIds[id];
-        _showSuccess("Proposal rejected.");
+        window.utils.showSuccess("Proposal rejected.");
       })
       .catch(function () {
         // Roll back
@@ -490,16 +474,7 @@ window.views.gmQueue = (function () {
     if (!_viewEl) return;
 
     // Guard: only GMs should see this view
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      var store = Alpine.store("app");
-      if (!store.isGm()) {
-        _viewEl.innerHTML =
-          '<div class="gm-queue">' +
-            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-          '</div>';
-        return;
-      }
-    }
+    if (!window.utils.requireGm(_viewEl)) return;
 
     // Reset state for a fresh mount
     _mounted = true;

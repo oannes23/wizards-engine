@@ -77,6 +77,7 @@ window.views.setup = (function () {
           if (typeof Alpine !== "undefined" && Alpine.store("app")) {
             Alpine.store("app").setUser(data);
           }
+          document.dispatchEvent(new CustomEvent("nav:refresh"));
           window.location.replace("#/gm");
         })
         .catch(function (err) {

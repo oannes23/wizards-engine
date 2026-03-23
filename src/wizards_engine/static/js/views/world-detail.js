@@ -47,6 +47,19 @@ window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
 
   /**
+   * HTML-escape a value for text content or attribute values.
+   * @param {*} str
+   * @returns {string}
+   */
+
+  /**
+   * Truncate a string to maxLen characters, appending ellipsis if trimmed.
+   * @param {string} text
+   * @param {number} maxLen
+   * @returns {string}
+   */
+
+  /**
    * Render the "back to world browser" button HTML.
    * @returns {string} HTML
    */
@@ -185,6 +198,82 @@ window.views.worldDetail = (function () {
   // ---------------------------------------------------------------------------
 
   /**
+   * Build an expandable bond card for a PC bond in the world-detail PC summary.
+   * Similar to character.js _buildBondItem but read-only (no Maintain action).
+   *
+   * @param {object} b — BondDisplayResponse
+   * @param {boolean} isGm — whether the current user is a GM
+   * @returns {string} HTML
+   */
+  function _buildPcBondItem(b, isGm) {
+    var isTrauma = !!b.is_trauma;
+    var isPC = b.slot_type === "pc_bond";
+
+    // Charge dots for PC bonds
+    var dotsHtml = "";
+    if (isPC && b.charges !== null && b.charges !== undefined) {
+      var charges = Number(b.charges) || 0;
+      var degradations = Number(b.degradations) || 0;
+      var effectiveMax = 5 - degradations;
+
+      dotsHtml = window.components.chargeDots.render({
+        current: charges,
+        max: 5,
+        variant: "bond",
+        effectiveMax: effectiveMax < 5 ? effectiveMax : undefined,
+      });
+    }
+
+    // Display name
+    var label = b.label || "";
+    var targetName = b.target_name || "";
+    var displayName = label && targetName ? label + " \u2014 " + targetName
+                    : label || targetName || "Unknown";
+
+    // Trauma badge
+    var badgeHtml = isTrauma
+      ? '<mark class="cs-trauma-badge">Trauma</mark>'
+      : "";
+
+    // Partner link
+    var footerLinkHtml = "";
+    var targetType = b.target_type || "";
+    var targetId   = b.target_id   || "";
+    if (targetType && targetId) {
+      var typeToPath = { character: "characters", group: "groups", location: "locations" };
+      var pathSeg = typeToPath[targetType] || targetType;
+      var partnerHref = "#/world/" + pathSeg + "/" + encodeURIComponent(targetId);
+      var partnerLabel = targetName || "partner";
+      footerLinkHtml =
+        '<a href="' + window.utils.esc(partnerHref) + '" class="exp-item__partner-link">' +
+          'Go to ' + window.utils.esc(partnerLabel) + ' \u2192' +
+        '</a>';
+    }
+
+    // Actions: GM Edit only (no Maintain — world-detail is read-only)
+    var actions = [];
+    if (isGm) {
+      actions.push({
+        label:     "Edit",
+        href:      "#/gm/bonds/" + encodeURIComponent(b.id) + "/edit",
+        secondary: true,
+      });
+    }
+
+    return window.components.expandableItem.render({
+      id:             b.id,
+      name:           displayName,
+      dotsHtml:       dotsHtml,
+      badgeHtml:      badgeHtml,
+      description:    b.description || "",
+      footerLinkHtml: footerLinkHtml,
+      actions:        actions,
+      variant:        "bond",
+      extraClass:     isTrauma ? "exp-item--trauma" : "",
+    });
+  }
+
+  /**
    * Build a read-only PC summary view for characters with detail_level === "full".
    * Avoids the race condition caused by hijacking character.js.
    * Shows meters and a "View Full Sheet" link for the current user's own character.
@@ -248,39 +337,54 @@ window.views.worldDetail = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    // Active traits (brief list)
+    // Determine GM status for Edit buttons
+    var isGm = false;
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      isGm = Alpine.store("app").isGm();
+    }
+
+    // Active traits — expandable cards
     var activeTraits = (c.traits && c.traits.active) ? c.traits.active : [];
     var traitsHtml = "";
     if (activeTraits.length > 0) {
-      traitsHtml =
-        '<section class="wd-pc-summary__section">' +
-          '<h3 class="wd-pc-summary__section-heading">Traits</h3>' +
-          '<ul class="wd-trait-list">';
+      traitsHtml = '<section class="wd-pc-summary__section">';
+      traitsHtml += '<h3 class="wd-pc-summary__section-heading">Traits</h3>';
+      traitsHtml += '<ul class="wd-trait-list">';
       for (var i = 0; i < activeTraits.length; i++) {
         var t = activeTraits[i];
         var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
         var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
-        traitsHtml +=
-          '<li class="wd-trait-item">' +
-            '<div style="display:flex;align-items:center;gap:0.5rem;">' +
-              '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
-              dots +
-            '</div>' +
-          '</li>';
+
+        var traitActions = [];
+        if (isGm) {
+          traitActions.push({
+            label:     "Edit",
+            href:      "#/gm/traits/" + encodeURIComponent(t.id) + "/edit",
+            secondary: true,
+          });
+        }
+
+        traitsHtml += window.components.expandableItem.render({
+          id:          t.id,
+          name:        t.name,
+          dotsHtml:    dots,
+          description: t.description || "",
+          actions:     traitActions,
+          variant:     "trait",
+        });
       }
       traitsHtml += '</ul></section>';
     }
 
-    // Active bonds (brief list using shared _buildBondItem)
+    // Active bonds — expandable cards
     var activeBonds = (c.bonds && c.bonds.active) ? c.bonds.active : [];
     var bondsHtml = "";
     if (activeBonds.length > 0) {
-      bondsHtml =
-        '<section class="wd-pc-summary__section">' +
-          '<h3 class="wd-pc-summary__section-heading">Bonds</h3>' +
-          '<ul class="wd-bond-list">';
+      bondsHtml = '<section class="wd-pc-summary__section">';
+      bondsHtml += '<h3 class="wd-pc-summary__section-heading">Bonds</h3>';
+      bondsHtml += '<ul class="wd-bond-list">';
       for (var j = 0; j < activeBonds.length; j++) {
-        bondsHtml += _buildBondItem(activeBonds[j]);
+        bondsHtml += _buildPcBondItem(activeBonds[j], isGm);
       }
       bondsHtml += '</ul></section>';
     }
@@ -387,6 +491,8 @@ window.views.worldDetail = (function () {
               _buildBackButton() +
               _buildPcSummary(data) +
             '</div>';
+          // Wire expand/collapse toggle listeners for trait and bond cards
+          window.components.expandableItem.attach(el);
         } else {
           // NPC: simplified summary
           el.innerHTML =

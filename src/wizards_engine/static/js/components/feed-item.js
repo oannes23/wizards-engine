@@ -112,14 +112,16 @@ window.components.feedItem = (function () {
 
   /**
    * Build a target list HTML string for an event.
-   * Feed targets are {type, id} objects — they carry no name field.
-   * We render each target as a link to its world-detail page using the type
-   * and a shortened form of the id as the label.
+   * Feed targets are {type, id} objects; they may also carry a name field
+   * (populated by 8.3.1 backend enrichment).
    *
-   * Falls back gracefully for legacy objects that do carry a name field and
-   * for plain string values.
+   * Each target renders as a clickable link to its world-detail page.
+   * When a name is available it is used as the link label; otherwise the
+   * target type is shown (e.g. "character").
    *
-   * @param {Array} targets — array of {type, id} objects or legacy {name} objects
+   * Falls back gracefully for plain string values.
+   *
+   * @param {Array} targets — array of {type, id[, name, display_name]} objects
    * @returns {string} HTML string (comma-separated), or empty string
    */
   function _targetList(targets) {
@@ -129,17 +131,14 @@ window.components.feedItem = (function () {
     for (var i = 0; i < targets.length; i++) {
       var t = targets[i];
       if (t && typeof t === "object") {
-        // Prefer an explicit name/display_name when present (legacy support)
-        if (t.name || t.display_name) {
-          parts.push(window.utils.esc(t.name || t.display_name));
-          continue;
-        }
-        // Standard API shape: {type, id}
-        var type = t.type || "object";
-        var id   = t.id   || "";
+        var type    = t.type || "object";
+        var id      = t.id   || "";
+        // Prefer explicit name from 8.3.1 enrichment or legacy fields; fall
+        // back to the target type as a human-readable label.
+        var name    = t.name || t.display_name || null;
+        var label   = name || type;
         var pathSeg = typeToPath[type] || (type + "s");
-        var shortId = id.length > 8 ? id.slice(0, 8) + "\u2026" : id;
-        var label = type + (shortId ? " " + shortId : "");
+
         if (id) {
           var href = "#/world/" + pathSeg + "/" + encodeURIComponent(id);
           parts.push('<a href="' + window.utils.esc(href) + '">' + window.utils.esc(label) + '</a>');
@@ -158,18 +157,82 @@ window.components.feedItem = (function () {
   // --------------------------------------------------------------------------
 
   /**
+   * Render the actor name, as a clickable link when actor_id is available
+   * and the actor is not "You" (is_own) or "System".
+   *
+   * The API may provide actor_name (added in 8.3.1) as a display name.
+   * Falls back to a label derived from actor_type + is_own when absent.
+   *
+   * @param {string} actorType — "player" | "gm" | "system"
+   * @param {string|null} actorId — ULID of the acting user, or null
+   * @param {string|null} actorName — display name from the API, or null
+   * @param {boolean} isOwn — true when the current user is the actor
+   * @returns {string} HTML string (plain text or <a> element)
+   */
+  function _actorHtml(actorType, actorId, actorName, isOwn) {
+    var label;
+    if (actorType === "system") {
+      label = "System";
+    } else if (isOwn) {
+      label = "You";
+    } else if (actorName) {
+      label = actorName;
+    } else if (actorType === "gm") {
+      label = "GM";
+    } else {
+      label = "Player";
+    }
+
+    // Only link when we have an actor_id, the actor is not "You", and not "System".
+    if (actorId && !isOwn && actorType !== "system") {
+      var href = "#/world/characters/" + encodeURIComponent(actorId);
+      return '<a class="feed-item__actor-link" href="' + window.utils.esc(href) + '">' + window.utils.esc(label) + '</a>';
+    }
+    return window.utils.esc(label);
+  }
+
+  /**
+   * Build a small source-type badge HTML string.
+   * Possible values: "Event", "Story", "Proposal".
+   *
+   * @param {string} sourceType — "event" | "story" | "proposal"
+   * @returns {string} HTML
+   */
+  function _sourceBadge(sourceType) {
+    var label, mod;
+    switch (String(sourceType || "event").toLowerCase()) {
+      case "story":
+      case "story_entry":
+        label = "Story";
+        mod   = "story";
+        break;
+      case "proposal":
+        label = "Proposal";
+        mod   = "proposal";
+        break;
+      default:
+        label = "Event";
+        mod   = "event";
+        break;
+    }
+    return (
+      '<span class="feed-item__source-badge feed-item__source-badge--' + window.utils.esc(mod) + '">' +
+        window.utils.esc(label) +
+      '</span>'
+    );
+  }
+
+  /**
    * Render an event feed item.
    * @param {object} item — event data from the API
    * @param {boolean} isOwn — true when the current user is the actor
    * @returns {string} HTML
    */
   function _renderEvent(item, isOwn) {
-    // The API returns actor_id (a ULID) rather than a name. Use actor_type to
-    // produce a readable label; fall back to "Event" for system actors.
     var actorType  = item.actor_type || "player";
-    var actorName  = actorType === "system" ? "System"
-                   : actorType === "gm"     ? "GM"
-                   : (isOwn ? "You" : "Player");
+    // actor_name populated by 8.3.1 backend enrichment; may be null/absent.
+    var actorName  = item.actor_name || null;
+    var actorId    = item.actor_id || null;
     var eventType  = item.event_type || item.type || "";
     var narrative  = item.narrative || item.description || "";
     var targets    = item.targets || [];
@@ -189,12 +252,17 @@ window.components.feedItem = (function () {
       : "";
 
     var ownClass = isOwn ? " feed-item--own" : "";
+    var actorHtml = _actorHtml(actorType, actorId, actorName, isOwn);
+
+    // Determine source type: events linked to a proposal show "Proposal".
+    var sourceType = item.proposal_id ? "proposal" : "event";
 
     return (
       '<div class="feed-item feed-item--event feed-item--' + window.utils.esc(modifier) + ownClass + '">' +
         '<div class="feed-item__meta">' +
-          '<span class="feed-item__actor">' + window.utils.esc(actorName) + '</span>' +
+          '<span class="feed-item__actor">' + actorHtml + '</span>' +
           '<span class="feed-item__action">' + window.utils.esc(typeLabel) + '</span>' +
+          _sourceBadge(sourceType) +
           (relTime
             ? '<time class="feed-item__time" datetime="' + window.utils.esc(timestamp) + '">' + window.utils.esc(relTime) + '</time>'
             : '') +
@@ -235,6 +303,7 @@ window.components.feedItem = (function () {
         '<div class="feed-item__meta">' +
           '<span class="feed-item__actor">' + window.utils.esc(authorName) + '</span>' +
           storyHtml +
+          _sourceBadge("story") +
           (relTime
             ? '<time class="feed-item__time" datetime="' + window.utils.esc(timestamp) + '">' + window.utils.esc(relTime) + '</time>'
             : '') +

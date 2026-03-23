@@ -4105,6 +4105,7 @@ main.container {
   );
   background-size: 400px 100%;
   animation: dt-shimmer 1.4s ease-in-out infinite;
+}
 
 /* ---------------------------------------------------------------------------
    Text utility classes — Story 8.1.6
@@ -4128,4 +4129,124 @@ main.container {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------------
+   GM Sessions view — DataTable + session-specific styles (Story 8.4.3)
+   --------------------------------------------------------------------------- */
+
+/* View container header (title + create button) */
+.sessions-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sessions-view__header h2 {
+  margin: 0;
+}
+
+/* ---- Session status badges -----------------------------------------------
+   Reuse the same visual pattern as .proposal-status-badge.
+   Three status-specific modifiers: active (green), draft (neutral), ended (muted).
+   --------------------------------------------------------------------------- */
+
+.session-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.session-status-badge--active  { background: var(--we-ft-green, #27ae60);   color: #fff; }
+.session-status-badge--draft   { background: var(--pico-muted-border-color, #555); color: var(--pico-color, #ddd); }
+.session-status-badge--ended   { background: var(--pico-card-sectioning-background-color, #2a2a3a); color: var(--pico-muted-color, #aaa); }
+.session-status-badge--unknown { background: var(--pico-muted-border-color, #555); color: var(--pico-color, #ddd); }
+
+/* ---- Participant avatar circles ------------------------------------------
+   Overlapping initials circles.  Each avatar is a fixed-size circle with
+   a negative left margin to create the overlap effect.
+   --------------------------------------------------------------------------- */
+
+.session-participants {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.session-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--pico-primary, #7c6aff);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 2px solid var(--pico-background-color, #1a1a2e);
+  margin-left: -0.5rem;
+  cursor: default;
+}
+
+/* First avatar has no negative margin */
+.session-avatar:first-child {
+  margin-left: 0;
+}
+
+/* Overflow pill (+N) — slightly muted background */
+.session-avatar--overflow {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.65rem;
+}
+
+/* Empty state placeholder */
+.session-participants--empty {
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* ---- Per-row action buttons -----------------------------------------------
+   Compact button group inside the Actions column.
+   --------------------------------------------------------------------------- */
+
+.session-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.session-row-btn {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* ---- Sessions form --------------------------------------------------------
+   Tighter spacing for inline create/edit forms, matching modern form pattern.
+   --------------------------------------------------------------------------- */
+
+.sessions-form label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.sessions-form label input,
+.sessions-form label textarea,
+.sessions-form label select {
+  margin-top: 0.25rem;
+}
+
+.sessions-form__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
 }

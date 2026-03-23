@@ -381,7 +381,7 @@ main.container {
 
 .game-object-card__snippet {
   font-size: 0.85rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0;
   overflow: hidden;
   display: -webkit-box;
@@ -1540,7 +1540,7 @@ main.container {
 
 .cs-header__desc {
   font-size: 0.875rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.75rem 0;
 }
 
@@ -1800,7 +1800,7 @@ main.container {
 
 .cs-trait-item__desc {
   font-size: 0.82rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.35rem 0;
 }
 
@@ -1863,7 +1863,7 @@ main.container {
 
 .cs-bond-item__desc {
   font-size: 0.82rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.35rem 0;
 }
 
@@ -1936,7 +1936,7 @@ main.container {
 
 .cs-effect-item__desc {
   font-size: 0.82rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.35rem 0;
 }
 
@@ -2636,7 +2636,7 @@ main.container {
 
 .wd-npc__desc {
   font-size: 0.9rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.75rem 0;
   white-space: pre-wrap;
 }
@@ -2717,7 +2717,7 @@ main.container {
 
 .wd-detail__desc {
   font-size: 0.9rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.75rem 0;
   white-space: pre-wrap;
 }
@@ -2770,7 +2770,7 @@ main.container {
 
 .wd-trait-item__desc {
   font-size: 0.82rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0.2rem 0 0 0;
 }
 
@@ -2818,7 +2818,7 @@ main.container {
 
 .wd-bond-item__desc {
   font-size: 0.82rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0;
 }
 
@@ -2928,7 +2928,7 @@ main.container {
 
 .wd-pc-summary__desc {
   font-size: 0.875rem;
-  color: var(--pico-muted-color, #aaa);
+  color: var(--pico-color, #ddd);
   margin: 0 0 0.75rem 0;
 }
 
@@ -3543,4 +3543,28 @@ main.container {
   .game-object-card__star-btn {
     font-size: 1.4rem;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Text utility classes — Story 8.1.6
+   Semantic helpers for consistent text color across views.
+   --------------------------------------------------------------------------- */
+
+/* Body text — readable on dark backgrounds (same as --pico-color) */
+.text-body {
+  color: var(--pico-color, #ddd);
+}
+
+/* Muted text — metadata, timestamps, secondary info */
+.text-muted {
+  color: var(--pico-muted-color, #aaa);
+}
+
+/* Label text — small uppercase headings, field labels */
+.text-label {
+  color: var(--pico-muted-color, #aaa);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }

@@ -192,7 +192,7 @@ window.views.character = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    var descSnippet = _snippet(c.description || "", 160);
+    var descFull = c.description || "";
 
     return (
       '<div class="cs-header">' +
@@ -200,8 +200,8 @@ window.views.character = (function () {
           '<h2 class="cs-header__name">' + _esc(c.name) + '</h2>' +
           editBtn +
         '</div>' +
-        (descSnippet
-          ? '<p class="cs-header__desc">' + _esc(descSnippet) + '</p>'
+        (descFull
+          ? '<p class="cs-header__desc">' + _esc(descFull) + '</p>'
           : '') +
         '<div class="cs-meters">' +
           stressBar +

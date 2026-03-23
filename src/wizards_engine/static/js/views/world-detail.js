@@ -232,7 +232,7 @@ window.views.worldDetail = (function () {
       '</a>'
     );
 
-    var descSnippet = _snippet(c.description || "", 160);
+    var descFull = c.description || "";
 
     // Resource meters
     var STRESS_MAX         = 9;
@@ -314,8 +314,8 @@ window.views.worldDetail = (function () {
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
         '</div>' +
-        (descSnippet
-          ? '<p class="wd-pc-summary__desc">' + _esc(descSnippet) + '</p>'
+        (descFull
+          ? '<p class="wd-pc-summary__desc">' + _esc(descFull) + '</p>'
           : '') +
         '<div class="wd-pc-summary__meters">' +
           stressBar + ftBar + plotBar + gnosisBar +

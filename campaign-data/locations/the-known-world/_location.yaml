@@ -23,3 +23,19 @@ features:
       Bronze Age divine compacts versus Iron Age rational expansion. Both are
       genuinely present. Which paradigm wins determines what kind of world
       the Known World becomes.
+  - name: Active Fault Lines
+    description: >
+      Three active political crises are unfolding simultaneously: the Argos
+      incorporation, the Troikas resistance, and the divine court review.
+      Events in each affect the others in ways that are not always obvious.
+bonds:
+  - name: Primary Administration
+    target:
+      type: group
+      name: Iron Compact
+    description: The Compact is the dominant political actor across the Known World's major trade routes and river valleys.
+  - name: Resistance Network
+    target:
+      type: group
+      name: Troikas Resistance
+    description: The resistance represents organized opposition to Compact expansion at the local level.

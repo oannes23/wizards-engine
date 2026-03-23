@@ -26,3 +26,8 @@ bonds:
       type: character
       name: Lysara
     description: Officially neutral. Privately rooting for her. Very helpful with technically-neutral information.
+  - name: Observation Post
+    target:
+      type: location
+      name: Argos
+    description: His unofficial base of operations. The Compact knows he is here and cannot object without appearing to obstruct the divine court's observation mandate.

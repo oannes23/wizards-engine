@@ -1,0 +1,72 @@
+name: The Road Out of Troikas
+summary: >
+  Enyo's exile from Troikas and the events of the first weeks on the road
+  before she encountered the group. This story covers what she knows about
+  the coup, the three people she helped escape (including Phila), and the
+  first time Myrtos approached her. Status: completed — these events are
+  established history, not ongoing story threads.
+status: completed
+tags: ["enyo", "troikas", "exile", "myrtos", "prequel"]
+owners:
+  - type: character
+    name: Enyo
+  - type: location
+    name: Troikas
+entries:
+  - text: >
+      The night of the coup: Enyo receives the execution order for twelve
+      political prisoners. She stalls, then refuses outright. The temple-guard
+      commander tells her the order comes from above him — from a level of
+      authority she didn't know existed in the guard structure. She helps
+      three prisoners escape through the Academic Quarter sewers. She has
+      approximately two hours before the commander reports her.
+    author: "GM"
+    character: "Enyo"
+    session: null
+  - text: >
+      The logistics of the escape: Enyo knows the sewer routes from patrol
+      duty. The three prisoners are Phila (philosopher), an academic named
+      Demos (later arrested separately), and a woman named Kaia whose
+      background Enyo never learned. She gets them to a safehouse in the
+      Harbor District and gives Phila everything she has for bribing passage
+      on a merchant vessel. She never sees Demos or Kaia again.
+    author: "Player Clio"
+    character: "Enyo"
+    session: null
+  - text: >
+      Myrtos's approach, three days later: Enyo is sleeping rough near the
+      northern gate. He finds her — she doesn't know how. Soft-spoken, no
+      threat in his posture, offers her a position in what he calls "a
+      technical capacity." When she refuses he says only: "Keep the offer
+      open. The work we do needs people with your understanding of
+      certain preparations." He leaves. She doesn't sleep again that night.
+    author: "Player Clio"
+    character: "Enyo"
+    session: null
+  - text: >
+      Two weeks on the road: Enyo reaches Argos and takes a room in a lower-
+      quarter inn. The Compact's administrative presence here is visible
+      but not yet as heavy as Troikas. She is trying to determine whether
+      to move further east or stay and gather information. The city's oracle
+      shrine has recently closed.
+    author: "GM"
+    character: "Enyo"
+    session: null
+  - text: >
+      The encounter at the road's seasonal ford, shortly before Session 1:
+      Enyo is hiding from an Iron Compact patrol checking documents when
+      she stumbles on Theron and Lysara doing the same thing. None of them
+      have legitimate reasons to explain their presence. They conclude,
+      wordlessly, that they are on the same side of this particular problem.
+    author: "Player Clio"
+    character: "Enyo"
+    session: 1
+  - text: >
+      Reflecting on this later, Enyo recognizes that the road out of Troikas
+      ended at the ford. She didn't plan to join a group; she planned to
+      operate alone. What she found instead was two people who also refused
+      something they were supposed to do. It was enough.
+    author: "Player Clio"
+    character: "Enyo"
+    session: 2
+children: []

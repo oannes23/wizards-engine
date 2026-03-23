@@ -28,3 +28,8 @@ bonds:
     labels:
       source: Shameful obligation
       target: Legal claim
+  - name: Diminished Presence
+    target:
+      type: location
+      name: Argos Ford
+    description: Aelion's divine presence is concentrated at the ford — it is where his oath-witnessing was strongest and where his diminishment is most visible.

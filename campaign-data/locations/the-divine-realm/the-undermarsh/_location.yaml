@@ -17,3 +17,20 @@ features:
     description: Shades of everyone who has ever died cluster in loose non-groupings. Finding a specific shade requires knowing where to look.
   - name: Dream Road Border
     description: The eastern edge where dream and death meet. The Dream Hound's patrol territory.
+  - name: Cold Approach Points
+    description: >
+      Specific locations in the mortal world that serve as ritual
+      entry points to the Undermarsh — old graves, cold springs, and
+      the sites of mass deaths. The Argos region has two such points
+      due to the Chorus executions.
+bonds:
+  - name: Border Guardian
+    target:
+      type: character
+      name: The Dream Hound
+    description: The Dream Hound patrols the Dream Road border of the Undermarsh. It enforces the boundary between dead and dreaming.
+  - name: Known Passage
+    target:
+      type: character
+      name: Korinna
+    description: Korinna transited the Undermarsh during the Arkos incident. The location recognized her passage and has not forgotten.

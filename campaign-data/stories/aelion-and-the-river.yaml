@@ -38,4 +38,31 @@ entries:
     author: "Player Brom"
     character: "Theron"
     session: 4
+  - text: >
+      Korinna, when told about the dream fragments, recognizes the emotional
+      signature of shame combined with attempted communication. She doesn't
+      tell Theron what she recognizes. She tells the GM privately that Aelion's
+      shame feels specifically like the shame of someone who made a choice they
+      cannot undo and are now watching its consequences.
+    author: "Player Dara"
+    character: "Korinna"
+    session: 4
+  - text: >
+      Orestes confirms from his documentation that a water-rights bargain of
+      the type Aelion apparently made has historical precedent. Divine entities
+      under pressure sometimes made short-term agreements that they expected
+      to renegotiate before the long-term costs became apparent. Two documented
+      cases. Neither ended well for the divine party to the bargain.
+    author: "Player Gale"
+    character: "Orestes"
+    session: 5
+  - text: >
+      The Argos Ford sluice gates at night: Theron stands at the gate looking
+      at the reduced flow and realizes that somewhere in the mechanism, the
+      water still knows where it was supposed to go. He can feel it — not
+      anger exactly, but a specific wrongness that makes his hands shake. His
+      father is in that wrongness. He doesn't go in. He should go in.
+    author: "Player Brom"
+    character: "Theron"
+    session: 5
 children: []

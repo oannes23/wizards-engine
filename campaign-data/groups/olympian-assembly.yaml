@@ -28,3 +28,19 @@ relations:
   - name: Counter-Claims Filed By
     target: Keepers of the Sacred Fire
     description: The Keepers have submitted counter-documentation. The competing claims are what's keeping Themis's observation order active.
+  - name: Observation Order
+    target: The Scattered Chorus
+    description: The Chorus's destruction is part of the evidence Themis is gathering. The Assembly has noted its status.
+holdings:
+  - name: Herald Station at Argos
+    target: Argos
+    description: >
+      The temporary posting where Herald Kassian conducts his observation
+      duties. Not an official divine installation — a rented room in a
+      merchant quarter inn that has become a de facto divine outpost.
+  - name: Olympos Peak Assembly Chamber
+    target: Olympos Peak
+    description: >
+      The primary location of the divine court's formal proceedings.
+      Divine legal claims are filed and argued here. The sacred stones
+      case is currently queued for its second hearing.

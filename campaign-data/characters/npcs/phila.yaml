@@ -29,3 +29,16 @@ bonds:
     labels:
       source: Hoping
       target: Unknown
+  - name: Operating Ground
+    target:
+      type: location
+      name: Troikas
+    description: Troikas is her city. She knows it deeply — every academic quarter gathering space, every guild contact, every patrol schedule change. This knowledge is her primary asset.
+  - name: Working Contact
+    target:
+      type: character
+      name: Myrtos
+    description: She doesn't know who the informant is but she suspects someone near her. She doesn't know it's directly connected to Myrtos.
+    labels:
+      source: Suspicious
+      target: Unknown threat

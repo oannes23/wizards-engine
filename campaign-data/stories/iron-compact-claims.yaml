@@ -40,6 +40,35 @@ entries:
     author: "Player Asha"
     character: "Lysara"
     session: 3
+  - text: >
+      Orestes confirms from his documentation: the sacred marker stones at Argos
+      Ford are listed as physical witnesses on eleven separate divine-mortal
+      contracts spanning four centuries. They are not decorative. Removing them
+      from the ford is legally equivalent, in the older contract tradition, to
+      removing a witness signature. The Compact almost certainly knows this.
+    author: "Player Gale"
+    character: "Orestes"
+    session: 3
+  - text: >
+      Mikkos, fresh eyes on the problem: the Compact filed in the divine court
+      before they removed the stones. Sequence matters. If they had removed the
+      stones before filing, the Assembly might have ruled immediately on contract
+      violation. By filing first, they put the Assembly in the position of ruling
+      on a situation that changes while the ruling is pending. This is either
+      coincidence or extremely sophisticated divine-court procedure.
+    author: "Player Evan"
+    character: "Mikkos"
+    session: 4
+  - text: >
+      Kassian's second appearance in Session 5: he delivers a formally neutral
+      message from the Assembly that the second hearing has been scheduled.
+      He adds, informally, that the "physical evidence situation" will be noted
+      by the reviewing party. He looks directly at the location of the group's
+      documentation materials when he says this. He then leaves before anyone
+      can respond.
+    author: "GM"
+    character: null
+    session: 5
 children:
   - name: The Sacred Stones
     summary: >

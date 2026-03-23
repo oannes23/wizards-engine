@@ -28,3 +28,19 @@ relations:
   - name: Hunted By
     target: Iron Compact
     description: The Compact actively hunts surviving Chorus members. Precision prophets are dangerous to their plans.
+  - name: Exile Solidarity
+    target: Troikas Resistance
+    description: Several Chorus survivors passed through Troikas during the purge. Shared exile creates fragile solidarity.
+holdings:
+  - name: Sondra's Fishing Village Refuge
+    target: The Known World
+    description: >
+      A fishing village east of Troikas where the survivor Sondra is
+      currently sheltering. Not a formal holding — a temporary refuge
+      that could be compromised at any time. Lysara knows the location.
+  - name: Dream Road Contact Network
+    target: The Dream Road
+    description: >
+      The surviving Chorus members maintain irregular contact through
+      the Dream Road when they can. Lysara's Dream Passage ability
+      makes this possible but the network is scattered and unreliable.

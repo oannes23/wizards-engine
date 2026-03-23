@@ -29,3 +29,8 @@ bonds:
     labels:
       source: Conflicted duty
       target: Unresolved betrayal
+  - name: Operational Territory
+    target:
+      type: location
+      name: Argos
+    description: The Administrative Compound is his headquarters. He knows Argos's streets, contacts, and political dynamics better than anyone outside the city.

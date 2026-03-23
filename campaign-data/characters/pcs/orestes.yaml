@@ -1,0 +1,141 @@
+name: Orestes
+detail_level: full
+description: >
+  A traveling scholar and inscriber from the northern city-states who has
+  spent ten years documenting divine-mortal contracts before they disappear —
+  a personal project that has become urgently relevant as the Iron Compact
+  systematically destroys the evidence he studies. He carries transcriptions
+  of over three hundred contracts in a waterproof carry-case he never puts
+  down. He is methodical, slightly pedantic, and capable of extraordinary
+  feats of physical endurance when there is something specific to protect.
+  He perceives divine presences as an auditory resonance — a low note he
+  can feel in his teeth rather than hear.
+notes: >
+  Detection method: sub-auditory resonance — vibration felt in jaw and
+  sternum rather than heard. His documentation project is what brought him
+  to the Argos region — the oracle shrine records here are the oldest in
+  the Known World and he arrived two days before Drakos shut the shrine.
+  He has copies of the shrine records that the Compact doesn't know exist.
+  This makes him dangerous to the Compact's legal claims in ways he hasn't
+  fully processed.
+secrets: >
+  Orestes's documentation project was initially funded by the Olympian
+  Assembly — a minor commission from a divine bureaucrat who has since
+  been silenced. He technically still holds a divine commission, which
+  may give him standing in the divine court he doesn't know how to exercise.
+  The commission document is in the carry-case along with the contract copies.
+attributes:
+  magic_detection: sub-auditory vibration in jaw and sternum
+  project: Documentation of divine-mortal contracts (300+ transcriptions)
+  notable_items:
+    - Waterproof carry-case with contract transcriptions
+    - Writing kit (bronze stylus, wax, vellum)
+    - Divine commission document (Assembly stamp, inactive)
+meters:
+  stress: 5
+  free_time: 1
+  plot: 4
+  gnosis: 7
+skills:
+  awareness: 2
+  composure: 3
+  influence: 1
+  finesse: 1
+  speed: 1
+  power: 2
+  knowledge: 3
+  technology: 2
+magic_stats:
+  being: {level: 0, xp: 0}
+  wyrding: {level: 3, xp: 2}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 2, xp: 0}
+  dreaming: {level: 1, xp: 1}
+core_traits:
+  - template: Iron Memory
+    charge: 4
+  - template: Oath-Keeper
+    charge: 5
+role_traits:
+  - template: Seer
+    charge: 3
+  - template: Dream-Walker
+    charge: 1
+bonds:
+  - name: Scholarly Alliance
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Lysara's ability to read fate-threads complements Orestes's
+      ability to read historical contracts. They have been sharing
+      documentation and oracle records to cross-reference.
+    charges: 4
+  - name: Source Documentation
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: >
+      The Keepers' archive and Orestes's transcriptions overlap
+      significantly. Vaela has been more forthcoming with him than
+      with the others — his scholarly approach matches her preference.
+    charges: 4
+  - name: Protected Evidence
+    target:
+      type: location
+      name: Argos
+    description: >
+      His carry-case contains copies of the Argos shrine records.
+      He is intensely aware that if the Compact learns he has them,
+      his life expectancy drops sharply.
+    charges: 3
+  - name: Legal Threat
+    target:
+      type: group
+      name: Iron Compact
+    description: >
+      His documentation directly undermines their legitimacy claims.
+      They don't know he exists yet. He is acutely aware that this
+      advantage is temporary.
+    charges: 2
+    degradations: 1
+  - name: Court Commission
+    target:
+      type: group
+      name: Olympian Assembly
+    description: >
+      The inactive commission from the Assembly bureaucrat. He's
+      not sure if it still carries authority. Herald Kassian has
+      been distinctly evasive when Orestes raises the topic.
+    charges: 3
+magic_effects:
+  - name: Contract Reading
+    description: >
+      When physically touching a written divine-mortal contract or
+      oath document, Orestes can perceive its current state — whether
+      the parties are honoring it, what obligations are outstanding,
+      and whether any clauses have been violated. The information
+      arrives as a resonance impression rather than verbal statement.
+      Forgeries feel wrong immediately.
+    effect_type: permanent
+    power_level: 3
+  - name: Oath Inscription
+    description: >
+      Orestes can inscribe a binding mortal oath that carries mild
+      divine weight — not Olympian-level enforcement, but the kind
+      of oath that makes breaking it feel wrong in the body and
+      that minor divine witnesses notice. Requires both parties'
+      willing participation and a written medium.
+    effect_type: charged
+    power_level: 3
+    charges: {current: 2, max: 4}
+  - name: Archive Sense
+    description: >
+      In a building or location that has held divine contracts or
+      oracle records, Orestes can sense what is missing — gaps in
+      the resonance where documents have been removed, burned, or
+      destroyed. He cannot reconstruct the missing content but he
+      can estimate how long ago it was removed and whether the
+      removal was sanctioned or violent.
+    effect_type: instant
+    power_level: 2

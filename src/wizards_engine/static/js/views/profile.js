@@ -51,14 +51,6 @@ window.views.profile = (function () {
   // HTML helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * HTML-escape for text content. Delegates to window.utils.esc.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Rendering
@@ -88,7 +80,7 @@ window.views.profile = (function () {
     _viewEl.innerHTML =
       '<div class="profile-root">' +
         '<hgroup><h2>Profile</h2></hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="profile-retry-btn">Retry</button>' +
       '</div>';
 
@@ -116,7 +108,7 @@ window.views.profile = (function () {
     var roleLabel = role === "gm" ? "GM" : "Player";
 
     var nameErrorHtml = _nameError
-      ? '<small class="profile__field-error" role="alert">' + _esc(_nameError) + '</small>'
+      ? '<small class="profile__field-error" role="alert">' + window.utils.esc(_nameError) + '</small>'
       : "";
 
     var saveDisabled = _inflightSave ? " disabled" : "";
@@ -127,7 +119,7 @@ window.views.profile = (function () {
       var charHash = role === "gm" ? "#/gm/character" : "#/character";
       charHtml =
         '<p class="profile__char-link-row">' +
-          'Character: <a href="' + _esc(charHash) + '">View character sheet</a>' +
+          'Character: <a href="' + window.utils.esc(charHash) + '">View character sheet</a>' +
         '</p>';
     }
 
@@ -135,7 +127,7 @@ window.views.profile = (function () {
       '<section class="profile__section">' +
         '<hgroup>' +
           '<h2>Profile</h2>' +
-          '<p><span class="' + _esc(roleBadgeClass) + '">' + _esc(roleLabel) + '</span></p>' +
+          '<p><span class="' + window.utils.esc(roleBadgeClass) + '">' + window.utils.esc(roleLabel) + '</span></p>' +
         '</hgroup>' +
         charHtml +
         '<form id="profile-name-form" novalidate>' +
@@ -144,7 +136,7 @@ window.views.profile = (function () {
           '  id="profile-name"' +
           '  name="display_name"' +
           '  type="text"' +
-          '  value="' + _esc(displayName) + '"' +
+          '  value="' + window.utils.esc(displayName) + '"' +
           '  required' +
           '  autocomplete="off"' +
           '  aria-required="true"' +
@@ -173,14 +165,14 @@ window.views.profile = (function () {
         '<div class="profile__refresh-confirm" role="status">' +
           '<p class="profile__refresh-success">New login link generated.</p>' +
           '<p class="profile__refresh-url">' +
-            '<code>' + _esc(_refreshedUrl) + '</code>' +
+            '<code>' + window.utils.esc(_refreshedUrl) + '</code>' +
           '</p>' +
           '<p class="profile__refresh-hint">Save this link. Your old link no longer works.</p>' +
         '</div>';
     } else if (_refreshError) {
       confirmHtml =
         '<p class="profile__refresh-error error-text" role="alert">' +
-          _esc(_refreshError) +
+          window.utils.esc(_refreshError) +
         '</p>';
     }
 
@@ -209,18 +201,18 @@ window.views.profile = (function () {
     var unstarDisabled = isInflight ? " disabled" : "";
     var unstarLabel = isInflight ? "Removing..." : "Unstar";
 
-    var typeBadgeClass = "profile__type-badge profile__type-badge--" + _esc(item.type || "unknown");
+    var typeBadgeClass = "profile__type-badge profile__type-badge--" + window.utils.esc(item.type || "unknown");
 
     return (
       '<li class="profile__starred-item" ' +
-          'data-object-type="' + _esc(item.type) + '" ' +
-          'data-object-id="' + _esc(item.id) + '">' +
-        '<span class="' + typeBadgeClass + '">' + _esc(item.type || "") + '</span>' +
-        '<span class="profile__starred-name">' + _esc(item.name || "") + '</span>' +
+          'data-object-type="' + window.utils.esc(item.type) + '" ' +
+          'data-object-id="' + window.utils.esc(item.id) + '">' +
+        '<span class="' + typeBadgeClass + '">' + window.utils.esc(item.type || "") + '</span>' +
+        '<span class="profile__starred-name">' + window.utils.esc(item.name || "") + '</span>' +
         '<button class="profile__unstar-btn secondary outline"' + unstarDisabled + ' ' +
-            'data-object-type="' + _esc(item.type) + '" ' +
-            'data-object-id="' + _esc(item.id) + '" ' +
-            'aria-label="Unstar ' + _esc(item.name || "") + '">' +
+            'data-object-type="' + window.utils.esc(item.type) + '" ' +
+            'data-object-id="' + window.utils.esc(item.id) + '" ' +
+            'aria-label="Unstar ' + window.utils.esc(item.name || "") + '">' +
           unstarLabel +
         '</button>' +
       '</li>'

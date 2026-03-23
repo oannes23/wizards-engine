@@ -125,14 +125,6 @@ window.views.gmPlayers = (function () {
   // Toast helpers
   // ---------------------------------------------------------------------------
 
-  function _showSuccess(message) {
-    document.dispatchEvent(
-      new CustomEvent("api:success", {
-        detail: { message: message },
-        bubbles: true,
-      })
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // Render helpers
@@ -180,7 +172,7 @@ window.views.gmPlayers = (function () {
       charHtml =
         '<a class="gm-players__char-link" ' +
           'href="#/gm/world/characters/' + player.character_id + '">' +
-          _escapeHtml(charLabel) +
+          window.utils.esc(charLabel) +
         '</a>';
     } else {
       charHtml = '<span class="gm-players__no-char">No character</span>';
@@ -191,9 +183,9 @@ window.views.gmPlayers = (function () {
       var fullUrl = _fullLoginUrl(player.login_url);
       loginLinkHtml =
         '<button class="gm-players__copy-btn" ' +
-          'data-copy-url="' + _escapeAttr(fullUrl) + '" ' +
+          'data-copy-url="' + window.utils.escAttr(fullUrl) + '" ' +
           'title="Click to copy login link" ' +
-          'aria-label="Copy login link for ' + _escapeAttr(player.display_name) + '">' +
+          'aria-label="Copy login link for ' + window.utils.escAttr(player.display_name) + '">' +
           'Copy link' +
         '</button>';
     }
@@ -203,17 +195,17 @@ window.views.gmPlayers = (function () {
       '<button class="gm-players__regen-btn" ' +
         'data-player-id="' + player.id + '"' + regenDisabled + ' ' +
         'title="Regenerate magic login link" ' +
-        'aria-label="Regenerate login link for ' + _escapeAttr(player.display_name) + '">' +
+        'aria-label="Regenerate login link for ' + window.utils.escAttr(player.display_name) + '">' +
         (_inflightRegen[player.id] ? "Regenerating..." : "Regen link") +
       '</button>';
 
     return (
       '<tr class="gm-players__row" data-player-id="' + player.id + '">' +
         '<td class="gm-players__col-name">' +
-          '<span class="gm-players__display-name">' + _escapeHtml(player.display_name) + '</span>' +
+          '<span class="gm-players__display-name">' + window.utils.esc(player.display_name) + '</span>' +
         '</td>' +
         '<td class="gm-players__col-role">' +
-          '<span class="' + roleBadgeClass + '">' + _escapeHtml(player.role) + '</span>' +
+          '<span class="' + roleBadgeClass + '">' + window.utils.esc(player.role) + '</span>' +
         '</td>' +
         '<td class="gm-players__col-char">' + charHtml + '</td>' +
         '<td class="gm-players__col-status">' +
@@ -275,10 +267,10 @@ window.views.gmPlayers = (function () {
       '<li class="gm-players__invite-item" data-invite-id="' + invite.id + '">' +
         '<div class="gm-players__invite-url">' +
           '<button class="gm-players__invite-copy-btn" ' +
-            'data-copy-url="' + _escapeAttr(fullUrl) + '" ' +
+            'data-copy-url="' + window.utils.escAttr(fullUrl) + '" ' +
             'title="Click to copy invite link" ' +
             'aria-label="Copy invite link">' +
-            _escapeHtml(fullUrl) +
+            window.utils.esc(fullUrl) +
           '</button>' +
         '</div>' +
         '<div class="gm-players__invite-actions">' +
@@ -600,7 +592,7 @@ window.views.gmPlayers = (function () {
             }
           }
         }
-        _showSuccess("Login link regenerated for " + name + ".");
+        window.utils.showSuccess("Login link regenerated for " + name + ".");
         _renderList();
       })
       .catch(function () {
@@ -630,7 +622,7 @@ window.views.gmPlayers = (function () {
         }
         _activeTab = "invites";
         _renderList();
-        _showSuccess("Invite created. Share the link with your new player.");
+        window.utils.showSuccess("Invite created. Share the link with your new player.");
       })
       .catch(function () {
         _inflightCreateInvite = false;
@@ -661,7 +653,7 @@ window.views.gmPlayers = (function () {
         // Remove from list
         _invites = _invites.filter(function (inv) { return inv.id !== inviteId; });
         _renderList();
-        _showSuccess("Invite deleted.");
+        window.utils.showSuccess("Invite deleted.");
       })
       .catch(function () {
         delete _inflightDeleteInvite[inviteId];
@@ -670,36 +662,6 @@ window.views.gmPlayers = (function () {
       });
   }
 
-  // ---------------------------------------------------------------------------
-  // Escape helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Escape a string for safe HTML text content.
-   * @param {string} str
-   * @returns {string}
-   */
-  function _escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  /**
-   * Escape a string for use in an HTML attribute value (double-quoted).
-   * @param {string} str
-   * @returns {string}
-   */
-  function _escapeAttr(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
 
   // ---------------------------------------------------------------------------
   // Cleanup

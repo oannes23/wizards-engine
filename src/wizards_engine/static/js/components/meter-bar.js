@@ -27,20 +27,14 @@ window.components.meterBar = (function () {
   // --------------------------------------------------------------------------
 
   /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
-  var _esc = function (str) { return window.utils.esc(str); };
-
-  /**
    * Clamp a value to [0, max], guarding against null / undefined.
+   * Delegates to window.utils.clamp.
    * @param {number} value
    * @param {number} max
    * @returns {number}
    */
   function _clamp(value, max) {
-    var v = Number(value) || 0;
-    var m = Number(max) || 0;
-    return Math.min(Math.max(v, 0), m);
+    return window.utils.clamp(value, 0, max);
   }
 
   /**
@@ -119,7 +113,7 @@ window.components.meterBar = (function () {
       return (
         '<div class="meter-bar">' +
           '<div class="meter-bar__header">' +
-            '<span class="meter-bar__label">' + _esc(label) + '</span>' +
+            '<span class="meter-bar__label">' + window.utils.esc(label) + '</span>' +
             '<span class="meter-bar__value">' + current + '/' + max + '</span>' +
           '</div>' +
           '<div class="meter-bar__track"' +
@@ -127,7 +121,7 @@ window.components.meterBar = (function () {
                ' aria-valuenow="' + current + '"' +
                ' aria-valuemin="0"' +
                ' aria-valuemax="' + max + '"' +
-               ' aria-label="' + _esc(label) + ' ' + current + ' of ' + max + '">' +
+               ' aria-label="' + window.utils.esc(label) + ' ' + current + ' of ' + max + '">' +
             '<div class="meter-bar__fill" style="' + _fillStyle(current, max, color) + '">' +
               markerHtml +
             '</div>' +

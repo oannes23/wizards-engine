@@ -66,7 +66,6 @@ window.views.proposalDetail = (function () {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  var _esc = function (str) { return window.utils.esc(str); };
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
 
   function _actionLabel(actionType) {
@@ -123,8 +122,8 @@ window.views.proposalDetail = (function () {
         var val = selections[k];
         if (typeof val === "boolean") val = val ? "Yes" : "No";
         return (
-          '<tr><th scope="row">' + _esc(label) + '</th>' +
-          '<td>' + _esc(String(val)) + '</td></tr>'
+          '<tr><th scope="row">' + window.utils.esc(label) + '</th>' +
+          '<td>' + window.utils.esc(String(val)) + '</td></tr>'
         );
       })
       .join("");
@@ -165,8 +164,8 @@ window.views.proposalDetail = (function () {
           if (typeof n === "number") val = n + "d";
         }
         return (
-          '<tr><th scope="row">' + _esc(label) + '</th>' +
-          '<td>' + _esc(String(val)) + '</td></tr>'
+          '<tr><th scope="row">' + window.utils.esc(label) + '</th>' +
+          '<td>' + window.utils.esc(String(val)) + '</td></tr>'
         );
       })
       .join("");
@@ -197,7 +196,7 @@ window.views.proposalDetail = (function () {
     var info = _statusInfo(proposal.status);
 
     var narrativeHtml = proposal.narrative
-      ? '<p class="proposal-detail__narrative">' + _esc(proposal.narrative) + '</p>'
+      ? '<p class="proposal-detail__narrative">' + window.utils.esc(proposal.narrative) + '</p>'
       : '<p class="proposal-detail__narrative proposal-detail__narrative--empty"><em>No narrative provided.</em></p>';
 
     // GM notes / rejection note — stored in gm_notes field
@@ -207,13 +206,13 @@ window.views.proposalDetail = (function () {
         gmNotesHtml =
           '<div class="proposal-detail__rejection-note" role="note">' +
             '<strong>Rejection note:</strong>' +
-            '<p>' + _esc(proposal.gm_notes) + '</p>' +
+            '<p>' + window.utils.esc(proposal.gm_notes) + '</p>' +
           '</div>';
       } else {
         gmNotesHtml =
           '<div class="proposal-detail__gm-notes" role="note">' +
             '<strong>GM notes:</strong>' +
-            '<p>' + _esc(proposal.gm_notes) + '</p>' +
+            '<p>' + window.utils.esc(proposal.gm_notes) + '</p>' +
           '</div>';
       }
     }
@@ -222,12 +221,12 @@ window.views.proposalDetail = (function () {
     var actionButtonHtml = "";
     if (proposal.status === "pending") {
       actionButtonHtml =
-        '<a href="#/proposals/' + _esc(proposal.id) + '/edit" role="button" class="proposal-detail__edit-btn">' +
+        '<a href="#/proposals/' + window.utils.esc(proposal.id) + '/edit" role="button" class="proposal-detail__edit-btn">' +
           'Edit' +
         '</a>';
     } else if (proposal.status === "rejected") {
       actionButtonHtml =
-        '<a href="#/proposals/' + _esc(proposal.id) + '/edit" role="button" class="proposal-detail__revise-btn">' +
+        '<a href="#/proposals/' + window.utils.esc(proposal.id) + '/edit" role="button" class="proposal-detail__revise-btn">' +
           'Revise and Resubmit' +
         '</a>';
     }
@@ -239,7 +238,7 @@ window.views.proposalDetail = (function () {
         '</div>' +
 
         '<hgroup>' +
-          '<h2>' + _esc(_actionLabel(proposal.action_type)) + '</h2>' +
+          '<h2>' + window.utils.esc(_actionLabel(proposal.action_type)) + '</h2>' +
           '<p>' +
             '<span class="proposal-status-badge ' + info.cssClass + '">' + info.label + '</span>' +
           '</p>' +
@@ -258,9 +257,9 @@ window.views.proposalDetail = (function () {
         '<section class="proposal-detail__timestamps">' +
           '<dl>' +
             '<dt>Submitted</dt>' +
-            '<dd>' + _esc(_formatDate(proposal.created_at)) + '</dd>' +
+            '<dd>' + window.utils.esc(_formatDate(proposal.created_at)) + '</dd>' +
             '<dt>Last updated</dt>' +
-            '<dd>' + _esc(_formatDate(proposal.updated_at)) + '</dd>' +
+            '<dd>' + window.utils.esc(_formatDate(proposal.updated_at)) + '</dd>' +
           '</dl>' +
         '</section>' +
 
@@ -283,7 +282,7 @@ window.views.proposalDetail = (function () {
   function _buildSkillSelect(currentSkill) {
     var options = SKILLS.map(function (s) {
       var selected = (s.value === currentSkill) ? ' selected' : '';
-      return '<option value="' + _esc(s.value) + '"' + selected + '>' + _esc(s.label) + '</option>';
+      return '<option value="' + window.utils.esc(s.value) + '"' + selected + '>' + window.utils.esc(s.label) + '</option>';
     }).join("");
 
     return (
@@ -326,17 +325,17 @@ window.views.proposalDetail = (function () {
     return (
       '<div class="proposal-edit">' +
         '<div class="proposal-edit__back">' +
-          '<a href="#/proposals/' + _esc(proposal.id) + '">&larr; Back to proposal</a>' +
+          '<a href="#/proposals/' + window.utils.esc(proposal.id) + '">&larr; Back to proposal</a>' +
         '</div>' +
 
         '<hgroup>' +
-          '<h2>' + _esc(heading) + '</h2>' +
-          '<p>' + _esc(subheading) + '</p>' +
+          '<h2>' + window.utils.esc(heading) + '</h2>' +
+          '<p>' + window.utils.esc(subheading) + '</p>' +
         '</hgroup>' +
 
         (isRevise && proposal.gm_notes
           ? '<div class="proposal-edit__rejection-note" role="note">' +
-              '<strong>Rejection note:</strong> ' + _esc(proposal.gm_notes) +
+              '<strong>Rejection note:</strong> ' + window.utils.esc(proposal.gm_notes) +
             '</div>'
           : '') +
 
@@ -348,12 +347,12 @@ window.views.proposalDetail = (function () {
           '</label>' +
           '<textarea id="edit-narrative" name="narrative" rows="5" ' +
                     'placeholder="Describe what your character does...">' +
-            _esc(currentNarrative) +
+            window.utils.esc(currentNarrative) +
           '</textarea>' +
           '<p id="edit-narrative-error" class="error-text" role="alert" hidden></p>' +
 
           '<div class="proposal-edit__actions">' +
-            '<a href="#/proposals/' + _esc(proposal.id) + '" role="button" class="outline secondary">Cancel</a>' +
+            '<a href="#/proposals/' + window.utils.esc(proposal.id) + '" role="button" class="outline secondary">Cancel</a>' +
             '<button type="submit" id="proposal-edit-submit">Submit</button>' +
           '</div>' +
         '</form>' +
@@ -380,7 +379,7 @@ window.views.proposalDetail = (function () {
         '<div class="proposal-detail__back">' +
           '<a href="#/proposals">&larr; My Proposals</a>' +
         '</div>' +
-        '<p class="error-text" role="alert">' + _esc(message || "Failed to load proposal.") + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(message || "Failed to load proposal.") + '</p>' +
       '</div>';
   }
 

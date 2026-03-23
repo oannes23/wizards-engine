@@ -234,7 +234,7 @@ window.components.sacrificeBuilder = (function () {
    */
   function buildHtml(idPrefix) {
     var typeOptions = SACRIFICE_TYPE_OPTIONS.map(function (opt) {
-      return '<option value="' + _esc(opt.value) + '">' + _esc(opt.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(opt.value) + '">' + window.utils.escAttr(opt.label) + '</option>';
     }).join("");
 
     return [
@@ -376,8 +376,8 @@ window.components.sacrificeBuilder = (function () {
 
       // Add sacrifice controls
       '  <div class="sacrifice-add">',
-      '    <label for="' + _esc(idPrefix) + '-add-type">Add sacrifice</label>',
-      '    <select id="' + _esc(idPrefix) + '-add-type"',
+      '    <label for="' + window.utils.escAttr(idPrefix) + '-add-type">Add sacrifice</label>',
+      '    <select id="' + window.utils.escAttr(idPrefix) + '-add-type"',
       '            x-model="addSacrificeType">',
       typeOptions,
       '    </select>',
@@ -390,19 +390,6 @@ window.components.sacrificeBuilder = (function () {
 
       '</fieldset>',
     ].join("\n");
-  }
-
-  // -------------------------------------------------------------------------
-  // HTML escape helper
-  // -------------------------------------------------------------------------
-
-  /**
-   * Escape a string for safe inclusion in HTML attribute values and text.
-   * @param {string} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str).replace(/'/g, "&#39;");
   }
 
   // -------------------------------------------------------------------------

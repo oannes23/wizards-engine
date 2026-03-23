@@ -45,8 +45,6 @@ window.components.FeedList = function FeedList(containerEl) {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  var _esc = function (s) { return window.utils.esc(s); };
-
   /**
    * Determine the current user's character_id for is_own resolution.
    * Falls back to null if the store is not yet populated.

@@ -46,27 +46,6 @@ window.views.worldDetail = (function () {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * HTML-escape a value for text content or attribute values.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
-
-  /**
-   * Truncate a string to maxLen characters, appending ellipsis if trimmed.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
-  function _snippet(text, maxLen) {
-    if (!text) return "";
-    var s = String(text);
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen).trimEnd() + "\u2026";
-  }
 
   /**
    * Render the "back to world browser" button HTML.
@@ -94,7 +73,7 @@ window.views.worldDetail = (function () {
     el.innerHTML =
       '<div class="wd-root">' +
         _buildBackButton() +
-        '<p class="wd-loading" aria-busy="true">Loading ' + _esc(label) + '...</p>' +
+        '<p class="wd-loading" aria-busy="true">Loading ' + window.utils.esc(label) + '...</p>' +
       '</div>';
   }
 
@@ -107,7 +86,7 @@ window.views.worldDetail = (function () {
     el.innerHTML =
       '<div class="wd-root">' +
         _buildBackButton() +
-        '<p class="wd-error" role="alert">' + _esc(message) + '</p>' +
+        '<p class="wd-error" role="alert">' + window.utils.esc(message) + '</p>' +
       '</div>';
   }
 
@@ -148,19 +127,19 @@ window.views.worldDetail = (function () {
       slotBadge = '<mark class="wd-bond-slot-badge">Bond</mark>';
     }
 
-    var descSnippet = _snippet(b.description || "", 100);
+    var descSnippet = window.utils.snippet(b.description || "", 100);
 
     return (
       '<li class="wd-bond-item' + (isTrauma ? ' wd-bond-item--trauma' : '') + '">' +
         '<div class="wd-bond-item__header">' +
-          '<a href="' + _esc(href) + '" class="wd-bond-item__link">' +
-            _esc(displayName) +
+          '<a href="' + window.utils.esc(href) + '" class="wd-bond-item__link">' +
+            window.utils.esc(displayName) +
           '</a>' +
           traumaBadge +
           slotBadge +
         '</div>' +
         (descSnippet
-          ? '<p class="wd-bond-item__desc">' + _esc(descSnippet) + '</p>'
+          ? '<p class="wd-bond-item__desc">' + window.utils.esc(descSnippet) + '</p>'
           : '') +
       '</li>'
     );
@@ -188,13 +167,13 @@ window.views.worldDetail = (function () {
       html +=
         '<li class="wd-clock-item">' +
           '<div class="wd-clock-item__header">' +
-            '<strong class="wd-clock-item__name">' + _esc(clock.name) + '</strong>' +
+            '<strong class="wd-clock-item__name">' + window.utils.esc(clock.name) + '</strong>' +
           '</div>' +
           '<div class="wd-clock-item__progress">' +
             progress +
           '</div>' +
           (clock.notes
-            ? '<p class="wd-clock-item__notes">' + _esc(clock.notes) + '</p>'
+            ? '<p class="wd-clock-item__notes">' + window.utils.esc(clock.notes) + '</p>'
             : '') +
         '</li>';
     }
@@ -227,7 +206,7 @@ window.views.worldDetail = (function () {
     }
 
     var viewLink = (
-      '<a href="' + _esc(characterHash) + '" class="wd-pc-summary__view-link">' +
+      '<a href="' + window.utils.esc(characterHash) + '" class="wd-pc-summary__view-link">' +
         (isOwnCharacter ? 'View My Sheet' : 'View Full Sheet') +
       '</a>'
     );
@@ -285,7 +264,7 @@ window.views.worldDetail = (function () {
         traitsHtml +=
           '<li class="wd-trait-item">' +
             '<div style="display:flex;align-items:center;gap:0.5rem;">' +
-              '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
+              '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
               dots +
             '</div>' +
           '</li>';
@@ -310,12 +289,12 @@ window.views.worldDetail = (function () {
     return (
       '<div class="wd-pc-summary">' +
         '<div class="wd-pc-summary__header">' +
-          '<h2 class="wd-pc-summary__name">' + _esc(c.name) + '</h2>' +
+          '<h2 class="wd-pc-summary__name">' + window.utils.esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
         '</div>' +
         (descFull
-          ? '<p class="wd-pc-summary__desc">' + _esc(descFull) + '</p>'
+          ? '<p class="wd-pc-summary__desc">' + window.utils.esc(descFull) + '</p>'
           : '') +
         '<div class="wd-pc-summary__meters">' +
           stressBar + ftBar + plotBar + gnosisBar +
@@ -345,8 +324,8 @@ window.views.worldDetail = (function () {
           var val = attributes[key];
           var valStr = (val !== null && val !== undefined) ? String(val) : "";
           attributesHtml +=
-            '<dt class="wd-npc-attrs__key">' + _esc(key) + '</dt>' +
-            '<dd class="wd-npc-attrs__val">' + _esc(valStr) + '</dd>';
+            '<dt class="wd-npc-attrs__key">' + window.utils.esc(key) + '</dt>' +
+            '<dd class="wd-npc-attrs__val">' + window.utils.esc(valStr) + '</dd>';
         }
         attributesHtml += '</dl>';
       }
@@ -369,11 +348,11 @@ window.views.worldDetail = (function () {
     return (
       '<div class="wd-npc">' +
         '<div class="wd-npc__header">' +
-          '<h2 class="wd-npc__name">' + _esc(c.name) + '</h2>' +
+          '<h2 class="wd-npc__name">' + window.utils.esc(c.name) + '</h2>' +
           '<mark class="wd-badge wd-badge--npc">NPC</mark>' +
         '</div>' +
         (descFull
-          ? '<p class="wd-npc__desc">' + _esc(descFull) + '</p>'
+          ? '<p class="wd-npc__desc">' + window.utils.esc(descFull) + '</p>'
           : '') +
         (attributesHtml
           ? '<section class="wd-section"><h3 class="wd-section__heading">Attributes</h3>' + attributesHtml + '</section>'
@@ -454,12 +433,12 @@ window.views.worldDetail = (function () {
     // Header
     html +=
       '<div class="wd-detail__header">' +
-        '<h2 class="wd-detail__name">' + _esc(name) + '</h2>' +
-        '<mark class="wd-badge wd-badge--tier">Tier ' + _esc(tier) + '</mark>' +
+        '<h2 class="wd-detail__name">' + window.utils.esc(name) + '</h2>' +
+        '<mark class="wd-badge wd-badge--tier">Tier ' + window.utils.esc(tier) + '</mark>' +
       '</div>';
 
     if (description) {
-      html += '<p class="wd-detail__desc">' + _esc(description) + '</p>';
+      html += '<p class="wd-detail__desc">' + window.utils.esc(description) + '</p>';
     }
 
     // Traits section
@@ -473,9 +452,9 @@ window.views.worldDetail = (function () {
         var t = traits[i];
         html +=
           '<li class="wd-trait-item">' +
-            '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
+            '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
             (t.description
-              ? '<p class="wd-trait-item__desc">' + _esc(t.description) + '</p>'
+              ? '<p class="wd-trait-item__desc">' + window.utils.esc(t.description) + '</p>'
               : '') +
           '</li>';
       }
@@ -610,7 +589,7 @@ window.views.worldDetail = (function () {
 
     // Header
     html += '<div class="wd-detail__header">';
-    html += '<h2 class="wd-detail__name">' + _esc(name) + '</h2>';
+    html += '<h2 class="wd-detail__name">' + window.utils.esc(name) + '</h2>';
 
     // Parent link
     if (parent) {
@@ -618,8 +597,8 @@ window.views.worldDetail = (function () {
       html +=
         '<p class="wd-detail__parent">' +
           'Part of ' +
-          '<a href="' + _esc(parentHref) + '" class="wd-parent-link">' +
-            _esc(parent.name) +
+          '<a href="' + window.utils.esc(parentHref) + '" class="wd-parent-link">' +
+            window.utils.esc(parent.name) +
           '</a>' +
         '</p>';
     } else if (location.parent_id) {
@@ -633,7 +612,7 @@ window.views.worldDetail = (function () {
     html += '</div>'; // wd-detail__header
 
     if (description) {
-      html += '<p class="wd-detail__desc">' + _esc(description) + '</p>';
+      html += '<p class="wd-detail__desc">' + window.utils.esc(description) + '</p>';
     }
 
     // Children section
@@ -671,9 +650,9 @@ window.views.worldDetail = (function () {
         var t = traits[i];
         html +=
           '<li class="wd-trait-item">' +
-            '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
+            '<strong class="wd-trait-item__name">' + window.utils.esc(t.name) + '</strong>' +
             (t.description
-              ? '<p class="wd-trait-item__desc">' + _esc(t.description) + '</p>'
+              ? '<p class="wd-trait-item__desc">' + window.utils.esc(t.description) + '</p>'
               : '') +
           '</li>';
       }

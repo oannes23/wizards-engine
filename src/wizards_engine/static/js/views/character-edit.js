@@ -45,14 +45,6 @@ window.views.characterEdit = (function () {
   // HTML helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * HTML-escape for text content. Delegates to window.utils.esc.
-   * @param {*} str
-   * @returns {string}
-   */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Rendering
@@ -84,7 +76,7 @@ window.views.characterEdit = (function () {
         '<hgroup>' +
           '<h2>Edit Character</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="ce-retry-btn">Retry</button>' +
       '</div>';
 
@@ -109,7 +101,7 @@ window.views.characterEdit = (function () {
     var notesVal = c.notes || "";
 
     var nameErrorHtml = nameError
-      ? '<small class="ce-field-error" role="alert">' + _esc(nameError) + '</small>'
+      ? '<small class="ce-field-error" role="alert">' + window.utils.esc(nameError) + '</small>'
       : "";
 
     _viewEl.innerHTML =
@@ -125,7 +117,7 @@ window.views.characterEdit = (function () {
           '  id="ce-name"' +
           '  name="name"' +
           '  type="text"' +
-          '  value="' + _esc(nameVal) + '"' +
+          '  value="' + window.utils.esc(nameVal) + '"' +
           '  required' +
           '  autocomplete="off"' +
           '  aria-required="true"' +
@@ -138,14 +130,14 @@ window.views.characterEdit = (function () {
           '  id="ce-description"' +
           '  name="description"' +
           '  rows="4"' +
-          '>' + _esc(descVal) + '</textarea>' +
+          '>' + window.utils.esc(descVal) + '</textarea>' +
 
           '<label for="ce-notes">Notes</label>' +
           '<textarea' +
           '  id="ce-notes"' +
           '  name="notes"' +
           '  rows="4"' +
-          '>' + _esc(notesVal) + '</textarea>' +
+          '>' + window.utils.esc(notesVal) + '</textarea>' +
 
           '<div class="ce-actions">' +
             '<button id="ce-save-btn" type="submit">Save</button>' +

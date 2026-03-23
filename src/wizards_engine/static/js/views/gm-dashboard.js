@@ -65,8 +65,6 @@ window.views.gmDashboard = (function () {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /** Delegate HTML escaping to window.utils. */
-  var _esc = function (str) { return window.utils.esc(str); };
 
   /**
    * Render a meter bar using window.components.meterBar if available,
@@ -91,7 +89,7 @@ window.views.gmDashboard = (function () {
     var pct = max > 0 ? Math.round((current / max) * 100) : 0;
     return (
       '<div class="meter-bar">' +
-        '<span class="meter-bar__label">' + _esc(label) + ': ' + current + '/' + max + '</span>' +
+        '<span class="meter-bar__label">' + window.utils.esc(label) + ': ' + current + '/' + max + '</span>' +
         '<div style="height:6px;background:linear-gradient(to right,' + color + ' ' + pct + '%,#444 ' + pct + '%)"></div>' +
       '</div>'
     );
@@ -172,13 +170,13 @@ window.views.gmDashboard = (function () {
         var charName = (p.character_id && nameMap[p.character_id])
           ? nameMap[p.character_id]
           : (p.origin === "system" ? "System" : "Unknown");
-        var actionLabel = _esc(p.action_type || "—");
-        var timeLabel = _esc(window.utils.relativeTime(p.created_at));
+        var actionLabel = window.utils.esc(p.action_type || "—");
+        var timeLabel = window.utils.esc(window.utils.relativeTime(p.created_at));
 
         html +=
           '<li class="gm-dashboard__proposal-item">' +
             '<a href="#/gm/queue" class="gm-dashboard__proposal-link">' +
-              '<span class="gm-dashboard__proposal-char">' + _esc(charName) + '</span>' +
+              '<span class="gm-dashboard__proposal-char">' + window.utils.esc(charName) + '</span>' +
               '<span class="gm-dashboard__proposal-meta">' +
                 '<span class="gm-dashboard__proposal-type">' + actionLabel + '</span>' +
                 (timeLabel ? '<span class="gm-dashboard__proposal-time">' + timeLabel + '</span>' : '') +
@@ -235,9 +233,9 @@ window.views.gmDashboard = (function () {
         var gnosisMax   = Number(pc.gnosis_max)    || GNOSIS_MAX_FALLBACK;
 
         html +=
-          '<a href="#/gm/world/characters/' + _esc(pc.id) + '" class="gm-dashboard__pc-card">' +
+          '<a href="#/gm/world/characters/' + window.utils.esc(pc.id) + '" class="gm-dashboard__pc-card">' +
             '<article>' +
-              '<header class="gm-dashboard__pc-name">' + _esc(pc.name) + '</header>' +
+              '<header class="gm-dashboard__pc-name">' + window.utils.esc(pc.name) + '</header>' +
               '<div class="gm-dashboard__pc-meters">' +
                 _meterBar("Stress",    stress,   stressMax,   "var(--we-stress-red, #c0392b)") +
                 _meterBar("Free Time", freetime, freetimeMax, "var(--we-ft-green, #27ae60)") +
@@ -283,15 +281,15 @@ window.views.gmDashboard = (function () {
       html += '<ul class="gm-dashboard__clock-list">';
       for (var i = 0; i < clocks.length; i++) {
         var clock = clocks[i];
-        var href = _esc(_clockDetailPath(clock));
+        var href = window.utils.esc(_clockDetailPath(clock));
         var assocLabel = clock.associated_type
-          ? _esc(clock.associated_type.replace(/_/g, " "))
+          ? window.utils.esc(clock.associated_type.replace(/_/g, " "))
           : "";
 
         html +=
           '<li class="gm-dashboard__clock-item">' +
             '<a href="' + href + '" class="gm-dashboard__clock-link">' +
-              '<span class="gm-dashboard__clock-name">' + _esc(clock.name) + '</span>' +
+              '<span class="gm-dashboard__clock-name">' + window.utils.esc(clock.name) + '</span>' +
               '<span class="gm-dashboard__clock-meta">' +
                 _clockProgress(clock.progress, clock.segments) +
                 (assocLabel ? ' &middot; ' + assocLabel : '') +
@@ -474,16 +472,7 @@ window.views.gmDashboard = (function () {
     if (!_viewEl) return;
 
     // Guard: only GMs should see this view
-    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
-      var store = Alpine.store("app");
-      if (!store.isGm()) {
-        _viewEl.innerHTML =
-          '<div class="gm-dashboard">' +
-            '<p class="error-text" role="alert">Access denied — GM only.</p>' +
-          '</div>';
-        return;
-      }
-    }
+    if (!window.utils.requireGm(_viewEl)) return;
 
     // Reset state for a fresh mount
     _mounted = true;

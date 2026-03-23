@@ -35,23 +35,6 @@ window.components.gameObjectCard = (function () {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
-  var _esc = function (str) { return window.utils.esc(str); };
-
-  /**
-   * Truncate a description string to a readable snippet length.
-   * @param {string} text
-   * @param {number} maxLen
-   * @returns {string}
-   */
-  function _snippet(text, maxLen) {
-    if (!text) return "";
-    var s = String(text);
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen).trimEnd() + "\u2026"; // …
-  }
 
   /**
    * Build a <mark> badge with a given label.
@@ -61,7 +44,7 @@ window.components.gameObjectCard = (function () {
    */
   function _badge(label, modifier) {
     var cls = "game-object-card__badge" + (modifier ? " game-object-card__badge--" + modifier : "");
-    return '<mark class="' + _esc(cls) + '">' + _esc(label) + '</mark>';
+    return '<mark class="' + window.utils.esc(cls) + '">' + window.utils.esc(label) + '</mark>';
   }
 
   /**
@@ -116,7 +99,7 @@ window.components.gameObjectCard = (function () {
     if (data.member_count !== undefined && data.member_count !== null) {
       parts.push(
         '<span class="game-object-card__meta">' +
-          _esc(data.member_count) + " members" +
+          window.utils.esc(data.member_count) + " members" +
         '</span>'
       );
     }
@@ -132,7 +115,7 @@ window.components.gameObjectCard = (function () {
     if (data.parent_name) {
       return (
         '<span class="game-object-card__meta">' +
-          "in " + _esc(data.parent_name) +
+          "in " + window.utils.esc(data.parent_name) +
         '</span>'
       );
     }
@@ -182,7 +165,7 @@ window.components.gameObjectCard = (function () {
       var id   = data.id || "";
       var name = data.name || data.display_name || "Untitled";
       var description = data.description || data.summary || "";
-      var snippet = _snippet(description, 120);
+      var snippet = window.utils.snippet(description, 120);
       var headerHtml = _header(type, data);
       var hash = _defaultHash(type, id);
 
@@ -194,32 +177,32 @@ window.components.gameObjectCard = (function () {
       var starBtn =
         '<button class="game-object-card__star-btn"' +
             ' data-card-star="true"' +
-            ' data-card-id="' + _esc(id) + '"' +
-            ' data-card-type="' + _esc(type) + '"' +
+            ' data-card-id="' + window.utils.esc(id) + '"' +
+            ' data-card-type="' + window.utils.esc(type) + '"' +
             ' data-card-starred="' + (isStarred ? "true" : "false") + '"' +
-            ' aria-label="' + _esc(starLabel) + '"' +
+            ' aria-label="' + window.utils.esc(starLabel) + '"' +
             ' aria-pressed="' + (isStarred ? "true" : "false") + '"' +
-            ' title="' + _esc(starLabel) + '">' +
+            ' title="' + window.utils.esc(starLabel) + '">' +
           starIcon +
         '</button>';
 
       return (
-        '<article class="game-object-card game-object-card--' + _esc(type) + '"' +
-                ' data-card-id="' + _esc(id) + '"' +
-                ' data-card-type="' + _esc(type) + '"' +
-                ' data-card-hash="' + _esc(hash) + '"' +
+        '<article class="game-object-card game-object-card--' + window.utils.esc(type) + '"' +
+                ' data-card-id="' + window.utils.esc(id) + '"' +
+                ' data-card-type="' + window.utils.esc(type) + '"' +
+                ' data-card-hash="' + window.utils.esc(hash) + '"' +
                 ' role="button"' +
                 ' tabindex="0"' +
-                ' aria-label="' + _esc(name) + '">' +
+                ' aria-label="' + window.utils.esc(name) + '">' +
           '<header class="game-object-card__header">' +
-            '<strong class="game-object-card__name">' + _esc(name) + '</strong>' +
+            '<strong class="game-object-card__name">' + window.utils.esc(name) + '</strong>' +
             '<div class="game-object-card__header-actions">' +
               (headerHtml ? '<div class="game-object-card__badges">' + headerHtml + '</div>' : '') +
               starBtn +
             '</div>' +
           '</header>' +
           (snippet
-            ? '<p class="game-object-card__snippet">' + _esc(snippet) + '</p>'
+            ? '<p class="game-object-card__snippet">' + window.utils.esc(snippet) + '</p>'
             : '') +
         '</article>'
       );

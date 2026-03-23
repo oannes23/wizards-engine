@@ -946,14 +946,6 @@ window.views.gmActions = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // HTML escape helper
-  // ---------------------------------------------------------------------------
-
-  function _esc(str) {
-    return window.utils.esc(str).replace(/'/g, "&#39;");
-  }
-
-  // ---------------------------------------------------------------------------
   // HTML template helpers
   // ---------------------------------------------------------------------------
 
@@ -964,10 +956,10 @@ window.views.gmActions = (function () {
     var optionsHtml = '<option value="" disabled>Select action type...</option>';
     for (var g = 0; g < ACTION_GROUPS.length; g++) {
       var group = ACTION_GROUPS[g];
-      optionsHtml += '<optgroup label="' + _esc(group.label) + '">';
+      optionsHtml += '<optgroup label="' + window.utils.escAttr(group.label) + '">';
       for (var a = 0; a < group.actions.length; a++) {
         var action = group.actions[a];
-        optionsHtml += '<option value="' + _esc(action.type) + '">' + _esc(action.label) + '</option>';
+        optionsHtml += '<option value="' + window.utils.escAttr(action.type) + '">' + window.utils.escAttr(action.label) + '</option>';
       }
       optionsHtml += '</optgroup>';
     }
@@ -990,7 +982,7 @@ window.views.gmActions = (function () {
    */
   function _buildMagicStatOptions() {
     return MAGIC_STATS.map(function (s) {
-      return '<option value="' + _esc(s.value) + '">' + _esc(s.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(s.value) + '">' + window.utils.escAttr(s.label) + '</option>';
     }).join("");
   }
 
@@ -1004,18 +996,18 @@ window.views.gmActions = (function () {
   function _buildMeterChangeHtml(fieldPrefix, label, idPrefix) {
     return [
       '<div class="gm-actions__meter-row">',
-      '  <label>' + _esc(label) + '</label>',
+      '  <label>' + window.utils.escAttr(label) + '</label>',
       '  <div class="gm-actions__meter-controls">',
-      '    <select id="' + _esc(idPrefix) + '-op" x-model="' + _esc(fieldPrefix) + '_op"',
-      '            aria-label="' + _esc(label) + ' operation">',
+      '    <select id="' + window.utils.escAttr(idPrefix) + '-op" x-model="' + window.utils.escAttr(fieldPrefix) + '_op"',
+      '            aria-label="' + window.utils.escAttr(label) + ' operation">',
       '      <option value="delta">Delta (+/-)</option>',
       '      <option value="set">Set (absolute)</option>',
       '    </select>',
-      '    <input id="' + _esc(idPrefix) + '-val" type="number"',
-      '           x-model.number="' + _esc(fieldPrefix) + '_value"',
-      '           :placeholder="' + _esc(fieldPrefix) + '_op === \'set\' ? \'new value\' : \'amount\'"',
+      '    <input id="' + window.utils.escAttr(idPrefix) + '-val" type="number"',
+      '           x-model.number="' + window.utils.escAttr(fieldPrefix) + '_value"',
+      '           :placeholder="' + window.utils.escAttr(fieldPrefix) + '_op === \'set\' ? \'new value\' : \'amount\'"',
       '           inputmode="numeric"',
-      '           aria-label="' + _esc(label) + ' amount" />',
+      '           aria-label="' + window.utils.escAttr(label) + ' amount" />',
       '  </div>',
       '</div>',
     ].join("\n");
@@ -1385,7 +1377,7 @@ window.views.gmActions = (function () {
    */
   function _buildCreateTraitHtml() {
     var slotTypeOptions = SLOT_TYPES.map(function (s) {
-      return '<option value="' + _esc(s.value) + '">' + _esc(s.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(s.value) + '">' + window.utils.escAttr(s.label) + '</option>';
     }).join("");
 
     return [
@@ -1452,7 +1444,7 @@ window.views.gmActions = (function () {
    */
   function _buildCreateEffectHtml() {
     var effectTypeOptions = EFFECT_TYPES.map(function (e) {
-      return '<option value="' + _esc(e.value) + '">' + _esc(e.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(e.value) + '">' + window.utils.escAttr(e.label) + '</option>';
     }).join("");
 
     return [
@@ -1603,7 +1595,7 @@ window.views.gmActions = (function () {
 
   function _buildFormHtml() {
     var visibilityOptions = VISIBILITY_OPTIONS.map(function (v) {
-      return '<option value="' + _esc(v.value) + '">' + _esc(v.label) + '</option>';
+      return '<option value="' + window.utils.escAttr(v.value) + '">' + window.utils.escAttr(v.label) + '</option>';
     }).join("");
 
     return [

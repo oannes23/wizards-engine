@@ -78,8 +78,6 @@ window.components.feedItem = (function () {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  // Delegate to shared utils (window.utils — loaded via utils.js before this file).
-  var _esc = function (str) { return window.utils.esc(str); };
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
 
   /**
@@ -132,7 +130,7 @@ window.components.feedItem = (function () {
       if (t && typeof t === "object") {
         // Prefer an explicit name/display_name when present (legacy support)
         if (t.name || t.display_name) {
-          parts.push(_esc(t.name || t.display_name));
+          parts.push(window.utils.esc(t.name || t.display_name));
           continue;
         }
         // Standard API shape: {type, id}
@@ -143,12 +141,12 @@ window.components.feedItem = (function () {
         var label = type + (shortId ? " " + shortId : "");
         if (id) {
           var href = "#/world/" + pathSeg + "/" + encodeURIComponent(id);
-          parts.push('<a href="' + _esc(href) + '">' + _esc(label) + '</a>');
+          parts.push('<a href="' + window.utils.esc(href) + '">' + window.utils.esc(label) + '</a>');
         } else {
-          parts.push(_esc(label));
+          parts.push(window.utils.esc(label));
         }
       } else {
-        parts.push(_esc(String(t)));
+        parts.push(window.utils.esc(String(t)));
       }
     }
     return parts.join(", ");
@@ -186,18 +184,18 @@ window.components.feedItem = (function () {
       : "";
 
     var narrativeHtml = narrative
-      ? '<p class="feed-item__narrative">' + _esc(narrative) + '</p>'
+      ? '<p class="feed-item__narrative">' + window.utils.esc(narrative) + '</p>'
       : "";
 
     var ownClass = isOwn ? " feed-item--own" : "";
 
     return (
-      '<div class="feed-item feed-item--event feed-item--' + _esc(modifier) + ownClass + '">' +
+      '<div class="feed-item feed-item--event feed-item--' + window.utils.esc(modifier) + ownClass + '">' +
         '<div class="feed-item__meta">' +
-          '<span class="feed-item__actor">' + _esc(actorName) + '</span>' +
-          '<span class="feed-item__action">' + _esc(typeLabel) + '</span>' +
+          '<span class="feed-item__actor">' + window.utils.esc(actorName) + '</span>' +
+          '<span class="feed-item__action">' + window.utils.esc(typeLabel) + '</span>' +
           (relTime
-            ? '<time class="feed-item__time" datetime="' + _esc(timestamp) + '">' + _esc(relTime) + '</time>'
+            ? '<time class="feed-item__time" datetime="' + window.utils.esc(timestamp) + '">' + window.utils.esc(relTime) + '</time>'
             : '') +
         '</div>' +
         targetHtml +
@@ -222,11 +220,11 @@ window.components.feedItem = (function () {
     var relTime    = _relativeTime(timestamp);
 
     var storyHtml = storyName
-      ? '<span class="feed-item__story-name">' + _esc(storyName) + '</span>'
+      ? '<span class="feed-item__story-name">' + window.utils.esc(storyName) + '</span>'
       : "";
 
     var entryHtml = entryText
-      ? '<p class="feed-item__entry">' + _esc(entryText) + '</p>'
+      ? '<p class="feed-item__entry">' + window.utils.esc(entryText) + '</p>'
       : "";
 
     var ownClass = isOwn ? " feed-item--own" : "";
@@ -234,10 +232,10 @@ window.components.feedItem = (function () {
     return (
       '<div class="feed-item feed-item--story-entry' + ownClass + '">' +
         '<div class="feed-item__meta">' +
-          '<span class="feed-item__actor">' + _esc(authorName) + '</span>' +
+          '<span class="feed-item__actor">' + window.utils.esc(authorName) + '</span>' +
           storyHtml +
           (relTime
-            ? '<time class="feed-item__time" datetime="' + _esc(timestamp) + '">' + _esc(relTime) + '</time>'
+            ? '<time class="feed-item__time" datetime="' + window.utils.esc(timestamp) + '">' + window.utils.esc(relTime) + '</time>'
             : '') +
         '</div>' +
         entryHtml +

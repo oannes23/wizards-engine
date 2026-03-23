@@ -46,7 +46,6 @@ window.views.proposalsList = (function () {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  var _esc = function (str) { return window.utils.esc(str); };
   var _relativeTime = function (s) { return window.utils.relativeTime(s); };
 
   /** Human-readable action type labels (mirrors proposal-card.js constants). */
@@ -198,18 +197,18 @@ window.views.proposalsList = (function () {
       badgeClass += " proposal-status-badge--rejected";
       statusLabel = "Rejected";
     } else {
-      statusLabel = _esc(proposal.status);
+      statusLabel = window.utils.esc(proposal.status);
     }
 
-    var narrativePreview = _esc(_truncate(proposal.narrative, 80));
-    var timeLabel = _esc(_relativeTime(proposal.updated_at));
+    var narrativePreview = window.utils.esc(_truncate(proposal.narrative, 80));
+    var timeLabel = window.utils.esc(_relativeTime(proposal.updated_at));
 
     return (
       '<article class="proposal-list-card" role="button" tabindex="0" ' +
-              'data-proposal-id="' + _esc(proposal.id) + '" ' +
-              'aria-label="' + _esc(_actionLabel(proposal.action_type)) + ' proposal, ' + statusLabel + '">' +
+              'data-proposal-id="' + window.utils.esc(proposal.id) + '" ' +
+              'aria-label="' + window.utils.esc(_actionLabel(proposal.action_type)) + ' proposal, ' + statusLabel + '">' +
         '<div class="proposal-list-card__header">' +
-          '<span class="proposal-list-card__action-type">' + _esc(_actionLabel(proposal.action_type)) + '</span>' +
+          '<span class="proposal-list-card__action-type">' + window.utils.esc(_actionLabel(proposal.action_type)) + '</span>' +
           '<span class="' + badgeClass + '">' + statusLabel + '</span>' +
         '</div>' +
         '<div class="proposal-list-card__body">' +
@@ -241,7 +240,7 @@ window.views.proposalsList = (function () {
     return (
       '<section class="proposals-group">' +
         '<h3 class="proposals-group__heading">' +
-          _esc(label) +
+          window.utils.esc(label) +
           ' <span class="proposals-group__count">(' + proposals.length + ')</span>' +
         '</h3>' +
         '<div class="proposals-group__list">' + cards + '</div>' +

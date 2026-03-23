@@ -752,17 +752,18 @@ class TestClocksDelete:
 
 class TestClocksGmGuard:
     def test_gm_guard_present(self, clocks_src: str):
-        """gm-clocks.js checks Alpine store for GM role before mounting."""
-        assert "isGm()" in clocks_src, (
-            "gm-clocks.js must call Alpine.store('app').isGm() to enforce "
+        """gm-clocks.js enforces GM-only access via shared utility."""
+        assert "requireGm" in clocks_src, (
+            "gm-clocks.js must call window.utils.requireGm() to enforce "
             "GM-only access"
         )
 
     def test_gm_guard_renders_access_denied(self, clocks_src: str):
-        """gm-clocks.js renders an 'Access denied' message for non-GM users."""
-        assert "Access denied" in clocks_src, (
-            "gm-clocks.js must render an access denied message when the "
-            "current user is not the GM"
+        """gm-clocks.js uses requireGm which renders access denied for non-GM users."""
+        # After DRY extraction (8.1.4), the access denied message lives in
+        # window.utils.requireGm() in utils.js, not inline in each view file.
+        assert "requireGm" in clocks_src, (
+            "gm-clocks.js must use requireGm (which handles access denied rendering)"
         )
 
 

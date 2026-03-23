@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from wizards_engine.models.base import Base, _new_ulid, _utcnow
@@ -104,6 +104,10 @@ class EventTarget(Base):
     """
 
     __tablename__ = "event_targets"
+    __table_args__ = (
+        # Composite index for efficient reverse lookups: "recent events for entity X"
+        Index("ix_event_targets_target", "target_type", "target_id"),
+    )
 
     event_id: Mapped[str] = mapped_column(
         String(26),

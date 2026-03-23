@@ -239,9 +239,9 @@ Phase 8 (infrastructure first, then 4 parallel tracks, then CRUD)
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
 | 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |
 | 8.1 — Shared Infrastructure & Bug Fixes | 🔴 Not started | 0/8 |
-| 8.2 — GM Queue Tab Redesign | 🔴 Not started | 0/4 |
-| 8.3 — Event Feed Redesign | 🟡 In progress | 1/3 |
+| 8.2 — GM Queue Tab Redesign | 🟡 In progress | 1/4 |
+| 8.3 — Event Feed Redesign | 🔴 Not started | 0/3 |
 | 8.4 — Game Objects Browser Redesign | 🔴 Not started | 0/4 |
 | 8.5 — Character Detail View Overhaul | 🔴 Not started | 0/4 |
 | 8.6 — Game Object CRUD Forms | 🔴 Not started | 0/3 |
-| 8.7 — Comprehensive Example Campaign Data | 🟡 In progress | 1/3 |
+| 8.7 — Comprehensive Example Campaign Data | 🔴 Not started | 0/3 |

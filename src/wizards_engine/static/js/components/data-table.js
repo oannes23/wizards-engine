@@ -81,7 +81,6 @@ window.components.DataTable = function DataTable(containerEl, options) {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  var _esc = function (s) { return window.utils.esc(s); };
 
   /**
    * Return the value of a nested key path like "a.b.c" from an object.
@@ -201,7 +200,7 @@ window.components.DataTable = function DataTable(containerEl, options) {
         '       class="dt-filter-input"' +
         '       data-dt-filter="global"' +
         '       placeholder="Filter..."' +
-        '       value="' + _esc(_globalFilter) + '"' +
+        '       value="' + window.utils.esc(_globalFilter) + '"' +
         '       aria-label="Filter all columns">' +
       '</label>';
 
@@ -215,17 +214,17 @@ window.components.DataTable = function DataTable(containerEl, options) {
         var current = _colFilters[col.key] || "";
         html +=
           '<label class="dt-filter-select-wrap">' +
-            '<span class="dt-filter-label">' + _esc(col.label) + '</span>' +
+            '<span class="dt-filter-label">' + window.utils.esc(col.label) + '</span>' +
             '<select class="dt-filter-select"' +
             '        data-dt-filter="select"' +
-            '        data-dt-col="' + _esc(col.key) + '"' +
-            '        aria-label="Filter by ' + _esc(col.label) + '">' +
+            '        data-dt-col="' + window.utils.esc(col.key) + '"' +
+            '        aria-label="Filter by ' + window.utils.esc(col.label) + '">' +
               '<option value="">All</option>';
         for (var vi = 0; vi < vals.length; vi++) {
           html +=
-            '<option value="' + _esc(vals[vi]) + '"' +
+            '<option value="' + window.utils.esc(vals[vi]) + '"' +
             (current === vals[vi] ? ' selected' : '') + '>' +
-            _esc(vals[vi]) +
+            window.utils.esc(vals[vi]) +
             '</option>';
         }
         html += '</select></label>';
@@ -233,14 +232,14 @@ window.components.DataTable = function DataTable(containerEl, options) {
       } else if (col.filter === "text") {
         html +=
           '<label class="dt-filter-col-wrap">' +
-            '<span class="dt-filter-label">' + _esc(col.label) + '</span>' +
+            '<span class="dt-filter-label">' + window.utils.esc(col.label) + '</span>' +
             '<input type="search"' +
             '       class="dt-filter-input"' +
             '       data-dt-filter="col-text"' +
-            '       data-dt-col="' + _esc(col.key) + '"' +
-            '       placeholder="' + _esc(col.label) + '..."' +
-            '       value="' + _esc(_colFilters[col.key] || "") + '"' +
-            '       aria-label="Filter by ' + _esc(col.label) + '">' +
+            '       data-dt-col="' + window.utils.esc(col.key) + '"' +
+            '       placeholder="' + window.utils.esc(col.label) + '..."' +
+            '       value="' + window.utils.esc(_colFilters[col.key] || "") + '"' +
+            '       aria-label="Filter by ' + window.utils.esc(col.label) + '">' +
           '</label>';
       }
     }
@@ -274,15 +273,15 @@ window.components.DataTable = function DataTable(containerEl, options) {
         }
       }
       var hideClass = col.hideMobile ? " dt-th--hide-mobile" : "";
-      var widthStyle = col.width ? ' style="width:' + _esc(col.width) + '"' : "";
+      var widthStyle = col.width ? ' style="width:' + window.utils.esc(col.width) + '"' : "";
       html +=
         '<th class="dt-th' + sortClass + hideClass + '"' +
             ' scope="col"' +
             ariaSortAttr +
             widthStyle +
-            (col.sortable ? ' data-dt-sort="' + _esc(col.key) + '" tabindex="0" role="columnheader"' : ' role="columnheader"') +
+            (col.sortable ? ' data-dt-sort="' + window.utils.esc(col.key) + '" tabindex="0" role="columnheader"' : ' role="columnheader"') +
             '>' +
-          _esc(col.label) + sortIndicator +
+          window.utils.esc(col.label) + sortIndicator +
         '</th>';
     }
     if (_rowActions.length > 0) {
@@ -306,11 +305,11 @@ window.components.DataTable = function DataTable(containerEl, options) {
     if (typeof col.render === "function") {
       cellHtml = col.render(rawVal, row);
     } else {
-      cellHtml = _esc(rawVal == null ? "" : String(rawVal));
+      cellHtml = window.utils.esc(rawVal == null ? "" : String(rawVal));
     }
     if (typeof col.linkTo === "function") {
       var href = col.linkTo(row);
-      cellHtml = '<a href="' + _esc(href) + '" class="dt-cell-link">' + cellHtml + '</a>';
+      cellHtml = '<a href="' + window.utils.esc(href) + '" class="dt-cell-link">' + cellHtml + '</a>';
     }
     return cellHtml;
   }
@@ -328,10 +327,10 @@ window.components.DataTable = function DataTable(containerEl, options) {
       var action = _rowActions[ai];
       var extraClass = action.className ? " " + action.className : "";
       html +=
-        '<button class="dt-action-btn' + _esc(extraClass) + '"' +
+        '<button class="dt-action-btn' + window.utils.esc(extraClass) + '"' +
         '        data-dt-action="' + ai + '"' +
         '        data-dt-row="' + rowIdx + '">' +
-          _esc(action.label) +
+          window.utils.esc(action.label) +
         '</button>';
     }
     html += '</td>';
@@ -350,7 +349,7 @@ window.components.DataTable = function DataTable(containerEl, options) {
         '<tbody>' +
           '<tr class="dt-row dt-row--empty">' +
             '<td class="dt-td dt-td--empty" colspan="' + colspan + '">' +
-              _esc(_emptyMsg) +
+              window.utils.esc(_emptyMsg) +
             '</td>' +
           '</tr>' +
         '</tbody>'
@@ -396,7 +395,7 @@ window.components.DataTable = function DataTable(containerEl, options) {
       var col = _columns[ci];
       html +=
         '<div class="dt-card__field">' +
-          '<span class="dt-card__label">' + _esc(col.label) + '</span>' +
+          '<span class="dt-card__label">' + window.utils.esc(col.label) + '</span>' +
           '<span class="dt-card__value">' + _renderCell(col, row) + '</span>' +
         '</div>';
     }
@@ -406,10 +405,10 @@ window.components.DataTable = function DataTable(containerEl, options) {
         var action = _rowActions[ai];
         var extraClass = action.className ? " " + action.className : "";
         html +=
-          '<button class="dt-action-btn' + _esc(extraClass) + '"' +
+          '<button class="dt-action-btn' + window.utils.esc(extraClass) + '"' +
           '        data-dt-action="' + ai + '"' +
           '        data-dt-row="' + rowIdx + '">' +
-            _esc(action.label) +
+            window.utils.esc(action.label) +
           '</button>';
       }
       html += '</div>';
@@ -425,7 +424,7 @@ window.components.DataTable = function DataTable(containerEl, options) {
    */
   function _renderCardList(rows) {
     if (rows.length === 0) {
-      return '<p class="dt-empty">' + _esc(_emptyMsg) + '</p>';
+      return '<p class="dt-empty">' + window.utils.esc(_emptyMsg) + '</p>';
     }
     var html = '<div class="dt-cards">';
     for (var ri = 0; ri < rows.length; ri++) {

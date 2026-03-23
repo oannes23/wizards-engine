@@ -51,9 +51,6 @@ window.views.traitEdit = (function () {
    * @param {*} str
    * @returns {string}
    */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Rendering
@@ -85,7 +82,7 @@ window.views.traitEdit = (function () {
         '<hgroup>' +
           '<h2>Edit Trait</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="te-retry-btn">Retry</button>' +
       '</div>';
 
@@ -110,20 +107,20 @@ window.views.traitEdit = (function () {
     var chargesVal   = (trait.charge !== undefined && trait.charge !== null) ? trait.charge : 0;
 
     var chargesErrorHtml = chargesError
-      ? '<small class="te-field-error" role="alert">' + _esc(chargesError) + '</small>'
+      ? '<small class="te-field-error" role="alert">' + window.utils.esc(chargesError) + '</small>'
       : "";
 
     // Build the cancel href — navigate to the character detail page if we know
     // the owner, otherwise fall back to the world browser.
     var cancelHref = _characterId
-      ? "#/world/characters/" + _esc(_characterId)
+      ? "#/world/characters/" + window.utils.esc(_characterId)
       : "#/world";
 
     _viewEl.innerHTML =
       '<div class="te-root">' +
         '<hgroup>' +
           '<h2>Edit Trait</h2>' +
-          '<p>' + _esc(nameVal) + '</p>' +
+          '<p>' + window.utils.esc(nameVal) + '</p>' +
         '</hgroup>' +
         '<form id="te-form" novalidate>' +
 
@@ -132,7 +129,7 @@ window.views.traitEdit = (function () {
           '  id="te-name"' +
           '  name="name"' +
           '  type="text"' +
-          '  value="' + _esc(nameVal) + '"' +
+          '  value="' + window.utils.esc(nameVal) + '"' +
           '  autocomplete="off"' +
           ' />' +
 
@@ -141,7 +138,7 @@ window.views.traitEdit = (function () {
           '  id="te-description"' +
           '  name="description"' +
           '  rows="5"' +
-          '>' + _esc(descVal) + '</textarea>' +
+          '>' + window.utils.esc(descVal) + '</textarea>' +
 
           '<label for="te-charges">Charges (0–5)</label>' +
           '<input' +
@@ -151,7 +148,7 @@ window.views.traitEdit = (function () {
           '  min="0"' +
           '  max="5"' +
           '  step="1"' +
-          '  value="' + _esc(chargesVal) + '"' +
+          '  value="' + window.utils.esc(chargesVal) + '"' +
           (chargesError ? '  aria-invalid="true"' : '') +
           ' />' +
           chargesErrorHtml +

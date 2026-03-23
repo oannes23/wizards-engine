@@ -14,7 +14,7 @@ PATCH  /events/{id}/visibility  — GM only.  Override visibility level.
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import asc, and_, desc, select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
@@ -37,8 +37,8 @@ _ALLOWED_SORT_BY = {"created_at", "type", "actor_type"}
 _ALLOWED_SORT_DIR = {"asc", "desc"}
 
 # Mapping from sort_by string to the SQLAlchemy Event column.
-_SORT_COLUMN = {
-    "created_at": Event.id,  # ULID order = chronological order
+_SORT_COLUMNS = {
+    "created_at": Event.created_at,
     "type": Event.type,
     "actor_type": Event.actor_type,
 }
@@ -47,15 +47,6 @@ _SORT_COLUMN = {
 # ---------------------------------------------------------------------------
 # GET /events — paginated list with filters
 # ---------------------------------------------------------------------------
-
-
-_SORT_COLUMNS = {
-    "created_at": Event.created_at,
-    "type": Event.type,
-    "actor_type": Event.actor_type,
-}
-
-_VALID_SORT_DIRS = {"asc", "desc"}
 
 
 @router.get(
@@ -181,17 +172,16 @@ def list_events(
             and_(EventTarget.event_id == Event.id, *target_conditions),
         ).distinct()
 
-    # Build the order_by expression.  For the default (created_at desc),
-    # pass None so paginate() uses its own default (ORDER BY id DESC),
+    # Resolve sort column.  For the default (created_at desc), pass
+    # sort_col=None so paginate() uses its own default (ORDER BY id DESC),
     # preserving the existing ULID-order semantics.
     if sort_by == "created_at" and sort_dir == "desc":
-        order_by_expr = None
+        sort_col = None
     else:
-        col = _SORT_COLUMN[sort_by]
-        order_by_expr = asc(col) if sort_dir == "asc" else desc(col)
+        sort_col = _SORT_COLUMNS.get(sort_by)
 
     # Paginate (applies ORDER BY and cursor filter internally).
-    page = paginate(db, q, model=Event, after=after, limit=limit, order_by=order_by_expr)
+    page = paginate(db, q, model=Event, after=after, limit=limit, sort_col=sort_col, sort_dir=sort_dir)
 
     # Visibility filter — applied after DB fetch since it requires bond-graph
     # traversal that cannot be expressed as SQL.  For small groups (4–6 players)

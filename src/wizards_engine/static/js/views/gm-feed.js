@@ -136,8 +136,6 @@ window.views = window.views || {};
   // --------------------------------------------------------------------------
   // Helpers
   // --------------------------------------------------------------------------
-
-  var _esc = function (s) { return window.utils.esc(s); };
   var _rel = function (s) { return window.utils.relativeTime(s); };
 
   /**
@@ -172,9 +170,9 @@ window.views = window.views || {};
   function _actorCell(item) {
     var name = _actorName(item);
     if (item.actor_id && item.actor_type !== "system") {
-      return '<a href="#/gm/world/characters/' + _esc(item.actor_id) + '" class="gm-feed__link">' + _esc(name) + '</a>';
+      return '<a href="#/gm/world/characters/' + window.utils.esc(item.actor_id) + '" class="gm-feed__link">' + window.utils.esc(name) + '</a>';
     }
-    return _esc(name);
+    return window.utils.esc(name);
   }
 
   /**
@@ -188,8 +186,8 @@ window.views = window.views || {};
     // Enriched API fields (Story 8.3.1).
     if (item.primary_target_name && item.primary_target_id && item.primary_target_type) {
       var pathSeg = TYPE_TO_PATH[item.primary_target_type] || (item.primary_target_type + "s");
-      return '<a href="#/gm/world/' + _esc(pathSeg) + '/' + _esc(item.primary_target_id) + '" class="gm-feed__link">' +
-        _esc(item.primary_target_name) + '</a>';
+      return '<a href="#/gm/world/' + window.utils.esc(pathSeg) + '/' + window.utils.esc(item.primary_target_id) + '" class="gm-feed__link">' +
+        window.utils.esc(item.primary_target_name) + '</a>';
     }
 
     // Fall back to targets array.
@@ -212,9 +210,9 @@ window.views = window.views || {};
     var label = type;
 
     if (id) {
-      return '<a href="#/gm/world/' + _esc(pathSeg2) + '/' + _esc(id) + '" class="gm-feed__link">' + _esc(label) + '</a>';
+      return '<a href="#/gm/world/' + window.utils.esc(pathSeg2) + '/' + window.utils.esc(id) + '" class="gm-feed__link">' + window.utils.esc(label) + '</a>';
     }
-    return _esc(label);
+    return window.utils.esc(label);
   }
 
   /**
@@ -227,8 +225,8 @@ window.views = window.views || {};
   function _changesCell(item) {
     // Enriched API field (Story 8.3.1).
     if (item.changes_summary) {
-      return '<span class="gm-feed__changes" title="' + _esc(item.changes_summary) + '">' +
-        _esc(item.changes_summary.length > 60 ? item.changes_summary.slice(0, 57) + "..." : item.changes_summary) +
+      return '<span class="gm-feed__changes" title="' + window.utils.esc(item.changes_summary) + '">' +
+        window.utils.esc(item.changes_summary.length > 60 ? item.changes_summary.slice(0, 57) + "..." : item.changes_summary) +
         '</span>';
     }
 
@@ -248,8 +246,8 @@ window.views = window.views || {};
       }
     }
     var summary = parts.join(", ");
-    return '<span class="gm-feed__changes" title="' + _esc(summary) + '">' +
-      _esc(summary.length > 60 ? summary.slice(0, 57) + "..." : summary) +
+    return '<span class="gm-feed__changes" title="' + window.utils.esc(summary) + '">' +
+      window.utils.esc(summary.length > 60 ? summary.slice(0, 57) + "..." : summary) +
       '</span>';
   }
 
@@ -262,7 +260,7 @@ window.views = window.views || {};
     var sourceType = item._source_type || "event";
     var label = sourceType === "story_entry" ? "Story" : sourceType === "proposal" ? "Proposal" : "Event";
     var mod   = sourceType === "story_entry" ? "story" : sourceType === "proposal" ? "proposal" : "event";
-    return '<span class="gm-feed__badge gm-feed__badge--' + _esc(mod) + '">' + _esc(label) + '</span>';
+    return '<span class="gm-feed__badge gm-feed__badge--' + window.utils.esc(mod) + '">' + window.utils.esc(label) + '</span>';
   }
 
   /**
@@ -274,7 +272,7 @@ window.views = window.views || {};
     var text = item.narrative || item.entry_text || "";
     if (!text) return '<span class="dt-null">—</span>';
     var short = text.length > 80 ? text.slice(0, 77) + "..." : text;
-    return '<span class="gm-feed__narrative" title="' + _esc(text) + '">' + _esc(short) + '</span>';
+    return '<span class="gm-feed__narrative" title="' + window.utils.esc(text) + '">' + window.utils.esc(short) + '</span>';
   }
 
   // --------------------------------------------------------------------------
@@ -342,8 +340,8 @@ window.views = window.views || {};
         render: function (val) {
           if (!val) return '<span class="dt-null">—</span>';
           return (
-            '<time datetime="' + _esc(val) + '" title="' + _esc(val) + '">' +
-            _esc(_rel(val)) +
+            '<time datetime="' + window.utils.esc(val) + '" title="' + window.utils.esc(val) + '">' +
+            window.utils.esc(_rel(val)) +
             '</time>'
           );
         },
@@ -372,7 +370,7 @@ window.views = window.views || {};
         width:    "130px",
         render: function (val) {
           if (!val) return '<span class="dt-null">—</span>';
-          return _esc(_eventLabel(val));
+          return window.utils.esc(_eventLabel(val));
         },
       },
       {
@@ -446,10 +444,10 @@ window.views = window.views || {};
       var t = tabs[i];
       var active = t.key === activeKey;
       html +=
-        '<a href="' + _esc(t.hash) + '"' +
+        '<a href="' + window.utils.esc(t.hash) + '"' +
         '   class="feed-tab' + (active ? ' feed-tab--active' : '') + '"' +
         '   role="tab" aria-selected="' + (active ? 'true' : 'false') + '">' +
-        _esc(t.label) +
+        window.utils.esc(t.label) +
         '</a>';
     }
     html += '</nav>';
@@ -469,8 +467,8 @@ window.views = window.views || {};
         '<button class="gm-feed__cat-tab' + (active ? ' gm-feed__cat-tab--active' : '') + '"' +
         '   role="tab"' +
         '   aria-selected="' + (active ? 'true' : 'false') + '"' +
-        '   data-category="' + _esc(t.key) + '">' +
-        _esc(t.label) +
+        '   data-category="' + window.utils.esc(t.key) + '">' +
+        window.utils.esc(t.label) +
         '</button>';
     }
     html += '</div>';
@@ -496,9 +494,9 @@ window.views = window.views || {};
     html += '<select class="dt-select gm-feed__actor-filter" aria-label="Filter by actor type">';
     for (var a = 0; a < ACTOR_TYPE_OPTIONS.length; a++) {
       var opt = ACTOR_TYPE_OPTIONS[a];
-      html += '<option value="' + _esc(opt.value) + '"' +
+      html += '<option value="' + window.utils.esc(opt.value) + '"' +
         (opt.value === _actorType ? ' selected' : '') + '>' +
-        _esc(opt.label) + '</option>';
+        window.utils.esc(opt.label) + '</option>';
     }
     html += '</select>';
 
@@ -508,9 +506,9 @@ window.views = window.views || {};
       html += '<option value="">All Sessions</option>';
       for (var s = 0; s < sessionIds.length; s++) {
         var sid2 = sessionIds[s];
-        html += '<option value="' + _esc(sid2) + '"' +
+        html += '<option value="' + window.utils.esc(sid2) + '"' +
           (sid2 === _sessionId ? ' selected' : '') + '>' +
-          'Session ' + _esc(sid2.slice(0, 8)) + '</option>';
+          'Session ' + window.utils.esc(sid2.slice(0, 8)) + '</option>';
       }
       html += '</select>';
     }

@@ -305,7 +305,7 @@ def get_queue_summary(db: Session) -> dict:
     pc_cards = []
     for char in characters:
         trauma_count = count_trauma_bonds(db, char.id)
-        stress_max = 9 - trauma_count
+        stress_max = STRESS_MAX - trauma_count
 
         low_slots = get_low_charge_slots(db, char.id)
         low_traits = [

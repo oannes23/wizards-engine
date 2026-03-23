@@ -43,15 +43,12 @@ window.views.characterCreate = (function () {
    * @param {*} str
    * @returns {string}
    */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   /**
    * Dispatch a success toast.
    * @param {string} message
    */
-  function _showSuccess(message) {
+  function window.utils.showSuccess(message) {
     document.dispatchEvent(
       new CustomEvent("api:success", {
         detail: { message: message },
@@ -77,11 +74,11 @@ window.views.characterCreate = (function () {
     var descVal = (values && values.description) || "";
 
     var nameErrorHtml = nameError
-      ? '<small class="cc-field-error" role="alert">' + _esc(nameError) + "</small>"
+      ? '<small class="cc-field-error" role="alert">' + window.utils.esc(nameError) + "</small>"
       : "";
 
     var generalErrorHtml = generalError
-      ? '<p class="error-text" role="alert">' + _esc(generalError) + "</p>"
+      ? '<p class="error-text" role="alert">' + window.utils.esc(generalError) + "</p>"
       : "";
 
     _viewEl.innerHTML =
@@ -99,7 +96,7 @@ window.views.characterCreate = (function () {
           '  id="cc-name"' +
           '  name="name"' +
           '  type="text"' +
-          '  value="' + _esc(nameVal) + '"' +
+          '  value="' + window.utils.esc(nameVal) + '"' +
           "  required" +
           '  autocomplete="off"' +
           '  aria-required="true"' +
@@ -112,7 +109,7 @@ window.views.characterCreate = (function () {
           '  id="cc-description"' +
           '  name="description"' +
           '  rows="4"' +
-          ">" + _esc(descVal) + "</textarea>" +
+          ">" + window.utils.esc(descVal) + "</textarea>" +
 
           '<label for="cc-detail-level">Detail Level</label>' +
           '<select id="cc-detail-level" name="detail_level">' +
@@ -206,7 +203,7 @@ window.views.characterCreate = (function () {
       .post("/api/v1/characters", payload)
       .then(function (created) {
         if (!_mounted) return;
-        _showSuccess('"' + created.name + '" created.');
+        window.utils.showSuccess('"' + created.name + '" created.');
         // Navigate to the new character's GM world detail page.
         window.location.hash = "#/gm/world/characters/" + encodeURIComponent(created.id);
       })

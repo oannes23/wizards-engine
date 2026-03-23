@@ -62,9 +62,6 @@ window.views.groupEdit = (function () {
    * @param {*} str
    * @returns {string}
    */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Rendering
@@ -79,7 +76,7 @@ window.views.groupEdit = (function () {
     _viewEl.innerHTML =
       '<div class="ge-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
           '<p aria-busy="true">Loading...</p>' +
         '</hgroup>' +
       '</div>';
@@ -96,9 +93,9 @@ window.views.groupEdit = (function () {
     _viewEl.innerHTML =
       '<div class="ge-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="ge-retry-btn">Retry</button>' +
       '</div>';
 
@@ -126,11 +123,11 @@ window.views.groupEdit = (function () {
     var tierVal = (values.tier !== null && values.tier !== undefined) ? values.tier : 1;
 
     var nameErrorHtml = nameError
-      ? '<small class="ge-field-error" role="alert">' + _esc(nameError) + '</small>'
+      ? '<small class="ge-field-error" role="alert">' + window.utils.esc(nameError) + '</small>'
       : "";
 
     var submitErrorHtml = submitError
-      ? '<p class="ge-submit-error error-text" role="alert">' + _esc(submitError) + '</p>'
+      ? '<p class="ge-submit-error error-text" role="alert">' + window.utils.esc(submitError) + '</p>'
       : "";
 
     // Tier field: editable in create mode, read-only in edit mode
@@ -152,7 +149,7 @@ window.views.groupEdit = (function () {
       // Edit mode: tier is read-only (changes require GM actions)
       tierFieldHtml =
         '<label>Tier</label>' +
-        '<p class="ge-tier-readonly">' + _esc(tierVal) + ' <small>(use GM Actions to change tier)</small></p>';
+        '<p class="ge-tier-readonly">' + window.utils.esc(tierVal) + ' <small>(use GM Actions to change tier)</small></p>';
     }
 
     // Archive button (edit mode only)
@@ -170,7 +167,7 @@ window.views.groupEdit = (function () {
     _viewEl.innerHTML =
       '<div class="ge-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
         '</hgroup>' +
         submitErrorHtml +
         '<form id="ge-form" novalidate>' +
@@ -181,7 +178,7 @@ window.views.groupEdit = (function () {
           '  id="ge-name"' +
           '  name="name"' +
           '  type="text"' +
-          '  value="' + _esc(nameVal) + '"' +
+          '  value="' + window.utils.esc(nameVal) + '"' +
           '  required' +
           '  autocomplete="off"' +
           '  aria-required="true"' +
@@ -194,13 +191,13 @@ window.views.groupEdit = (function () {
           '  id="ge-description"' +
           '  name="description"' +
           '  rows="4"' +
-          '>' + _esc(descVal) + '</textarea>' +
+          '>' + window.utils.esc(descVal) + '</textarea>' +
 
           tierFieldHtml +
 
           '<div class="ge-actions">' +
             '<button id="ge-save-btn" type="submit">Save</button>' +
-            '<a href="' + _esc(cancelHref) + '" class="ge-cancel-link outline secondary">Cancel</a>' +
+            '<a href="' + window.utils.esc(cancelHref) + '" class="ge-cancel-link outline secondary">Cancel</a>' +
           '</div>' +
         '</form>' +
 
@@ -225,7 +222,7 @@ window.views.groupEdit = (function () {
               ' aria-label="Confirm archive">' +
         '<article>' +
           '<header><h3>Archive Group?</h3></header>' +
-          '<p>Are you sure you want to archive <strong>' + _esc(name || "this group") + '</strong>?</p>' +
+          '<p>Are you sure you want to archive <strong>' + window.utils.esc(name || "this group") + '</strong>?</p>' +
           '<p class="ge-archive-warning">' +
             'The group will be hidden from lists. This action can be undone by the GM.' +
           '</p>' +

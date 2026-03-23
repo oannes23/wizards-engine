@@ -66,9 +66,6 @@ window.views.locationEdit = (function () {
    * @param {*} str
    * @returns {string}
    */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Child-location discovery
@@ -115,7 +112,7 @@ window.views.locationEdit = (function () {
     _viewEl.innerHTML =
       '<div class="le-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
           '<p aria-busy="true">Loading...</p>' +
         '</hgroup>' +
       '</div>';
@@ -132,9 +129,9 @@ window.views.locationEdit = (function () {
     _viewEl.innerHTML =
       '<div class="le-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="le-retry-btn">Retry</button>' +
       '</div>';
 
@@ -169,8 +166,8 @@ window.views.locationEdit = (function () {
       if (excluded.has(loc.id)) continue;
       var isSelected = selectedParentId && loc.id === selectedParentId;
       html +=
-        '<option value="' + _esc(loc.id) + '"' + (isSelected ? ' selected' : '') + '>' +
-        _esc(loc.name) +
+        '<option value="' + window.utils.esc(loc.id) + '"' + (isSelected ? ' selected' : '') + '>' +
+        window.utils.esc(loc.name) +
         '</option>';
     }
 
@@ -194,11 +191,11 @@ window.views.locationEdit = (function () {
     var parentId = values.parent_id || null;
 
     var nameErrorHtml = nameError
-      ? '<small class="le-field-error" role="alert">' + _esc(nameError) + '</small>'
+      ? '<small class="le-field-error" role="alert">' + window.utils.esc(nameError) + '</small>'
       : "";
 
     var submitErrorHtml = submitError
-      ? '<p class="error-text le-submit-error" role="alert">' + _esc(submitError) + '</p>'
+      ? '<p class="error-text le-submit-error" role="alert">' + window.utils.esc(submitError) + '</p>'
       : "";
 
     var archiveHtml = isEdit
@@ -214,7 +211,7 @@ window.views.locationEdit = (function () {
     _viewEl.innerHTML =
       '<div class="le-root">' +
         '<hgroup>' +
-          '<h2>' + _esc(title) + '</h2>' +
+          '<h2>' + window.utils.esc(title) + '</h2>' +
         '</hgroup>' +
 
         submitErrorHtml +
@@ -227,7 +224,7 @@ window.views.locationEdit = (function () {
           '  id="le-name"' +
           '  name="name"' +
           '  type="text"' +
-          '  value="' + _esc(nameVal) + '"' +
+          '  value="' + window.utils.esc(nameVal) + '"' +
           '  required' +
           '  autocomplete="off"' +
           '  aria-required="true"' +
@@ -240,7 +237,7 @@ window.views.locationEdit = (function () {
           '  id="le-description"' +
           '  name="description"' +
           '  rows="4"' +
-          '>' + _esc(descVal) + '</textarea>' +
+          '>' + window.utils.esc(descVal) + '</textarea>' +
 
           '<label for="le-parent">Parent Location</label>' +
           '<select id="le-parent" name="parent_id">' +

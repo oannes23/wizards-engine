@@ -51,9 +51,6 @@ window.views.bondEdit = (function () {
    * @param {*} str
    * @returns {string}
    */
-  function _esc(str) {
-    return window.utils.esc(str);
-  }
 
   // ---------------------------------------------------------------------------
   // Rendering
@@ -85,7 +82,7 @@ window.views.bondEdit = (function () {
         '<hgroup>' +
           '<h2>Edit Bond</h2>' +
         '</hgroup>' +
-        '<p class="error-text" role="alert">' + _esc(msg) + '</p>' +
+        '<p class="error-text" role="alert">' + window.utils.esc(msg) + '</p>' +
         '<button id="be-retry-btn">Retry</button>' +
       '</div>';
 
@@ -110,20 +107,20 @@ window.views.bondEdit = (function () {
     var chargesVal   = (bond.charges !== undefined && bond.charges !== null) ? bond.charges : 0;
 
     var chargesErrorHtml = chargesError
-      ? '<small class="be-field-error" role="alert">' + _esc(chargesError) + '</small>'
+      ? '<small class="be-field-error" role="alert">' + window.utils.esc(chargesError) + '</small>'
       : "";
 
     // Build the cancel href — navigate to the character detail page if we know
     // the owner, otherwise fall back to the world browser.
     var cancelHref = _characterId
-      ? "#/world/characters/" + _esc(_characterId)
+      ? "#/world/characters/" + window.utils.esc(_characterId)
       : "#/world";
 
     _viewEl.innerHTML =
       '<div class="be-root">' +
         '<hgroup>' +
           '<h2>Edit Bond</h2>' +
-          '<p>Bond with ' + _esc(partnerName) + '</p>' +
+          '<p>Bond with ' + window.utils.esc(partnerName) + '</p>' +
         '</hgroup>' +
         '<form id="be-form" novalidate>' +
 
@@ -132,7 +129,7 @@ window.views.bondEdit = (function () {
           '  id="be-description"' +
           '  name="description"' +
           '  rows="5"' +
-          '>' + _esc(descVal) + '</textarea>' +
+          '>' + window.utils.esc(descVal) + '</textarea>' +
 
           '<label for="be-charges">Charges (0–5)</label>' +
           '<input' +
@@ -142,7 +139,7 @@ window.views.bondEdit = (function () {
           '  min="0"' +
           '  max="5"' +
           '  step="1"' +
-          '  value="' + _esc(chargesVal) + '"' +
+          '  value="' + window.utils.esc(chargesVal) + '"' +
           (chargesError ? '  aria-invalid="true"' : '') +
           ' />' +
           chargesErrorHtml +

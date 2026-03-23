@@ -36,7 +36,6 @@ window.components.expandableItem = (function () {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  var _esc = function (str) { return window.utils.esc(str); };
 
   /**
    * Build the data-* attribute string from a plain object.
@@ -49,7 +48,7 @@ window.components.expandableItem = (function () {
     var keys = Object.keys(attrs);
     for (var i = 0; i < keys.length; i++) {
       var k = keys[i];
-      parts.push(_esc(k) + '="' + _esc(attrs[k]) + '"');
+      parts.push(window.utils.esc(k) + '="' + window.utils.esc(attrs[k]) + '"');
     }
     return parts.length ? " " + parts.join(" ") : "";
   }
@@ -63,10 +62,10 @@ window.components.expandableItem = (function () {
     var cls = "exp-item__action-btn" + (action.secondary ? " exp-item__action-btn--secondary" : "");
     if (action.href) {
       return (
-        '<a href="' + _esc(action.href) + '"' +
+        '<a href="' + window.utils.esc(action.href) + '"' +
         '   class="' + cls + '"' +
         '   role="button">' +
-          _esc(action.label) +
+          window.utils.esc(action.label) +
         '</a>'
       );
     }
@@ -74,7 +73,7 @@ window.components.expandableItem = (function () {
       '<button class="' + cls + '"' +
       _dataAttrs(action.dataAttrs) +
       '>' +
-        _esc(action.label) +
+        window.utils.esc(action.label) +
       '</button>'
     );
   }
@@ -109,8 +108,8 @@ window.components.expandableItem = (function () {
       var variant     = props.variant === "bond" ? "bond" : "trait";
       var extraClass  = props.extraClass  || "";
 
-      var triggerId = "exp-trigger-" + _esc(id);
-      var bodyId    = "exp-body-"    + _esc(id);
+      var triggerId = "exp-trigger-" + window.utils.esc(id);
+      var bodyId    = "exp-body-"    + window.utils.esc(id);
 
       // Action buttons
       var actionsHtml = "";
@@ -126,13 +125,13 @@ window.components.expandableItem = (function () {
 
       return (
         '<li class="' + rootClass + '"' +
-        '    data-exp-id="' + _esc(id) + '">' +
+        '    data-exp-id="' + window.utils.esc(id) + '">' +
           '<button class="exp-item__trigger"' +
           '        id="' + triggerId + '"' +
           '        aria-expanded="false"' +
           '        aria-controls="' + bodyId + '">' +
             '<span class="exp-item__header">' +
-              '<span class="exp-item__name">' + _esc(name) + '</span>' +
+              '<span class="exp-item__name">' + window.utils.esc(name) + '</span>' +
               (badgeHtml ? '<span class="exp-item__badge">' + badgeHtml + '</span>' : '') +
               (dotsHtml  ? '<span class="exp-item__dots">'  + dotsHtml  + '</span>' : '') +
             '</span>' +
@@ -144,7 +143,7 @@ window.components.expandableItem = (function () {
           '     aria-labelledby="' + triggerId + '"' +
           '     hidden>' +
             (description
-              ? '<p class="exp-item__desc">' + _esc(description) + '</p>'
+              ? '<p class="exp-item__desc">' + window.utils.esc(description) + '</p>'
               : '') +
             (footerLink ? '<div class="exp-item__footer-link">' + footerLink + '</div>' : '') +
             actionsHtml +

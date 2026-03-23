@@ -17,7 +17,7 @@ Redesign the GM Queue tab (`#/gm`) from a wide single-column layout into an info
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 8.2.1 — Backend: New /gm/queue-summary Endpoint | 🔴 Not started | — |
+| 8.2.1 — Backend: New /gm/queue-summary Endpoint | 🟢 Complete | 2026-03-22 |
 | 8.2.2 — Database Migration: event_targets Index | 🟢 Complete | 2026-03-22 |
 | 8.2.3 — Frontend: 3-Column PC Card Grid | 🔴 Not started | — |
 | 8.2.4 — Frontend: Groups Section in Queue | 🔴 Not started | — |

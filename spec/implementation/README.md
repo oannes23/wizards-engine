@@ -238,7 +238,7 @@ Phase 8 (infrastructure first, then 4 parallel tracks, then CRUD)
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
 | 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |
-| 8.1 — Shared Infrastructure & Bug Fixes | 🟡 In progress | 3/8 |
+| 8.1 — Shared Infrastructure & Bug Fixes | 🟡 In progress | 7/8 |
 | 8.2 — GM Queue Tab Redesign | 🟡 In progress | 2/4 |
 | 8.3 — Event Feed Redesign | 🔴 Not started | 0/3 |
 | 8.4 — Game Objects Browser Redesign | 🟡 In progress | 1/4 |

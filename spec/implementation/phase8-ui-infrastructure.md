@@ -18,11 +18,11 @@ Fix all reported UI bugs (nav bar race condition, meter maximums, bond dyad dupl
 | Story | Status | Completed |
 |-------|--------|-----------|
 | 8.1.1 — Fix Nav Bar Visibility on Initial Load | 🟢 Complete | 2026-03-22 |
-| 8.1.2 — Fix Meter Maximums and Extend PCSummary Schema | 🔴 Not started | — |
-| 8.1.3 — Fix Bond Perspective Filtering (Backend) | 🔴 Not started | — |
+| 8.1.2 — Fix Meter Maximums and Extend PCSummary Schema | 🟢 Complete | 2026-03-22 |
+| 8.1.3 — Fix Bond Perspective Filtering (Backend) | 🟢 Complete | 2026-03-22 |
 | 8.1.4 — Extract Shared Constants and Utilities | 🔴 Not started | — |
-| 8.1.5 — Rename GM Tabs and Fix More Tab | 🔴 Not started | — |
-| 8.1.6 — Fix Description Readability and Truncation | 🔴 Not started | — |
+| 8.1.5 — Rename GM Tabs and Fix More Tab | 🟢 Complete | 2026-03-22 |
+| 8.1.6 — Fix Description Readability and Truncation | 🟢 Complete | 2026-03-22 |
 | 8.1.7 — Build Reusable DataTable Component | 🟢 Complete | 2026-03-22 |
 | 8.1.8 — Build Reusable ExpandableItem Component | 🔴 Not started | — |
 

@@ -42,8 +42,8 @@ window.views.character = (function () {
   var PLOT_MAX    = 5;
   var GNOSIS_DISPLAY_MAX = 23; // Gnosis has no hard cap; display up to 23
 
-  // Tab identifiers
-  var TABS = ["traits", "bonds", "effects", "skills", "feed"];
+  // Tab identifiers (Skills now inline; Feed moves to bottom in 8.5.3)
+  var TABS = ["traits", "bonds", "effects"];
 
   var SKILL_LABELS = {
     awareness:  "Awareness",
@@ -192,7 +192,7 @@ window.views.character = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    var descSnippet = _snippet(c.description || "", 160);
+    var descFull = c.description || "";
 
     return (
       '<div class="cs-header">' +
@@ -200,8 +200,8 @@ window.views.character = (function () {
           '<h2 class="cs-header__name">' + _esc(c.name) + '</h2>' +
           editBtn +
         '</div>' +
-        (descSnippet
-          ? '<p class="cs-header__desc">' + _esc(descSnippet) + '</p>'
+        (descFull
+          ? '<p class="cs-header__desc">' + _esc(descFull) + '</p>'
           : '') +
         '<div class="cs-meters">' +
           stressBar +
@@ -229,8 +229,6 @@ window.views.character = (function () {
       traits:  "Traits",
       bonds:   "Bonds",
       effects: "Effects",
-      skills:  "Skills",
-      feed:    "Feed",
     };
 
     var html = '<nav class="cs-tabs" role="tablist" aria-label="Character sheet sections">';
@@ -246,6 +244,34 @@ window.views.character = (function () {
         '</button>';
     }
     html += '</nav>';
+    return html;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inline skills grid (below header, above tabs)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Build a compact 2×4 inline skills grid shown between the header and tab bar.
+   * All 8 skills are always displayed. Each cell: name (muted) + value (bold).
+   *
+   * @param {object} skills — dict of skill name to level (from CharacterDetailResponse)
+   * @returns {string} HTML
+   */
+  function _buildSkillsInline(skills) {
+    var skillKeys = Object.keys(SKILL_LABELS);
+    var html = '<div class="cs-skills-inline">';
+    for (var i = 0; i < skillKeys.length; i++) {
+      var key = skillKeys[i];
+      var level = (skills && skills[key] !== undefined && skills[key] !== null)
+        ? Number(skills[key]) : 0;
+      html +=
+        '<div class="cs-skills-inline__cell">' +
+          '<span class="cs-skills-inline__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
+          '<span class="cs-skills-inline__value">' + level + '</span>' +
+        '</div>';
+    }
+    html += '</div>';
     return html;
   }
 
@@ -736,12 +762,6 @@ window.views.character = (function () {
       case "effects":
         html += _buildEffectsTab(c.magic_effects);
         break;
-      case "skills":
-        html += _buildSkillsTab(c.skills);
-        break;
-      case "feed":
-        html += _buildFeedTab();
-        break;
       default:
         html += _buildTraitsTab(c.traits);
     }
@@ -1025,6 +1045,7 @@ window.views.character = (function () {
     var html =
       '<div class="cs-root">' +
         _buildHeader(c) +
+        _buildSkillsInline(c.skills) +
         _buildTabBar() +
         _buildTabPanel(c) +
         _buildTier3(c) +
@@ -1040,11 +1061,7 @@ window.views.character = (function () {
           var tab = btn.getAttribute("data-tab");
           if (tab && tab !== _activeTab) {
             _activeTab = tab;
-            if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
-              _fetchFeed(true);
-            } else {
-              _renderSheet();
-            }
+            _renderSheet();
           }
         });
       })(tabBtns[i]);
@@ -1121,10 +1138,6 @@ window.views.character = (function () {
         if (!_mounted) return;
         _character = data;
         _renderSheet();
-        // If Feed tab was active on first load, prime the feed.
-        if (_activeTab === "feed" && _feedItems.length === 0 && !_feedLoading) {
-          _fetchFeed(true);
-        }
       })
       .catch(function (err) {
         if (!_mounted) return;

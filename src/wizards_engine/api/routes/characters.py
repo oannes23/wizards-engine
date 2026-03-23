@@ -131,6 +131,10 @@ def create_character(
     return CharacterResponse.model_validate(character)
 
 
+_VALID_SORT_BY = frozenset({"name", "created_at", "updated_at"})
+_VALID_SORT_DIR = frozenset({"asc", "desc"})
+
+
 @router.get(
     "/characters",
     response_model=PaginatedResponse[CharacterResponse],
@@ -140,6 +144,8 @@ def create_character(
         "Returns a paginated list of characters.  Soft-deleted characters are "
         "excluded by default.  Supports filtering by detail_level, has_player, "
         "name (case-insensitive partial), and include_deleted.  "
+        "Supports sorting via ``?sort_by=name|created_at|updated_at`` and "
+        "``?sort_dir=asc|desc``.  "
         "ULID cursor pagination via ``?after=<ulid>&limit=N``."
     ),
 )
@@ -148,6 +154,8 @@ def list_characters(
     has_player: bool | None = None,
     include_deleted: bool = False,
     name: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
     after: str | None = None,
     limit: int = 50,
     _current_user: User = Depends(get_current_user),
@@ -161,6 +169,9 @@ def list_characters(
             ``false`` = only chars without one.
         include_deleted: When ``true``, include soft-deleted characters.
         name: Case-insensitive partial name filter.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or ``"updated_at"``.
+            Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
         _current_user: Authenticated user (any role).
@@ -173,16 +184,27 @@ def list_characters(
         return validation_error_response(
             {"detail_level": "must be 'full' or 'simplified'"}
         )
+    if sort_by not in _VALID_SORT_BY:
+        return validation_error_response(
+            {"sort_by": "must be 'name', 'created_at', or 'updated_at'"}
+        )
+    if sort_dir not in _VALID_SORT_DIR:
+        return validation_error_response({"sort_dir": "must be 'asc' or 'desc'"})
 
-    q = character_svc.list_characters_query(
+    q, sort_col, resolved_sort_dir = character_svc.list_characters_query(
         db,
         detail_level=detail_level,
         has_player=has_player,
         include_deleted=include_deleted,
         name=name,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
-    page = paginate(db, q, model=Character, after=after, limit=limit)
+    page = paginate(
+        db, q, model=Character, after=after, limit=limit,
+        sort_col=sort_col, sort_dir=resolved_sort_dir,
+    )
 
     return PaginatedResponse[CharacterResponse](
         items=[CharacterResponse.model_validate(c) for c in page.items],

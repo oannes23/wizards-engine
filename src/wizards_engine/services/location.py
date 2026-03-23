@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.location import Location
@@ -79,11 +79,21 @@ def get_location(db: Session, location_id: str) -> Location | None:
     return db.get(Location, location_id)
 
 
+_ALLOWED_SORT_COLS_LOCATION = {
+    "name": Location.name,
+    "created_at": Location.created_at,
+    "updated_at": Location.updated_at,
+}
+
+
 def list_locations_query(
     db: Session,
     *,
     parent_id: str | None = None,
     include_deleted: bool = False,
+    name: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
 ):
     """Build a SQLAlchemy select statement for the Locations list with optional filters.
 
@@ -96,9 +106,14 @@ def list_locations_query(
             location (not recursive).  ``None`` skips the filter.
         include_deleted: When ``True``, include soft-deleted locations.
             Defaults to ``False`` (exclude deleted).
+        name: Case-insensitive partial match on the location name.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or
+            ``"updated_at"``.  Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
 
     Returns:
-        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.location.Location`.
+        A 2-tuple of ``(Select statement, order_by expression)`` targeting
+        :class:`~wizards_engine.models.location.Location`.
     """
     stmt = select(Location)
 
@@ -108,7 +123,11 @@ def list_locations_query(
     if parent_id is not None:
         stmt = stmt.where(Location.parent_id == parent_id)
 
-    return stmt
+    if name is not None:
+        stmt = stmt.where(func.lower(Location.name).contains(name.lower()))
+
+    sort_col = _ALLOWED_SORT_COLS_LOCATION.get(sort_by, Location.name)
+    return stmt, sort_col, sort_dir
 
 
 def update_location(

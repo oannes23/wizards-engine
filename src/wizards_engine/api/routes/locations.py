@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
-from wizards_engine.api.responses import raise_not_found
+from wizards_engine.api.responses import raise_not_found, validation_error_response
 from wizards_engine.db import get_db
 from wizards_engine.models.location import Location
 from wizards_engine.models.user import User
@@ -35,6 +35,9 @@ from wizards_engine.services.bond import get_bonds_display_for_entity, get_trait
 from wizards_engine.services.presence import get_presence_for_location
 
 router = APIRouter()
+
+_VALID_SORT_BY = frozenset({"name", "created_at", "updated_at"})
+_VALID_SORT_DIR = frozenset({"asc", "desc"})
 
 
 @router.post(
@@ -103,14 +106,19 @@ def create_location(
     summary="List locations",
     description=(
         "Returns a paginated list of locations.  Soft-deleted locations are "
-        "excluded by default.  Supports filtering by parent (direct children only) "
-        "and include_deleted.  "
+        "excluded by default.  Supports filtering by parent (direct children only), "
+        "name (case-insensitive partial), and include_deleted.  "
+        "Supports sorting via ``?sort_by=name|created_at|updated_at`` and "
+        "``?sort_dir=asc|desc``.  "
         "ULID cursor pagination via ``?after=<ulid>&limit=N``."
     ),
 )
 def list_locations(
     parent: str | None = None,
     include_deleted: bool = False,
+    name: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
     after: str | None = None,
     limit: int = 50,
     _current_user: User = Depends(get_current_user),
@@ -122,6 +130,10 @@ def list_locations(
         parent: Optional ULID filter — returns only direct children of that
             location (not recursive).
         include_deleted: When ``true``, include soft-deleted locations.
+        name: Case-insensitive partial name filter.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or ``"updated_at"``.
+            Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
         _current_user: Authenticated user (any role).
@@ -130,13 +142,26 @@ def list_locations(
     Returns:
         ``PaginatedResponse`` wrapping a list of ``LocationResponse`` objects.
     """
-    q = location_svc.list_locations_query(
+    if sort_by not in _VALID_SORT_BY:
+        return validation_error_response(
+            {"sort_by": "must be 'name', 'created_at', or 'updated_at'"}
+        )
+    if sort_dir not in _VALID_SORT_DIR:
+        return validation_error_response({"sort_dir": "must be 'asc' or 'desc'"})
+
+    q, sort_col, resolved_sort_dir = location_svc.list_locations_query(
         db,
         parent_id=parent,
         include_deleted=include_deleted,
+        name=name,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
-    page = paginate(db, q, model=Location, after=after, limit=limit)
+    page = paginate(
+        db, q, model=Location, after=after, limit=limit,
+        sort_col=sort_col, sort_dir=resolved_sort_dir,
+    )
 
     return PaginatedResponse[LocationResponse](
         items=[LocationResponse.model_validate(loc) for loc in page.items],

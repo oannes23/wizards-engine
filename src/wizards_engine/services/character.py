@@ -84,6 +84,13 @@ def get_character(db: Session, character_id: str) -> Character | None:
     return db.get(Character, character_id)
 
 
+_ALLOWED_SORT_COLS_CHARACTER = {
+    "name": Character.name,
+    "created_at": Character.created_at,
+    "updated_at": Character.updated_at,
+}
+
+
 def list_characters_query(
     db: Session,
     *,
@@ -91,6 +98,8 @@ def list_characters_query(
     has_player: bool | None = None,
     include_deleted: bool = False,
     name: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
 ):
     """Build a SQLAlchemy select statement for the Characters list with optional filters.
 
@@ -106,9 +115,14 @@ def list_characters_query(
         include_deleted: When ``True``, include soft-deleted characters.
             Defaults to ``False`` (exclude deleted).
         name: Case-insensitive partial match on the character name.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or
+            ``"updated_at"``.  Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
 
     Returns:
-        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.character.Character`.
+        A 3-tuple of ``(Select statement, sort_col, sort_dir)`` where
+        ``sort_col`` is a SQLAlchemy column object for use with the
+        ``sort_col`` parameter of :func:`~wizards_engine.api.pagination.paginate`.
     """
     stmt = select(Character)
 
@@ -136,7 +150,8 @@ def list_characters_query(
     if name is not None:
         stmt = stmt.where(func.lower(Character.name).contains(name.lower()))
 
-    return stmt
+    sort_col = _ALLOWED_SORT_COLS_CHARACTER.get(sort_by, Character.name)
+    return stmt, sort_col, sort_dir
 
 
 def update_character(

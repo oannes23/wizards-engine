@@ -107,6 +107,13 @@ def get_story(db: Session, story_id: str) -> Story | None:
     return db.get(Story, story_id)
 
 
+_ALLOWED_SORT_COLS_STORY = {
+    "name": Story.name,
+    "created_at": Story.created_at,
+    "updated_at": Story.updated_at,
+}
+
+
 def list_stories_query(
     db: Session,
     *,
@@ -115,6 +122,8 @@ def list_stories_query(
     owner_type: str | None = None,
     owner_id: str | None = None,
     include_deleted: bool = False,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
 ):
     """Build a SQLAlchemy select statement for the Stories list with optional filters.
 
@@ -128,9 +137,13 @@ def list_stories_query(
         owner_type: Owner type for the ``?owner=<type>:<id>`` filter.
         owner_id: Owner ID for the ``?owner=<type>:<id>`` filter.  Must be paired with ``owner_type``.
         include_deleted: When ``True``, include soft-deleted stories.  Defaults to ``False``.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or ``"updated_at"``.
+            Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
 
     Returns:
-        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.story.Story`.
+        A 2-tuple of ``(Select statement, order_by expression)`` targeting
+        :class:`~wizards_engine.models.story.Story`.
     """
     stmt = select(Story)
 
@@ -159,7 +172,8 @@ def list_stories_query(
             & (StoryOwner.owner_id == owner_id),
         )
 
-    return stmt
+    sort_col = _ALLOWED_SORT_COLS_STORY.get(sort_by, Story.name)
+    return stmt, sort_col, sort_dir
 
 
 def update_story(

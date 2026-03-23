@@ -17,7 +17,7 @@ Redesign the World Browser (renamed to "Game Objects") from a card grid with cli
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 8.4.1 — Backend: Add Sort/Filter Params to List Endpoints | 🔴 Not started | — |
+| 8.4.1 — Backend: Add Sort/Filter Params to List Endpoints | 🟢 Complete | 2026-03-22 |
 | 8.4.2 — Frontend: Game Objects Browser with DataTable and PC/NPC Sub-Tabs | 🔴 Not started | — |
 | 8.4.3 — Modernize Sessions View | 🔴 Not started | — |
 | 8.4.4 — Add CRUD Action Buttons to Game Objects Browser | 🔴 Not started | — |

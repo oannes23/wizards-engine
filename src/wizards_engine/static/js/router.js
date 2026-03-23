@@ -210,6 +210,26 @@ var router = (function () {
         }
       },
     },
+    {
+      pattern: "/gm/traits/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.traitEdit) {
+          views.traitEdit(params.id);
+        } else {
+          _placeholder("Edit Trait")();
+        }
+      },
+    },
+    {
+      pattern: "/gm/bonds/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.bondEdit) {
+          views.bondEdit(params.id);
+        } else {
+          _placeholder("Edit Bond")();
+        }
+      },
+    },
   ];
 
   /**

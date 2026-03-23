@@ -26,6 +26,8 @@ from .constants import (
     GNOSIS_MAX,
     MAGIC_STAT_KEYS,
     PC_BOND_LIMIT,
+    PLOT_MAX,
+    STRESS_MAX,
     TRAIT_LIMITS,
 )
 from .crud import (
@@ -43,6 +45,8 @@ __all__ = [
     "MAGIC_STAT_KEYS",
     "GNOSIS_MAX",
     "FREE_TIME_MAX",
+    "STRESS_MAX",
+    "PLOT_MAX",
     "PC_BOND_LIMIT",
     "TRAIT_LIMITS",
     "DOWNTIME_ACTION_TYPES",

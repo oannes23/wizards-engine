@@ -21,7 +21,7 @@ from wizards_engine.services.exceptions import BusinessRuleViolation
 from wizards_engine.services.magic_effect import create_effect as _create_magic_effect
 from wizards_engine.services.shared import count_trauma_bonds, has_pending_resolve_trauma
 
-from .constants import GNOSIS_MAX
+from .constants import GNOSIS_MAX, STRESS_MAX
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ def _apply_sacrifice_resources(
     stress_cost: int = int(costs.get("stress") or 0)
     if stress_cost > 0:
         trauma_count = count_trauma_bonds(db, character.id)
-        effective_max = 9 - trauma_count
+        effective_max = STRESS_MAX - trauma_count
         before_stress = character.stress or 0
         new_stress = before_stress + stress_cost
         clamped = new_stress >= effective_max
@@ -329,7 +329,7 @@ def _apply_use_magic(
     stress_cost: int = int(costs.get("stress") or 0)
     if stress_cost > 0:
         trauma_count = count_trauma_bonds(db, character.id)
-        effective_max = 9 - trauma_count
+        effective_max = STRESS_MAX - trauma_count
         before_stress = character.stress or 0
         new_stress = before_stress + stress_cost
         after_stress = min(new_stress, effective_max)
@@ -486,7 +486,7 @@ def _apply_charge_magic(
     stress_cost: int = int(costs.get("stress") or 0)
     if stress_cost > 0:
         trauma_count = count_trauma_bonds(db, character.id)
-        effective_max = 9 - trauma_count
+        effective_max = STRESS_MAX - trauma_count
         before_stress = character.stress or 0
         new_stress = before_stress + stress_cost
         after_stress = min(new_stress, effective_max)
@@ -927,7 +927,7 @@ def check_affordability(
     stress_cost: int = int(costs.get("stress") or 0)
     if stress_cost > 0:
         trauma_count_af: int = count_trauma_bonds(db, character.id)
-        effective_stress_max: int = 9 - trauma_count_af
+        effective_stress_max: int = STRESS_MAX - trauma_count_af
         current_stress: int = character.stress or 0
         if current_stress >= effective_stress_max:
             insufficient["stress"] = (

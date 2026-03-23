@@ -13,6 +13,7 @@ from wizards_engine.services.exceptions import InsufficientResources, ProposalNo
 from wizards_engine.services.shared import count_trauma_bonds, has_pending_resolve_trauma
 
 from .apply import APPLY_HANDLERS, check_affordability, merge_overrides
+from .constants import STRESS_MAX
 
 
 def approve_proposal(
@@ -115,7 +116,7 @@ def approve_proposal(
             _stress_change_key = f"character.{character.id}.stress"
             if _stress_change_key in changes:
                 trauma_count = count_trauma_bonds(db, character.id)
-                effective_stress_max = 9 - trauma_count
+                effective_stress_max = STRESS_MAX - trauma_count
                 if character.stress >= effective_stress_max and not has_pending_resolve_trauma(
                     db, character.id
                 ):

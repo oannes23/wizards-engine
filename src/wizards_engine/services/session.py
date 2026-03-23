@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.models.character import Character
 from wizards_engine.models.session import Session as SessionModel, SessionParticipant
+from wizards_engine.services.proposal.constants import FREE_TIME_MAX, PLOT_MAX
 
 __all__ = [
     "validate_time_now",
@@ -52,10 +53,10 @@ __all__ = [
 ]
 
 # FT cap constant — free_time cannot exceed this value.
-_FT_CAP = 20
+_FT_CAP = FREE_TIME_MAX
 
 # Plot cap constant — plot is clamped to this value at session end.
-_PLOT_CAP = 5
+_PLOT_CAP = PLOT_MAX
 
 
 def _max_ended_time_now(db: Session) -> int | None:

@@ -42,6 +42,12 @@ GNOSIS_MAX: int = 23
 #: Maximum free_time value.
 FREE_TIME_MAX: int = 20
 
+#: Maximum stress value (before trauma bond reduction).
+STRESS_MAX: int = 9
+
+#: Maximum plot value (clamped at session end).
+PLOT_MAX: int = 5
+
 #: Hard PC bond slot limit.
 PC_BOND_LIMIT: int = 8
 

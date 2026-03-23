@@ -45,6 +45,7 @@ from wizards_engine.schemas.common import PaginatedResponse
 from wizards_engine.services import character as character_svc
 from wizards_engine.services.bond import get_bonds_display_for_entity
 from wizards_engine.services.presence import get_locations_for_character
+from wizards_engine.services.proposal.constants import STRESS_MAX
 
 router = APIRouter()
 
@@ -404,7 +405,7 @@ def get_character(
         session_ids = list(session_rows)
 
         # --- Computed values --------------------------------------------------
-        # effective_stress_max: 9 - count of active pc_bond slots where is_trauma=True
+        # effective_stress_max: STRESS_MAX - count of active pc_bond slots where is_trauma=True
         trauma_count = len(
             db.execute(
                 select(Slot).where(
@@ -420,7 +421,7 @@ def get_character(
             .scalars()
             .all()
         )
-        effective_stress_max = 9 - trauma_count
+        effective_stress_max = STRESS_MAX - trauma_count
 
         # active_magic_effects_count: charged + permanent active effects
         active_counted_effects = sum(

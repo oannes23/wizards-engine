@@ -324,7 +324,7 @@ window.views.character = (function () {
   }
 
   /**
-   * Build a single trait list item with ChargeDots and a Recharge button.
+   * Build a single trait expandable card using the ExpandableItem component.
    * @param {object} t — CharacterTraitResponse
    * @returns {string} HTML
    */
@@ -332,32 +332,44 @@ window.views.character = (function () {
     var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
     var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
 
-    // Recharge button: visible when charge < 5.
-    var rechargeBtn = charge < 5
-      ? '<button class="cs-action-btn"' +
-        '        data-action="recharge-trait"' +
-        '        data-trait-id="' + _esc(t.id) + '"' +
-        '        data-trait-name="' + _esc(t.name) + '">' +
-        'Recharge' +
-        '</button>'
-      : "";
+    // Determine GM status for Edit button
+    var isGm = false;
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      isGm = Alpine.store("app").isGm();
+    }
 
-    var descSnippet = _snippet(t.description || "", 120);
+    // Build action list
+    var actions = [];
 
-    return (
-      '<li class="cs-trait-item">' +
-        '<div class="cs-trait-item__header">' +
-          '<strong class="cs-trait-item__name">' + _esc(t.name) + '</strong>' +
-          dots +
-        '</div>' +
-        (descSnippet
-          ? '<p class="cs-trait-item__desc">' + _esc(descSnippet) + '</p>'
-          : '') +
-        (rechargeBtn
-          ? '<div class="cs-trait-item__actions">' + rechargeBtn + '</div>'
-          : '') +
-      '</li>'
-    );
+    // Recharge button: visible when charge < 5
+    if (charge < 5) {
+      actions.push({
+        label: "Recharge",
+        dataAttrs: {
+          "data-action":     "recharge-trait",
+          "data-trait-id":   t.id,
+          "data-trait-name": t.name,
+        },
+      });
+    }
+
+    // Edit button: GM-only, links to edit form
+    if (isGm) {
+      actions.push({
+        label:     "Edit",
+        href:      "#/gm/traits/" + encodeURIComponent(t.id) + "/edit",
+        secondary: true,
+      });
+    }
+
+    return window.components.expandableItem.render({
+      id:          t.id,
+      name:        t.name,
+      dotsHtml:    dots,
+      description: t.description || "",
+      actions:     actions,
+      variant:     "trait",
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -387,7 +399,7 @@ window.views.character = (function () {
   }
 
   /**
-   * Build a single bond list item.
+   * Build a single bond expandable card using the ExpandableItem component.
    * @param {object} b — BondDisplayResponse
    * @returns {string} HTML
    */
@@ -395,15 +407,20 @@ window.views.character = (function () {
     var isTrauma = !!b.is_trauma;
     var isPC = b.slot_type === "pc_bond";
 
-    var itemClass = "cs-bond-item" + (isTrauma ? " cs-bond-item--trauma" : "");
+    // Determine GM status for Edit button
+    var isGm = false;
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      isGm = Alpine.store("app").isGm();
+    }
 
-    // For PC bonds, show ChargeDots.
+    // Charge dots: only for PC bonds with charges data
     var dotsHtml = "";
-    var maintainBtn = "";
+    var charges = 0;
+    var effectiveMax = 5;
     if (isPC && b.charges !== null && b.charges !== undefined) {
-      var charges = Number(b.charges) || 0;
+      charges = Number(b.charges) || 0;
       var degradations = Number(b.degradations) || 0;
-      var effectiveMax = 5 - degradations;
+      effectiveMax = 5 - degradations;
 
       dotsHtml = window.components.chargeDots.render({
         current: charges,
@@ -411,48 +428,72 @@ window.views.character = (function () {
         variant: "bond",
         effectiveMax: effectiveMax < 5 ? effectiveMax : undefined,
       });
-
-      // Maintain button: visible on non-trauma bonds when charges < effective max
-      if (!isTrauma && charges < effectiveMax) {
-        var targetDisplay = b.label && b.target_name
-          ? b.label + " \u2014 " + b.target_name
-          : b.label || b.target_name || "Bond";
-        maintainBtn =
-          '<button class="cs-action-btn"' +
-          '        data-action="maintain-bond"' +
-          '        data-bond-id="' + _esc(b.id) + '"' +
-          '        data-bond-name="' + _esc(targetDisplay) + '">' +
-          'Maintain' +
-          '</button>';
-      }
     }
 
+    // Display name: "label — targetName" or whichever is present
     var label = b.label || "";
     var targetName = b.target_name || "";
-    var displayName = label && targetName ? label + " — " + targetName
+    var displayName = label && targetName ? label + " \u2014 " + targetName
                     : label || targetName || "Unknown";
 
-    var traumaBadge = isTrauma
+    // Trauma badge
+    var badgeHtml = isTrauma
       ? '<mark class="cs-trauma-badge">Trauma</mark>'
       : "";
 
-    var descSnippet = _snippet(b.description || "", 100);
+    // Partner link in expanded body
+    var footerLinkHtml = "";
+    var targetType = b.target_type || "";
+    var targetId   = b.target_id   || "";
+    if (targetType && targetId) {
+      var typeToPath = { character: "characters", group: "groups", location: "locations" };
+      var pathSeg = typeToPath[targetType] || targetType;
+      var partnerHref = "#/world/" + pathSeg + "/" + encodeURIComponent(targetId);
+      var partnerLabel = targetName || "partner";
+      footerLinkHtml =
+        '<a href="' + _esc(partnerHref) + '" class="exp-item__partner-link">' +
+          'Go to ' + _esc(partnerLabel) + ' \u2192' +
+        '</a>';
+    }
 
-    return (
-      '<li class="' + _esc(itemClass) + '">' +
-        '<div class="cs-bond-item__header">' +
-          '<span class="cs-bond-item__name">' + _esc(displayName) + '</span>' +
-          traumaBadge +
-          dotsHtml +
-        '</div>' +
-        (descSnippet
-          ? '<p class="cs-bond-item__desc">' + _esc(descSnippet) + '</p>'
-          : '') +
-        (maintainBtn
-          ? '<div class="cs-bond-item__actions">' + maintainBtn + '</div>'
-          : '') +
-      '</li>'
-    );
+    // Action buttons
+    var actions = [];
+
+    // Maintain button: visible on non-trauma PC bonds when charges < effectiveMax
+    if (isPC && !isTrauma && charges < effectiveMax) {
+      var bondDisplay = label && targetName
+        ? label + " \u2014 " + targetName
+        : label || targetName || "Bond";
+      actions.push({
+        label: "Maintain",
+        dataAttrs: {
+          "data-action":    "maintain-bond",
+          "data-bond-id":   b.id,
+          "data-bond-name": bondDisplay,
+        },
+      });
+    }
+
+    // Edit button: GM-only
+    if (isGm) {
+      actions.push({
+        label:     "Edit",
+        href:      "#/gm/bonds/" + encodeURIComponent(b.id) + "/edit",
+        secondary: true,
+      });
+    }
+
+    return window.components.expandableItem.render({
+      id:             b.id,
+      name:           displayName,
+      dotsHtml:       dotsHtml,
+      badgeHtml:      badgeHtml,
+      description:    b.description || "",
+      footerLinkHtml: footerLinkHtml,
+      actions:        actions,
+      variant:        "bond",
+      extraClass:     isTrauma ? "exp-item--trauma" : "",
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -1073,6 +1114,12 @@ window.views.character = (function () {
       loadMoreBtn.addEventListener("click", function () {
         _fetchFeed(false);
       });
+    }
+
+    // Wire expand/collapse toggle listeners for trait and bond cards
+    var tabPanel = _viewEl.querySelector(".cs-tab-panel");
+    if (tabPanel) {
+      window.components.expandableItem.attach(tabPanel);
     }
 
     // Wire action buttons (Find Time, Recharge, Maintain, Use, Retire)

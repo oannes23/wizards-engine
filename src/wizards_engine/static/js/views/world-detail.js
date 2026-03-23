@@ -206,106 +206,86 @@ window.views.worldDetail = (function () {
   // Character detail
   // ---------------------------------------------------------------------------
 
-  /** Ordered list of skill keys for the inline grid. */
-  var SKILL_LABELS = {
-    awareness:  "Awareness",
-    composure:  "Composure",
-    influence:  "Influence",
-    finesse:    "Finesse",
-    speed:      "Speed",
-    power:      "Power",
-    knowledge:  "Knowledge",
-    technology: "Technology",
-  };
-
   /**
-   * Build a compact 2×4 inline skills grid for the PC summary.
-   * Each cell: skill name (muted) + value (bold).
+   * Build an expandable bond card for a PC bond in the world-detail PC summary.
+   * Similar to character.js _buildBondItem but read-only (no Maintain action).
    *
-   * @param {object} skills — dict of skill name to level
+   * @param {object} b — BondDisplayResponse
+   * @param {boolean} isGm — whether the current user is a GM
    * @returns {string} HTML
    */
-  function _buildSkillsInline(skills) {
-    var skillKeys = Object.keys(SKILL_LABELS);
-    var html = '<div class="cs-skills-inline">';
-    for (var i = 0; i < skillKeys.length; i++) {
-      var key = skillKeys[i];
-      var level = (skills && skills[key] !== undefined && skills[key] !== null)
-        ? Number(skills[key]) : 0;
-      html +=
-        '<div class="cs-skills-inline__cell">' +
-          '<span class="cs-skills-inline__name">' + _esc(SKILL_LABELS[key]) + '</span>' +
-          '<span class="cs-skills-inline__value">' + level + '</span>' +
-        '</div>';
-    }
-    html += '</div>';
-    return html;
-  }
+  function _buildPcBondItem(b, isGm) {
+    var isTrauma = !!b.is_trauma;
+    var isPC = b.slot_type === "pc_bond";
 
-  /**
-   * Build the traits section for a PC summary, split into Core and Role sections.
-   *
-   * @param {object} traits — { active: [...], past: [...] }
-   * @returns {string} HTML
-   */
-  function _buildPcTraitsSection(traits) {
-    var active = (traits && traits.active) ? traits.active : [];
-    var coreTraits = active.filter(function (t) { return t.slot_type === "core_trait"; });
-    var roleTraits = active.filter(function (t) { return t.slot_type === "role_trait"; });
+    // Charge dots for PC bonds
+    var dotsHtml = "";
+    if (isPC && b.charges !== null && b.charges !== undefined) {
+      var charges = Number(b.charges) || 0;
+      var degradations = Number(b.degradations) || 0;
+      var effectiveMax = 5 - degradations;
 
-    if (active.length === 0) {
-      return '<p class="wd-empty">No active traits.</p>';
+      dotsHtml = window.components.chargeDots.render({
+        current: charges,
+        max: 5,
+        variant: "bond",
+        effectiveMax: effectiveMax < 5 ? effectiveMax : undefined,
+      });
     }
 
-    var html = "";
+    // Display name
+    var label = b.label || "";
+    var targetName = b.target_name || "";
+    var displayName = label && targetName ? label + " \u2014 " + targetName
+                    : label || targetName || "Unknown";
 
-    if (coreTraits.length > 0) {
-      html += '<section class="wd-trait-group">';
-      html += '<h3 class="wd-group-heading">Core Traits</h3>';
-      html += '<ul class="wd-trait-list">';
-      for (var i = 0; i < coreTraits.length; i++) {
-        var t = coreTraits[i];
-        var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
-        var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
-        html +=
-          '<li class="wd-trait-item">' +
-            '<div class="wd-trait-item__header">' +
-              '<strong class="wd-trait-item__name">' + _esc(t.name) + '</strong>' +
-              dots +
-            '</div>' +
-          '</li>';
-      }
-      html += '</ul></section>';
+    // Trauma badge
+    var badgeHtml = isTrauma
+      ? '<mark class="cs-trauma-badge">Trauma</mark>'
+      : "";
+
+    // Partner link
+    var footerLinkHtml = "";
+    var targetType = b.target_type || "";
+    var targetId   = b.target_id   || "";
+    if (targetType && targetId) {
+      var typeToPath = { character: "characters", group: "groups", location: "locations" };
+      var pathSeg = typeToPath[targetType] || targetType;
+      var partnerHref = "#/world/" + pathSeg + "/" + encodeURIComponent(targetId);
+      var partnerLabel = targetName || "partner";
+      footerLinkHtml =
+        '<a href="' + _esc(partnerHref) + '" class="exp-item__partner-link">' +
+          'Go to ' + _esc(partnerLabel) + ' \u2192' +
+        '</a>';
     }
 
-    if (roleTraits.length > 0) {
-      html += '<section class="wd-trait-group">';
-      html += '<h3 class="wd-group-heading">Role Traits</h3>';
-      html += '<ul class="wd-trait-list">';
-      for (var j = 0; j < roleTraits.length; j++) {
-        var rt = roleTraits[j];
-        var rtCharge = (rt.charge !== null && rt.charge !== undefined) ? Number(rt.charge) : 0;
-        var rtDots = window.components.chargeDots.render({ current: rtCharge, max: 5, variant: "trait" });
-        html +=
-          '<li class="wd-trait-item">' +
-            '<div class="wd-trait-item__header">' +
-              '<strong class="wd-trait-item__name">' + _esc(rt.name) + '</strong>' +
-              rtDots +
-            '</div>' +
-          '</li>';
-      }
-      html += '</ul></section>';
+    // Actions: GM Edit only (no Maintain — world-detail is read-only)
+    var actions = [];
+    if (isGm) {
+      actions.push({
+        label:     "Edit",
+        href:      "#/gm/bonds/" + encodeURIComponent(b.id) + "/edit",
+        secondary: true,
+      });
     }
 
-    return html;
+    return window.components.expandableItem.render({
+      id:             b.id,
+      name:           displayName,
+      dotsHtml:       dotsHtml,
+      badgeHtml:      badgeHtml,
+      description:    b.description || "",
+      footerLinkHtml: footerLinkHtml,
+      actions:        actions,
+      variant:        "bond",
+      extraClass:     isTrauma ? "exp-item--trauma" : "",
+    });
   }
 
   /**
    * Build a read-only PC summary view for characters with detail_level === "full".
    * Avoids the race condition caused by hijacking character.js.
-   * Shows full description, inline skills grid, and tabbed sections (Traits, Bonds, Effects).
-   * For own character: shows "View My Sheet" link to #/character.
-   * For other characters: no "Full Sheet" button (they are already on the detail page).
+   * Shows meters and a "View Full Sheet" link for the current user's own character.
    *
    * @param {object} c — CharacterDetailResponse (full)
    * @returns {string} HTML
@@ -313,19 +293,22 @@ window.views.worldDetail = (function () {
   function _buildPcSummary(c) {
     // Determine whether this PC is the viewing user's own character
     var isOwnCharacter = false;
+    var characterHash = "#/world";
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       var store = Alpine.store("app");
       if (store.character_id && store.character_id === c.id) {
         isOwnCharacter = true;
+        characterHash = "#/character";
       }
     }
 
-    // Only own character gets a "View My Sheet" link; others have no such button
-    var viewLink = isOwnCharacter
-      ? '<a href="#/character" class="wd-pc-summary__view-link">View My Sheet</a>'
-      : "";
+    var viewLink = (
+      '<a href="' + _esc(characterHash) + '" class="wd-pc-summary__view-link">' +
+        (isOwnCharacter ? 'View My Sheet' : 'View Full Sheet') +
+      '</a>'
+    );
 
-    var descFull = c.description || "";
+    var descSnippet = _snippet(c.description || "", 160);
 
     // Resource meters
     var STRESS_MAX         = 9;
@@ -363,61 +346,57 @@ window.views.worldDetail = (function () {
       color: "var(--we-gnosis-blue)",
     });
 
-    // Active bonds section
+    // Determine GM status for Edit buttons
+    var isGm = false;
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      isGm = Alpine.store("app").isGm();
+    }
+
+    // Active traits — expandable cards
+    var activeTraits = (c.traits && c.traits.active) ? c.traits.active : [];
+    var traitsHtml = "";
+    if (activeTraits.length > 0) {
+      traitsHtml = '<section class="wd-pc-summary__section">';
+      traitsHtml += '<h3 class="wd-pc-summary__section-heading">Traits</h3>';
+      traitsHtml += '<ul class="wd-trait-list">';
+      for (var i = 0; i < activeTraits.length; i++) {
+        var t = activeTraits[i];
+        var charge = (t.charge !== null && t.charge !== undefined) ? Number(t.charge) : 0;
+        var dots = window.components.chargeDots.render({ current: charge, max: 5, variant: "trait" });
+
+        var traitActions = [];
+        if (isGm) {
+          traitActions.push({
+            label:     "Edit",
+            href:      "#/gm/traits/" + encodeURIComponent(t.id) + "/edit",
+            secondary: true,
+          });
+        }
+
+        traitsHtml += window.components.expandableItem.render({
+          id:          t.id,
+          name:        t.name,
+          dotsHtml:    dots,
+          description: t.description || "",
+          actions:     traitActions,
+          variant:     "trait",
+        });
+      }
+      traitsHtml += '</ul></section>';
+    }
+
+    // Active bonds — expandable cards
     var activeBonds = (c.bonds && c.bonds.active) ? c.bonds.active : [];
-    var bondsHtml = activeBonds.length > 0
-      ? '<ul class="wd-bond-list">' +
-          activeBonds.map(function (b) { return _buildBondItem(b); }).join("") +
-        '</ul>'
-      : '<p class="wd-empty">No active bonds.</p>';
-
-    // Active effects section
-    var activeEffects = (c.magic_effects && c.magic_effects.active) ? c.magic_effects.active : [];
-    var effectsHtml = activeEffects.length > 0
-      ? '<ul class="wd-effect-list">' +
-          activeEffects.map(function (e) {
-            var effectType = e.effect_type || "";
-            var badgeLabel = effectType === "charged"   ? "Charged"
-                           : effectType === "permanent" ? "Permanent"
-                           : effectType === "instant"   ? "Instant"
-                           : _esc(effectType);
-            var badgeMod = effectType === "charged"   ? "charged"
-                         : effectType === "permanent" ? "permanent"
-                         : "instant";
-            return (
-              '<li class="wd-effect-item">' +
-                '<div class="wd-effect-item__header">' +
-                  '<strong class="wd-effect-item__name">' + _esc(e.name) + '</strong>' +
-                  '<mark class="cs-effect-badge cs-effect-badge--' + badgeMod + '">' + badgeLabel + '</mark>' +
-                '</div>' +
-                (e.description
-                  ? '<p class="wd-effect-item__desc">' + _esc(e.description) + '</p>'
-                  : '') +
-              '</li>'
-            );
-          }).join("") +
-        '</ul>'
-      : '<p class="wd-empty">No active effects.</p>';
-
-    // Tab HTML — 3 tabs: Traits, Bonds, Effects
-    var tabsHtml =
-      '<nav class="cs-tabs" role="tablist" aria-label="Character sections">' +
-        '<button class="cs-tab cs-tab--active" role="tab" aria-selected="true"' +
-        '        data-wd-tab="traits">Traits</button>' +
-        '<button class="cs-tab" role="tab" aria-selected="false"' +
-        '        data-wd-tab="bonds">Bonds</button>' +
-        '<button class="cs-tab" role="tab" aria-selected="false"' +
-        '        data-wd-tab="effects">Effects</button>' +
-      '</nav>' +
-      '<div class="cs-tab-panel" data-wd-panel="traits">' +
-        _buildPcTraitsSection(c.traits) +
-      '</div>' +
-      '<div class="cs-tab-panel" data-wd-panel="bonds" hidden>' +
-        bondsHtml +
-      '</div>' +
-      '<div class="cs-tab-panel" data-wd-panel="effects" hidden>' +
-        effectsHtml +
-      '</div>';
+    var bondsHtml = "";
+    if (activeBonds.length > 0) {
+      bondsHtml = '<section class="wd-pc-summary__section">';
+      bondsHtml += '<h3 class="wd-pc-summary__section-heading">Bonds</h3>';
+      bondsHtml += '<ul class="wd-bond-list">';
+      for (var j = 0; j < activeBonds.length; j++) {
+        bondsHtml += _buildPcBondItem(activeBonds[j], isGm);
+      }
+      bondsHtml += '</ul></section>';
+    }
 
     return (
       '<div class="wd-pc-summary">' +
@@ -426,14 +405,14 @@ window.views.worldDetail = (function () {
           '<mark class="wd-badge wd-badge--pc">PC</mark>' +
           viewLink +
         '</div>' +
-        (descFull
-          ? '<p class="wd-pc-summary__desc">' + _esc(descFull) + '</p>'
+        (descSnippet
+          ? '<p class="wd-pc-summary__desc">' + _esc(descSnippet) + '</p>'
           : '') +
         '<div class="wd-pc-summary__meters">' +
           stressBar + ftBar + plotBar + gnosisBar +
         '</div>' +
-        _buildSkillsInline(c.skills) +
-        tabsHtml +
+        traitsHtml +
+        bondsHtml +
       '</div>'
     );
   }
@@ -521,8 +500,8 @@ window.views.worldDetail = (function () {
               _buildBackButton() +
               _buildPcSummary(data) +
             '</div>';
-          // Wire tab switching for the PC summary tab bar
-          _bindPcSummaryTabs(el);
+          // Wire expand/collapse toggle listeners for trait and bond cards
+          window.components.expandableItem.attach(el);
         } else {
           // NPC: simplified summary
           el.innerHTML =
@@ -536,42 +515,6 @@ window.views.worldDetail = (function () {
         if (!_mounted) return;
         _renderError(el, (err && err.message) || "Could not load character.");
       });
-  }
-
-  /**
-   * Bind click handlers to the PC summary tab buttons (data-wd-tab / data-wd-panel).
-   * Switches visible panel without re-fetching data.
-   *
-   * @param {HTMLElement} el — the #view container
-   */
-  function _bindPcSummaryTabs(el) {
-    var tabBtns = el.querySelectorAll("[data-wd-tab]");
-    var panels = el.querySelectorAll("[data-wd-panel]");
-
-    for (var i = 0; i < tabBtns.length; i++) {
-      (function (btn) {
-        btn.addEventListener("click", function () {
-          var target = btn.getAttribute("data-wd-tab");
-
-          // Update tab active state
-          for (var t = 0; t < tabBtns.length; t++) {
-            var isActive = tabBtns[t].getAttribute("data-wd-tab") === target;
-            tabBtns[t].classList.toggle("cs-tab--active", isActive);
-            tabBtns[t].setAttribute("aria-selected", isActive ? "true" : "false");
-          }
-
-          // Show/hide panels
-          for (var p = 0; p < panels.length; p++) {
-            var panelKey = panels[p].getAttribute("data-wd-panel");
-            if (panelKey === target) {
-              panels[p].removeAttribute("hidden");
-            } else {
-              panels[p].setAttribute("hidden", "");
-            }
-          }
-        });
-      })(tabBtns[i]);
-    }
   }
 
   // ---------------------------------------------------------------------------

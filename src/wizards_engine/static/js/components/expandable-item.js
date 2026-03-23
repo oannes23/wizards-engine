@@ -1,38 +1,32 @@
 /* Wizards Engine — ExpandableItem component
  *
- * Renders an expand/collapse card for a trait or bond in character detail views.
- * Used by Epic 8.5 (Character Detail).
+ * Renders an expand/collapse card for trait and bond items.
  *
  * Props:
- *   id           (string)           — unique identifier for this item (used in aria)
- *   name         (string)           — display name of the trait or bond
- *   dotsHtml     (string)           — pre-rendered HTML for charge dots (from chargeDots.render)
- *   badgeHtml    (string, optional) — pre-rendered HTML for an optional badge
- *                                     (e.g. trauma indicator, degraded marker)
- *   description  (string, optional) — full description text shown when expanded
- *   actions      (Array, optional)  — action buttons shown when expanded
- *                  Each action: { label, href?, dataAttrs? }
- *                  - href: if present, renders an <a> instead of <button>
- *                  - dataAttrs: object of data-* attribute key/value pairs
- *   footerLinkHtml (string, optional) — pre-rendered HTML for a footer link
- *                                     (e.g. "Go to [partner] →" for bonds)
- *   variant      (string)           — "trait" | "bond" — controls accent colour
+ *   id          (string)  — unique identifier for ARIA (e.g. slot ULID)
+ *   name        (string)  — display name shown in collapsed header
+ *   dotsHtml    (string)  — pre-rendered ChargeDots HTML (or empty string)
+ *   badgeHtml   (string)  — optional HTML for badges (e.g. trauma indicator)
+ *   description (string)  — full text shown in expanded body
+ *   actions     (Array)   — list of action descriptors:
+ *                           { label, href?, dataAttrs?, secondary? }
+ *                           href: renders as <a role="button">
+ *                           dataAttrs: object of data-* attrs rendered on <button>
+ *   footerLinkHtml (string) — optional HTML for a footer link (e.g. partner link)
+ *   variant     (string)  — "trait" | "bond" — controls accent class
+ *   extraClass  (string)  — optional additional CSS class(es) for the root <li>
  *
  * Usage:
- *   var html = components.expandableItem.render({ ... });
- *   container.innerHTML = html;
- *   components.expandableItem.attach(container);
+ *   var html = window.components.expandableItem.render(props);
+ *   // Insert html into DOM...
+ *   window.components.expandableItem.attach(containerEl);
  *
- * render() returns an HTML string. attach() wires click/keyboard listeners
- * via event delegation on the container — safe to call once even if multiple
- * items are rendered inside the same container.
+ * render() returns an HTML string.
+ * attach() wires click (and keyboard) toggle listeners to all .exp-item
+ * elements inside the given container.
  *
- * Toggle behaviour:
- *   - Click on .exp-item__trigger toggles the .exp-item--open class on .exp-item
- *   - aria-expanded attribute on the trigger reflects open/closed state
- *   - .exp-item__body has hidden attribute when collapsed, removed when expanded
- *   - Chevron rotates 90deg on expand via CSS transition
- *   - Keyboard: Enter or Space on trigger triggers toggle
+ * Multiple calls to attach() on the same container are safe — uses a
+ * data-exp-attached flag to avoid double-binding.
  */
 
 window.components = window.components || {};
@@ -42,57 +36,47 @@ window.components.expandableItem = (function () {
   // Private helpers
   // --------------------------------------------------------------------------
 
-  /**
-   * Delegate to shared utils (window.utils — loaded via utils.js).
-   */
   var _esc = function (str) { return window.utils.esc(str); };
 
   /**
-   * Build a data-attribute string from a plain object.
-   * Each key becomes a data-<key> attribute. Values are escaped.
-   * @param {object} dataAttrs
+   * Build the data-* attribute string from a plain object.
+   * @param {object} attrs — e.g. { "data-action": "recharge-trait", "data-trait-id": "..." }
    * @returns {string}
    */
-  function _dataAttrStr(dataAttrs) {
-    if (!dataAttrs || typeof dataAttrs !== "object") return "";
+  function _dataAttrs(attrs) {
+    if (!attrs || typeof attrs !== "object") return "";
     var parts = [];
-    var keys = Object.keys(dataAttrs);
+    var keys = Object.keys(attrs);
     for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      parts.push('data-' + _esc(key) + '="' + _esc(String(dataAttrs[key])) + '"');
+      var k = keys[i];
+      parts.push(_esc(k) + '="' + _esc(attrs[k]) + '"');
     }
     return parts.length ? " " + parts.join(" ") : "";
   }
 
   /**
-   * Build the action buttons / links shown in the expanded body.
-   * @param {Array} actions — [{label, href?, dataAttrs?}]
+   * Build a single action button or link.
+   * @param {object} action — { label, href?, dataAttrs?, secondary? }
    * @returns {string} HTML
    */
-  function _renderActions(actions) {
-    if (!actions || !actions.length) return "";
-    var parts = [];
-    for (var i = 0; i < actions.length; i++) {
-      var a = actions[i];
-      if (!a || !a.label) continue;
-      var label = _esc(a.label);
-      var dataStr = _dataAttrStr(a.dataAttrs);
-      if (a.href) {
-        parts.push(
-          '<a class="exp-item__action-btn" href="' + _esc(a.href) + '"' + dataStr + '>' +
-            label +
-          '</a>'
-        );
-      } else {
-        parts.push(
-          '<button class="exp-item__action-btn"' + dataStr + '>' +
-            label +
-          '</button>'
-        );
-      }
+  function _buildAction(action) {
+    var cls = "exp-item__action-btn" + (action.secondary ? " exp-item__action-btn--secondary" : "");
+    if (action.href) {
+      return (
+        '<a href="' + _esc(action.href) + '"' +
+        '   class="' + cls + '"' +
+        '   role="button">' +
+          _esc(action.label) +
+        '</a>'
+      );
     }
-    if (!parts.length) return "";
-    return '<div class="exp-item__actions">' + parts.join("") + '</div>';
+    return (
+      '<button class="' + cls + '"' +
+      _dataAttrs(action.dataAttrs) +
+      '>' +
+        _esc(action.label) +
+      '</button>'
+    );
   }
 
   // --------------------------------------------------------------------------
@@ -101,142 +85,116 @@ window.components.expandableItem = (function () {
 
   return {
     /**
-     * Render an ExpandableItem to an HTML string.
-     *
-     * The returned HTML must be inserted into the DOM before calling attach().
-     * IDs are used for aria-controls / aria-labelledby wiring.
+     * Render an expandable item to an HTML string.
      *
      * @param {object} props
-     * @param {string} props.id          — unique id for this item
-     * @param {string} props.name        — display name
-     * @param {string} props.dotsHtml    — charge dots HTML string
-     * @param {string} [props.badgeHtml] — optional badge HTML string
-     * @param {string} [props.description] — full description text
-     * @param {Array}  [props.actions]   — action config objects
-     * @param {string} [props.footerLinkHtml] — optional footer link HTML
-     * @param {string} [props.variant]   — "trait" | "bond"
+     * @param {string} props.id
+     * @param {string} props.name
+     * @param {string} [props.dotsHtml]
+     * @param {string} [props.badgeHtml]
+     * @param {string} [props.description]
+     * @param {Array}  [props.actions]
+     * @param {string} [props.footerLinkHtml]
+     * @param {string} [props.variant] — "trait" | "bond"
      * @returns {string}
      */
     render: function (props) {
-      var id          = String(props.id || "exp-item-" + Math.random().toString(36).slice(2));
-      var name        = String(props.name || "");
-      var dotsHtml    = props.dotsHtml || "";
-      var badgeHtml   = props.badgeHtml || "";
-      var description = String(props.description || "");
-      var actions     = props.actions || [];
-      var footerLinkHtml = props.footerLinkHtml || "";
+      var id          = props.id          || "";
+      var name        = props.name        || "";
+      var dotsHtml    = props.dotsHtml    || "";
+      var badgeHtml   = props.badgeHtml   || "";
+      var description = props.description || "";
+      var actions     = props.actions     || [];
+      var footerLink  = props.footerLinkHtml || "";
       var variant     = props.variant === "bond" ? "bond" : "trait";
+      var extraClass  = props.extraClass  || "";
 
-      var triggerId   = "exp-trig-" + id;
-      var bodyId      = "exp-body-" + id;
+      var triggerId = "exp-trigger-" + _esc(id);
+      var bodyId    = "exp-body-"    + _esc(id);
 
-      // Trigger: always visible row — name, dots, optional badge, chevron
-      var triggerHtml = (
-        '<button class="exp-item__trigger"' +
-                ' id="' + _esc(triggerId) + '"' +
-                ' aria-expanded="false"' +
-                ' aria-controls="' + _esc(bodyId) + '">' +
-          '<span class="exp-item__trigger-left">' +
-            '<span class="exp-item__name">' + _esc(name) + '</span>' +
-            (dotsHtml ? '<span class="exp-item__dots">' + dotsHtml + '</span>' : '') +
-            (badgeHtml ? '<span class="exp-item__badge">' + badgeHtml + '</span>' : '') +
-          '</span>' +
-          '<span class="exp-item__chevron" aria-hidden="true">&#x276F;</span>' +
-        '</button>'
-      );
+      // Action buttons
+      var actionsHtml = "";
+      if (actions.length > 0) {
+        actionsHtml = '<div class="exp-item__actions">';
+        for (var i = 0; i < actions.length; i++) {
+          actionsHtml += _buildAction(actions[i]);
+        }
+        actionsHtml += '</div>';
+      }
 
-      // Body: hidden by default, shown on expand
-      var actionsHtml = _renderActions(actions);
-
-      var descHtml = description
-        ? '<p class="exp-item__desc">' + _esc(description) + '</p>'
-        : "";
-
-      var footerHtml = footerLinkHtml
-        ? '<div class="exp-item__footer">' + footerLinkHtml + '</div>'
-        : "";
-
-      var bodyHtml = (
-        '<div class="exp-item__body"' +
-             ' id="' + _esc(bodyId) + '"' +
-             ' role="region"' +
-             ' aria-labelledby="' + _esc(triggerId) + '"' +
-             ' hidden>' +
-          descHtml +
-          actionsHtml +
-          footerHtml +
-        '</div>'
-      );
+      var rootClass = "exp-item exp-item--" + variant + (extraClass ? " " + extraClass : "");
 
       return (
-        '<div class="exp-item exp-item--' + _esc(variant) + '"' +
-             ' data-exp-id="' + _esc(id) + '">' +
-          triggerHtml +
-          bodyHtml +
-        '</div>'
+        '<li class="' + rootClass + '"' +
+        '    data-exp-id="' + _esc(id) + '">' +
+          '<button class="exp-item__trigger"' +
+          '        id="' + triggerId + '"' +
+          '        aria-expanded="false"' +
+          '        aria-controls="' + bodyId + '">' +
+            '<span class="exp-item__header">' +
+              '<span class="exp-item__name">' + _esc(name) + '</span>' +
+              (badgeHtml ? '<span class="exp-item__badge">' + badgeHtml + '</span>' : '') +
+              (dotsHtml  ? '<span class="exp-item__dots">'  + dotsHtml  + '</span>' : '') +
+            '</span>' +
+            '<span class="exp-item__chevron" aria-hidden="true">\u203a</span>' +
+          '</button>' +
+          '<div class="exp-item__body"' +
+          '     id="' + bodyId + '"' +
+          '     role="region"' +
+          '     aria-labelledby="' + triggerId + '"' +
+          '     hidden>' +
+            (description
+              ? '<p class="exp-item__desc">' + _esc(description) + '</p>'
+              : '') +
+            (footerLink ? '<div class="exp-item__footer-link">' + footerLink + '</div>' : '') +
+            actionsHtml +
+          '</div>' +
+        '</li>'
       );
     },
 
     /**
-     * Wire expand/collapse toggle listeners on all .exp-item elements inside
-     * a container. Uses event delegation — call once per container regardless
-     * of how many items it holds.
+     * Wire expand/collapse toggle listeners to all .exp-item elements inside
+     * container. Safe to call multiple times — uses data-exp-attached flag.
      *
-     * Safe to call multiple times: checks for a sentinel attribute to avoid
-     * double-binding.
-     *
-     * @param {HTMLElement} container — the parent element containing exp-items
+     * @param {HTMLElement} container
      */
     attach: function (container) {
       if (!container) return;
-      // Guard against double-binding the same container.
-      if (container.dataset.expAttached) return;
-      container.dataset.expAttached = "1";
+      var items = container.querySelectorAll(".exp-item");
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        if (item.getAttribute("data-exp-attached")) continue;
+        item.setAttribute("data-exp-attached", "1");
 
-      container.addEventListener("click", function (evt) {
-        var trigger = evt.target && evt.target.closest
-          ? evt.target.closest(".exp-item__trigger")
-          : null;
-        if (!trigger) return;
-        _toggleItem(trigger);
-      });
+        (function (li) {
+          var trigger = li.querySelector(".exp-item__trigger");
+          var body    = li.querySelector(".exp-item__body");
+          if (!trigger || !body) return;
 
-      container.addEventListener("keydown", function (evt) {
-        if (evt.key !== "Enter" && evt.key !== " ") return;
-        var trigger = evt.target && evt.target.closest
-          ? evt.target.closest(".exp-item__trigger")
-          : null;
-        if (!trigger) return;
-        evt.preventDefault();
-        _toggleItem(trigger);
-      });
+          function toggle() {
+            var expanded = trigger.getAttribute("aria-expanded") === "true";
+            if (expanded) {
+              trigger.setAttribute("aria-expanded", "false");
+              body.hidden = true;
+              li.classList.remove("exp-item--open");
+            } else {
+              trigger.setAttribute("aria-expanded", "true");
+              body.hidden = false;
+              li.classList.add("exp-item--open");
+            }
+          }
+
+          trigger.addEventListener("click", toggle);
+
+          trigger.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          });
+        })(item);
+      }
     },
   };
-
-  // --------------------------------------------------------------------------
-  // Private toggle logic (defined after the return for clarity; hoisted by JS)
-  // --------------------------------------------------------------------------
-
-  /**
-   * Toggle the open state of the .exp-item that owns a given trigger element.
-   * @param {HTMLElement} trigger — the .exp-item__trigger button
-   */
-  function _toggleItem(trigger) {
-    var item = trigger.closest(".exp-item");
-    if (!item) return;
-
-    var isOpen = item.classList.contains("exp-item--open");
-    var bodyId = trigger.getAttribute("aria-controls");
-    var body   = bodyId ? document.getElementById(bodyId) : null;
-
-    if (isOpen) {
-      item.classList.remove("exp-item--open");
-      trigger.setAttribute("aria-expanded", "false");
-      if (body) body.setAttribute("hidden", "");
-    } else {
-      item.classList.add("exp-item--open");
-      trigger.setAttribute("aria-expanded", "true");
-      if (body) body.removeAttribute("hidden");
-    }
-  }
 })();

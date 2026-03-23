@@ -3951,6 +3951,33 @@ main.container {
   text-align: left;
   min-height: 44px; /* touch target */
   border-radius: 0; /* inherit from parent */
+   ExpandableItem component
+   --------------------------------------------------------------------------- */
+
+.exp-item {
+  list-style: none;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+/* Trigger button — acts as the collapsed row */
+.exp-item__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--pico-color, #ddd);
+  font-size: 0.9rem;
+  min-height: 44px; /* touch target */
+  transition: background 0.12s;
 }
 
 .exp-item__trigger:hover,
@@ -4109,7 +4136,6 @@ main.container {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-=======
   white-space: nowrap;
   user-select: none;
 }
@@ -4130,22 +4156,32 @@ main.container {
 
 /* Left side of trigger: name + dots + optional badge */
 .exp-item__trigger-left {
+=======
+  background: var(--pico-secondary-background, #262636);
+  outline: none;
+}
+
+/* Inner header row: name + badge + dots laid out left-to-right */
+.exp-item__header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex: 1;
   min-width: 0; /* allow text truncation */
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .exp-item__name {
   font-weight: 600;
   font-size: 0.9rem;
+>>>>>>> worktree-agent-afb7068c
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+<<<<<<< HEAD
 .exp-item__dots {
   flex-shrink: 0;
 }
@@ -4162,6 +4198,28 @@ main.container {
   transition: transform 0.2s ease;
   display: inline-block;
   line-height: 1;
+=======
+.exp-item__badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.exp-item__dots {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Chevron arrow: rotates 90deg when expanded */
+.exp-item__chevron {
+  font-size: 1.1rem;
+  color: var(--pico-muted-color, #aaa);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  transition: transform 0.18s ease;
+  display: inline-block;
 }
 
 .exp-item--open .exp-item__chevron {
@@ -4191,11 +4249,32 @@ main.container {
 }
 
 /* Action buttons row */
+/* Expanded body */
+.exp-item__body {
+  padding: 0.75rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+  background: var(--pico-background-color, #1a1a2e);
+}
+
+.exp-item__desc {
+  font-size: 0.875rem;
+  color: var(--pico-color, #ddd);
+  margin-bottom: 0.6rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.exp-item__footer-link {
+  margin-bottom: 0.6rem;
+  font-size: 0.875rem;
+}
+
 .exp-item__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .exp-item__action-btn {
@@ -4211,6 +4290,19 @@ main.container {
   display: inline-flex;
   align-items: center;
   transition: background 0.15s, color 0.15s;
+  padding: 0.35rem 0.75rem;
+  min-height: 36px;
+  min-width: 44px;
+  border-radius: 0.3rem;
+  border: 1px solid var(--pico-primary, #7c6aff);
+  background: transparent;
+  color: var(--pico-primary, #7c6aff);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
 }
 
 .exp-item__action-btn:hover,
@@ -4287,7 +4379,6 @@ main.container {
 }
 
 /* Body rows */
-=======
 .dt-row {
   border-bottom: 1px solid var(--pico-muted-border-color, #333);
   transition: background 0.1s;
@@ -4909,4 +5000,38 @@ main.container {
     min-width: 40px;
     font-size: 1.25rem;
   }
+}
+=======
+.exp-item__action-btn--secondary {
+  border-color: var(--pico-muted-border-color, #555);
+  color: var(--pico-muted-color, #aaa);
+}
+
+.exp-item__action-btn--secondary:hover,
+.exp-item__action-btn--secondary:focus-visible {
+  background: var(--pico-muted-border-color, #555);
+  color: var(--pico-color, #ddd);
+}
+
+/* Bond variant — warm amber accent on trigger border */
+.exp-item--bond {
+  border-color: var(--we-plot-amber, #f39c12);
+  border-left-width: 3px;
+}
+
+/* Trauma bond — stress-red left border */
+.exp-item--bond.exp-item--trauma {
+  border-color: var(--we-stress-red, #c0392b);
+}
+
+/* Partner link inside expanded bond body */
+.exp-item__partner-link {
+  color: var(--pico-primary, #7c6aff);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.exp-item__partner-link:hover,
+.exp-item__partner-link:focus-visible {
+  text-decoration: underline;
 }

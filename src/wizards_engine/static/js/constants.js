@@ -39,16 +39,18 @@ window.constants = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Ordered list of the six core skill identifiers as they appear in the API
+   * Ordered list of the eight skill identifiers as they appear in the API
    * and character data. Use these for iteration and lookup.
    */
   var SKILL_NAMES = [
-    "force",
+    "awareness",
+    "composure",
+    "influence",
     "finesse",
-    "focus",
-    "presence",
-    "insight",
-    "magic",
+    "speed",
+    "power",
+    "knowledge",
+    "technology",
   ];
 
   // ---------------------------------------------------------------------------
@@ -61,10 +63,10 @@ window.constants = (function () {
    * environments where the variables are not defined.
    */
   var METER_COLORS = {
-    stress:    "var(--pico-del-color, #c0392b)",
-    free_time: "var(--pico-ins-color, #27ae60)",
-    plot:      "var(--pico-primary, #1095c1)",
-    gnosis:    "var(--pico-secondary, #805ad5)",
+    stress:    "var(--we-stress-red, #c0392b)",
+    free_time: "var(--we-ft-green, #27ae60)",
+    plot:      "var(--we-plot-amber, #d4a017)",
+    gnosis:    "var(--we-gnosis-blue, #805ad5)",
   };
 
   // ---------------------------------------------------------------------------

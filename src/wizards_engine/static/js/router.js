@@ -60,6 +60,8 @@ var router = (function () {
     "/gm/sessions/new":  function () { if (typeof views !== "undefined" && views.gmSessions)  { views.gmSessions({ mode: "new" });  } else { _placeholder("New Session")(); } },
     "/gm/world":               function () { if (typeof views !== "undefined" && views.world)           { views.world();           } else { _placeholder("GM World")();           } },
     "/gm/world/characters/new": function () { if (typeof views !== "undefined" && views.characterCreate) { views.characterCreate(); } else { _placeholder("New Character")(); } },
+    "/gm/world/groups/new":     function () { if (typeof views !== "undefined" && views.groupEdit)       { views.groupEdit();       } else { _placeholder("New Group")(); } },
+    "/gm/world/locations/new":  function () { if (typeof views !== "undefined" && views.locationEdit)    { views.locationEdit();    } else { _placeholder("New Location")(); } },
     "/gm/feed":            function () { if (typeof views !== "undefined" && views.gmFeed)        { views.gmFeed();        } else { _placeholder("GM Feed")(); } },
     "/gm/feed/silent":     function () { if (typeof views !== "undefined" && views.gmFeedSilent)  { views.gmFeedSilent();  } else { _placeholder("GM Silent Feed")(); } },
     "/gm/more":            _placeholder("GM More"),
@@ -172,6 +174,22 @@ var router = (function () {
       },
     },
     {
+      pattern: "/gm/traits/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.traitEdit) {
+          views.traitEdit(params.id);
+        } else { _placeholder("Edit Trait")(); }
+      },
+    },
+    {
+      pattern: "/gm/bonds/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.bondEdit) {
+          views.bondEdit(params.id);
+        } else { _placeholder("Edit Bond")(); }
+      },
+    },
+    {
       // More specific: /gm/world/characters/:id/edit must come before /gm/world/characters/:id
       pattern: "/gm/world/characters/:id/edit",
       handler: function (params) {
@@ -193,6 +211,14 @@ var router = (function () {
       },
     },
     {
+      pattern: "/gm/world/groups/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.groupEdit) {
+          views.groupEdit(params.id);
+        } else { _placeholder("Edit Group")(); }
+      },
+    },
+    {
       pattern: "/gm/world/groups/:id",
       handler: function (params) {
         if (typeof views !== "undefined" && views.worldDetail) {
@@ -200,6 +226,14 @@ var router = (function () {
         } else {
           _placeholder("Group Detail")();
         }
+      },
+    },
+    {
+      pattern: "/gm/world/locations/:id/edit",
+      handler: function (params) {
+        if (typeof views !== "undefined" && views.locationEdit) {
+          views.locationEdit(params.id);
+        } else { _placeholder("Edit Location")(); }
       },
     },
     {

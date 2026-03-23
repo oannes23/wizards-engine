@@ -4078,7 +4078,6 @@ main.container {
   letter-spacing: 0.03em;
   color: var(--pico-muted-color, #aaa);
   border-bottom: 2px solid var(--pico-muted-border-color, #444);
-<<<<<<< HEAD
 }
 
 .dt-search-input {
@@ -4156,7 +4155,6 @@ main.container {
 
 /* Left side of trigger: name + dots + optional badge */
 .exp-item__trigger-left {
-=======
   background: var(--pico-secondary-background, #262636);
   outline: none;
 }
@@ -4175,13 +4173,11 @@ main.container {
 .exp-item__name {
   font-weight: 600;
   font-size: 0.9rem;
->>>>>>> worktree-agent-afb7068c
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-<<<<<<< HEAD
 .exp-item__dots {
   flex-shrink: 0;
 }
@@ -4198,7 +4194,6 @@ main.container {
   transition: transform 0.2s ease;
   display: inline-block;
   line-height: 1;
-=======
 .exp-item__badge {
   display: inline-flex;
   align-items: center;
@@ -4342,7 +4337,6 @@ main.container {
     min-height: 40px;
     font-size: 0.85rem;
   }
->>>>>>> worktree-agent-a46b9548
 /* Currently sorted column */
 .dt-th--sorted {
   color: var(--pico-primary, #7c6aff);
@@ -4354,7 +4348,6 @@ main.container {
 }
 
 /* Table rows */
-<<<<<<< HEAD
 /* Sortable header cells */
 .dt-th[data-sort] {
   cursor: pointer;
@@ -4550,7 +4543,6 @@ main.container {
 
 /* In-cell links */
 .gm-feed__link {
->>>>>>> worktree-agent-a46b9548
   color: var(--pico-primary, #7c6aff);
   text-decoration: none;
 }
@@ -4605,433 +4597,5 @@ main.container {
   .dt-cards-wrap {
     display: block;
   }
-<<<<<<< HEAD
 
   /* Columns flagged as mobile-hidden are already excluded from cards via JS */
-=======
-}
-
-/* Mobile card */
-.dt-card {
-  border: 1px solid var(--pico-muted-border-color, #444);
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  background: var(--pico-card-background-color, #1e1e2e);
-}
-
-.dt-card--clickable {
-  cursor: pointer;
-  transition: background 0.1s;
-}
-
-.dt-card--clickable:hover {
-  background: var(--pico-card-sectioning-background-color, rgba(255, 255, 255, 0.04));
-}
-
-.dt-card--clickable:focus-visible {
-  outline: 2px solid var(--pico-primary, #7c6aff);
-  outline-offset: 2px;
-}
-
-.dt-card__field {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
-  font-size: 0.875rem;
-  align-items: baseline;
-}
-
-.dt-card__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--pico-muted-color, #aaa);
-  flex-shrink: 0;
-  min-width: 5rem;
-}
-
-.dt-card__value {
-  color: var(--pico-color, #ddd);
-  word-break: break-word;
-}
-
-.dt-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--pico-muted-border-color, #333);
-}
-
-.dt-card__actions .dt-action-btn {
-  flex: 1;
-  min-width: 80px;
-  text-align: center;
-  min-height: 44px; /* mobile touch target */
-}
-
-/* Empty state for card list */
-.dt-empty {
-  color: var(--pico-muted-color, #aaa);
-  font-style: italic;
-  text-align: center;
-  padding: 2rem 0;
-}
-
-/* Mobile-hidden columns — not rendered in card JS, no CSS needed */
-.dt-th--hide-mobile,
-.dt-td--hide-mobile {
-  /* These classes are present in the table for completeness; table is hidden
-     on mobile anyway. The JS does not emit these cells in card layout. */
-}
-
-/* ---------------------------------------------------------------------------
-   Loading skeleton shimmer
-   --------------------------------------------------------------------------- */
-
-@keyframes dt-shimmer {
-  0%   { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
-}
-
-.dt-skeleton {
-  padding: 0.5rem 0;
-}
-
-.dt-skeleton__row {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.dt-skeleton__cell {
-  flex: 1;
-  height: 1.2rem;
-  border-radius: 0.25rem;
-  background: linear-gradient(
-    90deg,
-    var(--pico-muted-border-color, #333) 25%,
-    var(--pico-card-sectioning-background-color, #3a3a4a) 50%,
-    var(--pico-muted-border-color, #333) 75%
-  );
-  background-size: 400px 100%;
-  animation: dt-shimmer 1.4s ease-in-out infinite;
-}
-
-/* ---------------------------------------------------------------------------
-   Text utility classes — Story 8.1.6
-   Semantic helpers for consistent text color across views.
-   --------------------------------------------------------------------------- */
-
-/* Body text — readable on dark backgrounds (same as --pico-color) */
-.text-body {
-  color: var(--pico-color, #ddd);
-}
-
-/* Muted text — metadata, timestamps, secondary info */
-.text-muted {
-  color: var(--pico-muted-color, #aaa);
-}
-
-/* Label text — small uppercase headings, field labels */
-.text-label {
-  color: var(--pico-muted-color, #aaa);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-/* ---------------------------------------------------------------------------
-   GM Sessions view — DataTable + session-specific styles (Story 8.4.3)
-   --------------------------------------------------------------------------- */
-
-/* View container header (title + create button) */
-.sessions-view__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.sessions-view__header h2 {
-  margin: 0;
-}
-
-/* ---- Session status badges -----------------------------------------------
-   Reuse the same visual pattern as .proposal-status-badge.
-   Three status-specific modifiers: active (green), draft (neutral), ended (muted).
-   --------------------------------------------------------------------------- */
-
-.session-status-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.session-status-badge--active  { background: var(--we-ft-green, #27ae60);   color: #fff; }
-.session-status-badge--draft   { background: var(--pico-muted-border-color, #555); color: var(--pico-color, #ddd); }
-.session-status-badge--ended   { background: var(--pico-card-sectioning-background-color, #2a2a3a); color: var(--pico-muted-color, #aaa); }
-.session-status-badge--unknown { background: var(--pico-muted-border-color, #555); color: var(--pico-color, #ddd); }
-
-/* ---- Participant avatar circles ------------------------------------------
-   Overlapping initials circles.  Each avatar is a fixed-size circle with
-   a negative left margin to create the overlap effect.
-   --------------------------------------------------------------------------- */
-
-.session-participants {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.session-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 50%;
-  background: var(--pico-primary, #7c6aff);
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border: 2px solid var(--pico-background-color, #1a1a2e);
-  margin-left: -0.5rem;
-  cursor: default;
-}
-
-/* First avatar has no negative margin */
-.session-avatar:first-child {
-  margin-left: 0;
-}
-
-/* Overflow pill (+N) — slightly muted background */
-.session-avatar--overflow {
-  background: var(--pico-muted-border-color, #555);
-  color: var(--pico-muted-color, #aaa);
-  font-size: 0.65rem;
-}
-
-/* Empty state placeholder */
-.session-participants--empty {
-  color: var(--pico-muted-color, #aaa);
-}
-
-/* ---- Per-row action buttons -----------------------------------------------
-   Compact button group inside the Actions column.
-   --------------------------------------------------------------------------- */
-
-.session-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
-}
-
-.session-row-btn {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  white-space: nowrap;
-}
-
-/* ---- Sessions form --------------------------------------------------------
-   Tighter spacing for inline create/edit forms, matching modern form pattern.
-   --------------------------------------------------------------------------- */
-
-.sessions-form label {
-  display: block;
-  margin-bottom: 0.75rem;
-}
-
-.sessions-form label input,
-.sessions-form label textarea,
-.sessions-form label select {
-  margin-top: 0.25rem;
-}
-
-.sessions-form__actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-.gm-feed__link:hover {
-  text-decoration: underline;
-}
-
-/* Changes summary — truncated with tooltip */
-.gm-feed__changes {
-  font-size: 0.8rem;
-  color: var(--pico-muted-color, #bbb);
-  cursor: default;
-}
-
-/* Narrative — truncated with tooltip */
-.gm-feed__narrative {
-  font-size: 0.8rem;
-  color: var(--pico-color, #eee);
-  font-style: italic;
-  cursor: default;
-}
-
-/* Load more button */
-.gm-feed__load-more {
-  margin-top: 1rem;
-  text-align: center;
-}
-
-.gm-feed__load-more button {
-  min-width: 140px;
-   Game Objects browser — Character sub-tabs (All | PCs | NPCs)
-   Story 8.4.2
-   --------------------------------------------------------------------------- */
-
-.world-sub-tabs {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--pico-muted-border-color, #444);
-}
-
-.world-sub-tab {
-  flex: 0 0 auto;
-  padding: 0.35rem 0.85rem;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--pico-muted-color, #aaa);
-  cursor: pointer;
-  min-height: 36px;
-  white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
-  margin-bottom: -1px;
-}
-
-.world-sub-tab:hover {
-  color: var(--pico-primary, #7c6aff);
-}
-
-.world-sub-tab--active {
-  color: var(--pico-primary, #7c6aff);
-  border-bottom-color: var(--pico-primary, #7c6aff);
-}
-
-/* DataTable container inside the world browser */
-.world-dt-container {
-  width: 100%;
-}
-
-/* Badges in DataTable cells — PC/NPC, Tier */
-.world-dt-badge {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
-  line-height: 1.4;
-}
-
-.world-dt-badge--pc {
-  background: rgba(39, 174, 96, 0.2);
-  color: var(--we-ft-green, #27ae60);
-  border: 1px solid rgba(39, 174, 96, 0.4);
-}
-
-.world-dt-badge--npc {
-  background: rgba(170, 170, 170, 0.1);
-  color: var(--pico-muted-color, #aaa);
-  border: 1px solid rgba(170, 170, 170, 0.25);
-}
-
-.world-dt-badge--tier {
-  background: rgba(41, 128, 185, 0.15);
-  color: var(--we-gnosis-blue, #2980b9);
-  border: 1px solid rgba(41, 128, 185, 0.35);
-}
-
-/* Star button inside DataTable cells */
-.world-dt-star-btn {
-  background: none;
-  border: none;
-  padding: 0 0.25rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  color: var(--pico-muted-color, #aaa);
-  line-height: 1;
-  min-height: 32px;
-  min-width: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  transition: color 0.15s;
-}
-
-.world-dt-star-btn:hover {
-  color: var(--we-plot-amber, #f39c12);
-}
-
-.world-dt-star-btn[data-starred="true"] {
-  color: var(--we-plot-amber, #f39c12);
-}
-
-.world-dt-star-btn:focus-visible {
-  outline: 2px solid var(--pico-primary, #7c6aff);
-  outline-offset: 1px;
-}
-
-/* Mobile touch target for star in cards */
-@media (max-width: 599px) {
-  .world-dt-star-btn {
-    min-height: 40px;
-    min-width: 40px;
-    font-size: 1.25rem;
-  }
-}
-=======
-.exp-item__action-btn--secondary {
-  border-color: var(--pico-muted-border-color, #555);
-  color: var(--pico-muted-color, #aaa);
-}
-
-.exp-item__action-btn--secondary:hover,
-.exp-item__action-btn--secondary:focus-visible {
-  background: var(--pico-muted-border-color, #555);
-  color: var(--pico-color, #ddd);
-}
-
-/* Bond variant — warm amber accent on trigger border */
-.exp-item--bond {
-  border-color: var(--we-plot-amber, #f39c12);
-  border-left-width: 3px;
-}
-
-/* Trauma bond — stress-red left border */
-.exp-item--bond.exp-item--trauma {
-  border-color: var(--we-stress-red, #c0392b);
-}
-
-/* Partner link inside expanded bond body */
-.exp-item__partner-link {
-  color: var(--pico-primary, #7c6aff);
-  text-decoration: none;
-  font-size: 0.875rem;
-}
-
-.exp-item__partner-link:hover,
-.exp-item__partner-link:focus-visible {
-  text-decoration: underline;
-}

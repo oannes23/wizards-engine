@@ -17,8 +17,8 @@ Overhaul the character detail views (both player's own character sheet and world
 
 | Story | Status | Completed |
 |-------|--------|-----------|
-| 8.5.1 — Restructure Character Detail Layout | 🔴 Not started | — |
-| 8.5.2 — Expandable Trait and Bond Cards | 🔴 Not started | — |
+| 8.5.1 — Restructure Character Detail Layout | 🟢 Complete | 2026-03-22 |
+| 8.5.2 — Expandable Trait and Bond Cards | 🟢 Complete | 2026-03-22 |
 | 8.5.3 — Character Events Feed at Bottom | 🔴 Not started | — |
 | 8.5.4 — Trait and Bond Inline Edit Forms | 🔴 Not started | — |
 

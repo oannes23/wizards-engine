@@ -18,8 +18,8 @@ Transform the GM Event Feed from a low-density card stream into a rich, sortable
 | Story | Status | Completed |
 |-------|--------|-----------|
 | 8.3.1 — Backend: Add Sort Params and Denormalized Names to Events API | 🟢 Complete | 2026-03-22 |
-| 8.3.2 — Frontend: GM Event Feed as Rich Data Table | 🔴 Not started | — |
-| 8.3.3 — Keep Player Feed Card-Based with Minor Enrichments | 🔴 Not started | — |
+| 8.3.2 — Frontend: GM Event Feed as Rich Data Table | 🟢 Complete | 2026-03-22 |
+| 8.3.3 — Keep Player Feed Card-Based with Minor Enrichments | 🟢 Complete | 2026-03-22 |
 
 ### Story 8.3.1 — Backend: Add Sort Params and Denormalized Names to Events API
 

@@ -199,4 +199,10 @@ Phase 7 (sequential, depends on all prior phases)
 | 6.5 — GM Tools & Session Management | 🟢 Complete | 5/5 |
 | 6.6 — Polish & Integration | 🟢 Complete | 3/3 |
 | 7.1 — Campaign Import/Export & Notes Ingestion | 🟢 Complete | 8/8 |
-| 8.5 — Character Detail View Overhaul | 🟡 In progress | 1/4 |
+| 8.1 — Shared Infrastructure & Bug Fixes | 🟢 Complete | 8/8 |
+| 8.2 — GM Queue Tab Redesign | 🟡 In progress | 3/4 |
+| 8.3 — Event Feed Redesign | 🟡 In progress | 2/3 |
+| 8.4 — Game Objects Browser Redesign | 🟡 In progress | 1/4 |
+| 8.5 — Character Detail View Overhaul | 🟡 In progress | 2/4 |
+| 8.6 — Game Object CRUD Forms | 🔴 Not started | 0/3 |
+| 8.7 — Comprehensive Example Campaign Data | 🟡 In progress | 1/3 |

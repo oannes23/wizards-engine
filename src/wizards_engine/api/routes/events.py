@@ -49,6 +49,15 @@ _SORT_COLUMN = {
 # ---------------------------------------------------------------------------
 
 
+_SORT_COLUMNS = {
+    "created_at": Event.created_at,
+    "type": Event.type,
+    "actor_type": Event.actor_type,
+}
+
+_VALID_SORT_DIRS = {"asc", "desc"}
+
+
 @router.get(
     "/events",
     response_model=PaginatedResponse[EventResponse],

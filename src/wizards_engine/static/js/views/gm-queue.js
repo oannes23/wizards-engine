@@ -31,12 +31,19 @@ window.views.gmQueue = (function () {
   var POLL_INTERVAL_MS = 30000;
   var PROPOSALS_URL = "/api/v1/proposals?status=pending";
 
+  var QUEUE_SUMMARY_POLL_KEY = "gm-queue-summary";
+  var QUEUE_SUMMARY_POLL_INTERVAL_MS = 60000;
+  var QUEUE_SUMMARY_URL = "/api/v1/gm/queue-summary";
+
   // ---------------------------------------------------------------------------
   // Private state
   // ---------------------------------------------------------------------------
 
   /** Currently rendered proposals list. Mutated by fetch/approve/reject. */
   var _proposals = [];
+
+  /** PC cards from /gm/queue-summary — array of PCQueueCard objects. */
+  var _pcCards = [];
 
   /** ID of the currently expanded proposal card, or null. */
   var _expandedId = null;
@@ -89,6 +96,155 @@ window.views.gmQueue = (function () {
 
 
   // ---------------------------------------------------------------------------
+  // PC card grid rendering
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Format an event type string into a human-readable label.
+   * Converts underscores to spaces and title-cases the result.
+   *
+   * @param {string} eventType — e.g. "use_skill", "gm_direct_action"
+   * @returns {string}
+   */
+  function _formatEventType(eventType) {
+    if (!eventType) return "";
+    return String(eventType)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  /**
+   * Render a single PC queue card as an HTML string.
+   *
+   * @param {object} card — PCQueueCard from the API
+   * @returns {string} HTML string
+   */
+  function _renderPcCard(card) {
+    var esc = window.utils.esc;
+    var relativeTime = window.utils.relativeTime;
+
+    var id = card.id || "";
+    var name = card.name || "Unknown";
+    var stress = card.stress || 0;
+    var stressMax = card.stress_max || 9;
+    var freeTime = card.free_time || 0;
+    var freeTimeMax = card.free_time_max || 20;
+    var plot = card.plot || 0;
+    var plotMax = card.plot_max || 5;
+    var gnosis = card.gnosis || 0;
+    var gnosisMax = card.gnosis_max || 23;
+
+    // Stress proximity alert: within 2 of effective max
+    var margin = stressMax - stress;
+    var isAlert = margin <= 2;
+    var cardClass = "queue-pc-card" + (isAlert ? " queue-pc-card--alert" : "");
+
+    // Meter bars — compact rendering via meterBar component
+    var stressBar = window.components.meterBar.render({
+      label: "Stress",
+      current: stress,
+      max: stressMax,
+      color: "var(--we-stress-red, #c0392b)",
+    });
+    var ftBar = window.components.meterBar.render({
+      label: "FT",
+      current: freeTime,
+      max: freeTimeMax,
+      color: "var(--we-ft-green, #27ae60)",
+    });
+    var plotBar = window.components.meterBar.render({
+      label: "Plot",
+      current: plot,
+      max: plotMax,
+      color: "var(--we-plot-amber, #f39c12)",
+    });
+    var gnosisBar = window.components.meterBar.render({
+      label: "Gnosis",
+      current: gnosis,
+      max: gnosisMax,
+      color: "var(--we-gnosis-blue, #2980b9)",
+    });
+
+    // Low-charge badges
+    var lowChargeItems = (card.low_charge_traits || []).concat(card.low_charge_bonds || []);
+    var badgesHtml = "";
+    if (lowChargeItems.length > 0) {
+      for (var i = 0; i < lowChargeItems.length; i++) {
+        var item = lowChargeItems[i];
+        badgesHtml +=
+          '<span class="queue-alert" title="' + esc(item.slot_type) + ' — charge: ' + esc(item.charge) + '">' +
+            esc(item.name) +
+          '</span>';
+      }
+    }
+
+    // Recent events
+    var recentEvents = card.recent_events || [];
+    var eventsHtml = "";
+    if (recentEvents.length === 0) {
+      eventsHtml = '<p class="queue-pc-card__no-events">No recent events</p>';
+    } else {
+      for (var j = 0; j < recentEvents.length; j++) {
+        var evt = recentEvents[j];
+        eventsHtml +=
+          '<div class="queue-pc-event-row">' +
+            '<span class="queue-pc-event-row__type">' + esc(_formatEventType(evt.type)) + '</span>' +
+            '<span class="queue-pc-event-row__time">' + esc(relativeTime(evt.created_at)) + '</span>' +
+          '</div>';
+      }
+    }
+
+    // Character detail link — use GM world characters route
+    var detailHash = "#/gm/world/characters/" + esc(id);
+
+    return (
+      '<div class="' + cardClass + '">' +
+        '<p class="queue-pc-card__name">' +
+          '<a href="' + detailHash + '">' + esc(name) + '</a>' +
+        '</p>' +
+        '<div class="queue-pc-card__meters">' +
+          stressBar +
+          ftBar +
+          plotBar +
+          gnosisBar +
+        '</div>' +
+        (lowChargeItems.length > 0
+          ? '<div class="queue-pc-card__badges">' + badgesHtml + '</div>'
+          : '') +
+        '<div class="queue-pc-card__events">' +
+          '<p class="queue-pc-card__events-label">Recent events</p>' +
+          eventsHtml +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  /**
+   * Render the PC card grid section as an HTML string.
+   * Returns empty string if there are no PC cards.
+   *
+   * @param {Array} pcCards
+   * @returns {string} HTML string
+   */
+  function _renderPcGrid(pcCards) {
+    if (!pcCards || pcCards.length === 0) {
+      return "";
+    }
+
+    var cardsHtml = "";
+    for (var i = 0; i < pcCards.length; i++) {
+      cardsHtml += _renderPcCard(pcCards[i]);
+    }
+
+    return (
+      '<p class="queue-section-heading">Player Characters</p>' +
+      '<div class="queue-pc-grid">' +
+        cardsHtml +
+      '</div>'
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -104,13 +260,16 @@ window.views.gmQueue = (function () {
     var html =
       '<div class="gm-queue">' +
         '<hgroup>' +
-          '<h2>Proposal Queue</h2>' +
+          '<h2>GM Queue</h2>' +
           '<p class="gm-queue__subtitle">' +
             (sorted.length === 0
               ? 'No pending proposals'
               : sorted.length + ' pending proposal' + (sorted.length === 1 ? '' : 's')) +
           '</p>' +
-        '</hgroup>';
+        '</hgroup>' +
+        _renderPcGrid(_pcCards);
+
+    html += '<p class="queue-section-heading">Pending Proposals</p>';
 
     if (sorted.length === 0) {
       html +=
@@ -261,6 +420,36 @@ window.views.gmQueue = (function () {
         if (!_mounted) return;
         _renderError();
       });
+  }
+
+  /**
+   * Fetch the queue summary (PC cards) from /gm/queue-summary and re-render.
+   * Called on mount and by the 60s poll callback.
+   * Failures are silent — the PC grid simply won't update.
+   */
+  function _fetchQueueSummary() {
+    if (!_mounted) return;
+
+    api
+      .get(QUEUE_SUMMARY_URL)
+      .then(function (data) {
+        if (!_mounted) return;
+        _pcCards = (data && data.pc_cards) ? data.pc_cards : [];
+        _renderList();
+      })
+      .catch(function () {
+        // Best-effort — do not change render state on error
+      });
+  }
+
+  /**
+   * Poll callback for queue-summary.
+   * @param {object} data — parsed response from GET /api/v1/gm/queue-summary
+   */
+  function _queueSummaryPollCallback(data) {
+    if (!_mounted) return;
+    _pcCards = (data && data.pc_cards) ? data.pc_cards : [];
+    _renderList();
   }
 
   // ---------------------------------------------------------------------------
@@ -440,9 +629,11 @@ window.views.gmQueue = (function () {
     _mounted = false;
     _expandedId = null;
     _inflightIds = {};
+    _pcCards = [];
 
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       Alpine.store("app").unregisterPoll(POLL_KEY);
+      Alpine.store("app").unregisterPoll(QUEUE_SUMMARY_POLL_KEY);
     }
 
     // Clear the queue badge when leaving the view
@@ -480,18 +671,29 @@ window.views.gmQueue = (function () {
     // Reset state for a fresh mount
     _mounted = true;
     _proposals = [];
+    _pcCards = [];
     _expandedId = null;
     _inflightIds = {};
 
-    // Initial fetch
+    // Initial fetch — proposals (shows loading state) + queue-summary (background)
     _fetchProposals(true);
+    _fetchQueueSummary();
 
-    // Register 30-second polling
+    // Register 30-second polling for proposals
     if (typeof Alpine !== "undefined" && Alpine.store("app")) {
       Alpine.store("app").registerPoll(POLL_KEY, {
         url: PROPOSALS_URL,
         intervalMs: POLL_INTERVAL_MS,
         callback: _pollCallback,
+      });
+    }
+
+    // Register 60-second polling for queue-summary (PC cards)
+    if (typeof Alpine !== "undefined" && Alpine.store("app")) {
+      Alpine.store("app").registerPoll(QUEUE_SUMMARY_POLL_KEY, {
+        url: QUEUE_SUMMARY_URL,
+        intervalMs: QUEUE_SUMMARY_POLL_INTERVAL_MS,
+        callback: _queueSummaryPollCallback,
       });
     }
 

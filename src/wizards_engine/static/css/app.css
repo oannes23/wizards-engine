@@ -1291,6 +1291,158 @@ main.container {
   gap: 0.75rem;
 }
 
+/* ---------------------------------------------------------------------------
+   PC card grid — 3-column responsive grid in the GM Queue view
+   --------------------------------------------------------------------------- */
+
+.queue-pc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.queue-pc-card {
+  padding: 0.75rem;
+  border: 1px solid var(--pico-muted-border-color, #333);
+  border-radius: 0.375rem;
+  background: var(--pico-card-background-color, #1e1e2e);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Red border highlight for PCs within 2 of effective stress max */
+.queue-pc-card--alert {
+  border-color: var(--we-stress-red, #c0392b);
+  box-shadow: 0 0 0 1px var(--we-stress-red, #c0392b);
+}
+
+.queue-pc-card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-pc-card__name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.queue-pc-card__name a:hover {
+  text-decoration: underline;
+  color: var(--pico-primary, #7c6aff);
+}
+
+.queue-pc-card__meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Compact meter bars inside PC cards — reduce spacing vs full meter-bar */
+.queue-pc-card .meter-bar {
+  margin: 0;
+}
+
+.queue-pc-card .meter-bar__header {
+  font-size: 0.75rem;
+  margin-bottom: 0.1rem;
+}
+
+.queue-pc-card .meter-bar__track {
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.queue-pc-card .meter-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+/* Low-charge badge list */
+.queue-pc-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.queue-alert {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--we-stress-red, #c0392b);
+  color: #fff;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Recent events list inside PC card */
+.queue-pc-card__events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-top: 1px solid var(--pico-muted-border-color, #333);
+  padding-top: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.queue-pc-card__events-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pico-muted-color, #aaa);
+  margin-bottom: 0.1rem;
+}
+
+.queue-pc-event-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.queue-pc-event-row__type {
+  color: var(--pico-color, #eee);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.queue-pc-event-row__time {
+  color: var(--pico-muted-color, #aaa);
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.queue-pc-card__no-events {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color, #aaa);
+  font-style: italic;
+}
+
+/* PC grid section heading */
+.queue-section-heading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color, #aaa);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
 /* Success toast — dispatched by gm-queue view on approve/reject */
 #api-success-toast {
   position: fixed;

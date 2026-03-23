@@ -29,6 +29,7 @@ from wizards_engine.services.exceptions import (
     InsufficientResources,
     NotFoundError,
 )
+from wizards_engine.services.proposal.constants import FREE_TIME_MAX
 
 __all__ = [
     "execute_find_time",
@@ -104,7 +105,7 @@ def execute_find_time(
         )
 
     ft_before: int = character.free_time or 0
-    if ft_before >= 20:
+    if ft_before >= FREE_TIME_MAX:
         raise InsufficientResources(
             "free_time_at_cap",
             "Character's Free Time is already at the cap of 20.",

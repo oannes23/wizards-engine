@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.character import Character
 from wizards_engine.models.clock import Clock
 from wizards_engine.models.proposal import Proposal
+from wizards_engine.services.proposal.constants import STRESS_MAX
 from wizards_engine.services.shared import count_trauma_bonds
 
 __all__ = [
@@ -127,7 +128,7 @@ def get_stress_proximity(db: Session) -> list[dict]:
     results = []
     for char in characters:
         trauma_count = count_trauma_bonds(db, char.id)
-        effective_max = 9 - trauma_count
+        effective_max = STRESS_MAX - trauma_count
         current_stress = char.stress or 0
         if effective_max - current_stress <= 2:
             results.append({

@@ -54,6 +54,7 @@ from wizards_engine.schemas.gm_actions import (
 from wizards_engine.services.bond import create_bond as bond_service_create
 from wizards_engine.services.event import VALID_VISIBILITY_LEVELS, create_event
 from wizards_engine.services.magic_effect import create_effect as effect_service_create
+from wizards_engine.services.proposal.constants import FREE_TIME_MAX, GNOSIS_MAX, STRESS_MAX
 from wizards_engine.services.shared import count_trauma_bonds, has_pending_resolve_trauma
 
 __all__ = [
@@ -80,10 +81,10 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 _METER_RANGES: dict[str, tuple[int, int]] = {
-    "stress": (0, 9),
-    "free_time": (0, 20),
+    "stress": (0, STRESS_MAX),
+    "free_time": (0, FREE_TIME_MAX),
     "plot": (0, 10_000),  # spec says >=0; use a large upper bound
-    "gnosis": (0, 23),
+    "gnosis": (0, GNOSIS_MAX),
 }
 
 _SKILL_RANGE: tuple[int, int] = (0, 3)
@@ -309,7 +310,7 @@ def handle_modify_character(
     # ------------------------------------------------------------------
     if character.stress is not None and ch.stress is not None:
         trauma_count = count_trauma_bonds(db, character.id)
-        effective_max = 9 - trauma_count
+        effective_max = STRESS_MAX - trauma_count
         if character.stress >= effective_max:
             if not has_pending_resolve_trauma(db, character.id):
                 proposal = Proposal(
@@ -372,7 +373,7 @@ def _meter_range_for_field(
     """
     if field == "stress":
         trauma_count = count_trauma_bonds(db, character.id)
-        return (0, 9 - trauma_count)
+        return (0, STRESS_MAX - trauma_count)
     return _METER_RANGES[field]
 
 

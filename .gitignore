@@ -215,3 +215,6 @@ __marimo__/
 
 # Real campaign data (private, not committed)
 wizards-campaign-data/
+.claude/worktrees/
+wizards-notes/
+.DS_Store

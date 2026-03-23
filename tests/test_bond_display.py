@@ -312,6 +312,35 @@ class TestGetBondsDisplayForEntity:
         assert len(result["active"]) == 1
         assert len(result["past"]) == 1
 
+    def test_owned_only_excludes_inbound_bonds(self, db: Session) -> None:
+        """When owned_only=True, inbound bidirectional bonds are excluded."""
+        pc_a = _full_pc(db, "A")
+        pc_b = _full_pc(db, "B")
+        create_bond(db, "character", pc_a.id, "character", pc_b.id)
+
+        # B does NOT own this bond — owned_only=True should return nothing.
+        result = get_bonds_display_for_entity(db, "character", pc_b.id, owned_only=True)
+        assert len(result["active"]) == 0
+
+    def test_owned_only_includes_outbound_bonds(self, db: Session) -> None:
+        """When owned_only=True, bonds owned by the entity are still included."""
+        pc_a = _full_pc(db, "A")
+        pc_b = _full_pc(db, "B")
+        create_bond(db, "character", pc_a.id, "character", pc_b.id)
+
+        # A owns the bond — it should appear with owned_only=True.
+        result = get_bonds_display_for_entity(db, "character", pc_a.id, owned_only=True)
+        assert len(result["active"]) == 1
+
+    def test_owned_only_false_still_merges_inbound(self, db: Session) -> None:
+        """Default owned_only=False still includes inbound bidirectional bonds."""
+        pc_a = _full_pc(db, "A")
+        pc_b = _full_pc(db, "B")
+        create_bond(db, "character", pc_a.id, "character", pc_b.id)
+
+        result = get_bonds_display_for_entity(db, "character", pc_b.id, owned_only=False)
+        assert len(result["active"]) == 1
+
 
 # ===========================================================================
 # Service-layer: get_traits_for_owner
@@ -501,10 +530,14 @@ class TestCharacterDetailBonds:
         assert len(bonds["past"]) == 1
         assert bonds["past"][0]["is_active"] is False
 
-    def test_inbound_bidirectional_bond_appears_on_target(
+    def test_inbound_bidirectional_bond_does_not_appear_on_target(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """A bidirectional bond from pc_a to pc_b shows up on pc_b's bond list."""
+        """With owned_only filtering, a bond owned by pc_a does not show on pc_b's detail page.
+
+        The detail endpoint uses owned_only=True to avoid duplicating the dyad on
+        both sides.  The bond is still visible on pc_a's own detail page.
+        """
         pc_a = seed_data["pc1"]
         pc_b = seed_data["pc3"]
         create_bond(
@@ -522,13 +555,13 @@ class TestCharacterDetailBonds:
         response = client.get(f"/api/v1/characters/{pc_b.id}")
         active_bonds = response.json()["bonds"]["active"]
         target_ids = [b["target_id"] for b in active_bonds]
-        # pc_b should see pc_a as "the other end" of this inbound bond.
-        assert pc_a.id in target_ids
+        # pc_a's bond should NOT appear on pc_b's page — only bonds pc_b owns.
+        assert pc_a.id not in target_ids
 
-    def test_inbound_bond_label_is_target_label(
+    def test_bond_owner_sees_bond_on_their_own_page(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """The inbound bond's label on pc_b is the target_label, not source_label."""
+        """The bond owner (pc_a) still sees the bond on their own detail page."""
         pc_a = seed_data["pc1"]
         pc_b = seed_data["pc3"]
         create_bond(
@@ -543,11 +576,34 @@ class TestCharacterDetailBonds:
         db.commit()
 
         auth_as(client, seed_data["gm"])
-        response = client.get(f"/api/v1/characters/{pc_b.id}")
+        response = client.get(f"/api/v1/characters/{pc_a.id}")
         active_bonds = response.json()["bonds"]["active"]
-        # Find the bond where pc_a is the other end.
-        bond_from_pc_a = next(b for b in active_bonds if b["target_id"] == pc_a.id)
-        assert bond_from_pc_a["label"] == "Their Rival"
+        target_ids = [b["target_id"] for b in active_bonds]
+        # pc_a owns the bond, so pc_b shows as pc_a's bond target.
+        assert pc_b.id in target_ids
+
+    def test_bond_owner_label_is_source_label(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """The bond owner sees their source_label on their own detail page."""
+        pc_a = seed_data["pc1"]
+        pc_b = seed_data["pc3"]
+        create_bond(
+            db,
+            "character",
+            pc_a.id,
+            "character",
+            pc_b.id,
+            source_label="My Rival",
+            target_label="Their Rival",
+        )
+        db.commit()
+
+        auth_as(client, seed_data["gm"])
+        response = client.get(f"/api/v1/characters/{pc_a.id}")
+        active_bonds = response.json()["bonds"]["active"]
+        bond_to_pc_b = next(b for b in active_bonds if b["target_id"] == pc_b.id)
+        assert bond_to_pc_b["label"] == "My Rival"
 
     def test_character_detail_still_includes_standard_fields(
         self, client: TestClient, seed_data: dict
@@ -850,10 +906,14 @@ class TestLocationDetailBonds:
 class TestPerspectiveNormalizationRoundTrip:
     """Bidirectional bond labels appear correctly from both endpoints."""
 
-    def test_bidirectional_bond_different_labels_each_side(
+    def test_bidirectional_bond_owner_sees_source_label(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """A bidirectional bond between two PCs shows different labels from each side."""
+        """The bond owner (pc_a) sees their source_label on their own detail page.
+
+        With owned_only filtering, only the owner sees the bond on their detail
+        page.  The partner (pc_b) navigates to pc_a's page to view it.
+        """
         pc_a = seed_data["pc1"]
         pc_b = seed_data["pc3"]
         create_bond(
@@ -869,22 +929,26 @@ class TestPerspectiveNormalizationRoundTrip:
 
         auth_as(client, seed_data["gm"])
 
-        # From pc_a's side: label = "My Rival", target = pc_b
+        # From pc_a's side (the owner): label = "My Rival", target = pc_b
         resp_a = client.get(f"/api/v1/characters/{pc_a.id}")
         a_bonds = resp_a.json()["bonds"]["active"]
         bond_a = next(b for b in a_bonds if b["target_id"] == pc_b.id)
         assert bond_a["label"] == "My Rival"
 
-        # From pc_b's side: label = "Their Rival", target = pc_a
+        # pc_b does not own this bond — it does not appear on pc_b's page.
         resp_b = client.get(f"/api/v1/characters/{pc_b.id}")
         b_bonds = resp_b.json()["bonds"]["active"]
-        bond_b = next(b for b in b_bonds if b["target_id"] == pc_a.id)
-        assert bond_b["label"] == "Their Rival"
+        target_ids = [b["target_id"] for b in b_bonds]
+        assert pc_a.id not in target_ids
 
-    def test_group_group_bond_bidirectional_both_see_it(
+    def test_group_group_bond_owner_sees_it_peer_does_not(
         self, client: TestClient, seed_data: dict, db: Session
     ) -> None:
-        """A bidirectional group-group bond appears on both groups' bond lists."""
+        """A group-group bond appears on the owning group's bonds list, not on the peer's.
+
+        With owned_only filtering, the peer group does not see the bond unless
+        they own their own bond back to the first group.
+        """
         group = seed_data["group"]
         peer = _group(db, "Rival Syndicate")
         create_bond(
@@ -900,20 +964,19 @@ class TestPerspectiveNormalizationRoundTrip:
 
         auth_as(client, seed_data["gm"])
 
+        # Owning group sees the bond with peer as target.
         resp_group = client.get(f"/api/v1/groups/{group.id}")
         group_bonds = resp_group.json()["bonds"]["active"]
-        # Group should see the bond with peer as target
         peer_bond_on_group = next(
             (b for b in group_bonds if b["target_id"] == peer.id), None
         )
         assert peer_bond_on_group is not None
         assert peer_bond_on_group["label"] == "Rivals"
 
+        # Peer group does not own the bond — it should not appear on peer's page.
         resp_peer = client.get(f"/api/v1/groups/{peer.id}")
         peer_bonds = resp_peer.json()["bonds"]["active"]
-        # Peer should see the bond with group as "target" (the other end from peer's view)
         group_bond_on_peer = next(
             (b for b in peer_bonds if b["target_id"] == group.id), None
         )
-        assert group_bond_on_peer is not None
-        assert group_bond_on_peer["label"] == "Competitors"
+        assert group_bond_on_peer is None

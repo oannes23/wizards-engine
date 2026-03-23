@@ -1078,38 +1078,47 @@ def get_bonds_display_for_entity(
     db: Session,
     entity_type: str,
     entity_id: str,
+    owned_only: bool = False,
 ) -> dict[str, list["BondDisplayResponse"]]:
-    """Return all bonds for a Game Object, grouped by active/past status.
+    """Return bonds for a Game Object, grouped by active/past status.
 
-    Merges outbound bonds and inbound bidirectional bonds into a single list,
-    normalized to the viewer's perspective.  Returns a dict with two keys:
+    By default merges outbound bonds and inbound bidirectional bonds into a
+    single list, normalized to the viewer's perspective.  When
+    ``owned_only=True``, only bonds where the entity is the owner are
+    returned — inbound bidirectional bonds are excluded.
+
+    Returns a dict with two keys:
 
     - ``"active"``: current bonds (``is_active = True``).
     - ``"past"``: retired bonds (``is_active = False``).
 
-    Both owned bonds and inbound bidirectional bonds from other owners are
-    included.  Perspective normalization is applied via
-    :func:`build_bond_display`.
+    Perspective normalization is applied via :func:`build_bond_display`.
 
     Args:
         db: Active SQLAlchemy session.
         entity_type: ``"character"``, ``"group"``, or ``"location"``.
         entity_id: ULID of the Game Object.
+        owned_only: When ``True``, skip inbound bond query and return only
+            bonds where the entity is the owner.  Defaults to ``False``.
 
     Returns:
         Dict with ``"active"`` and ``"past"`` lists of
         :class:`~wizards_engine.schemas.bond.BondDisplayResponse`.
     """
     owned = get_bonds_for_owner(db, entity_type, entity_id, include_inactive=True)
-    inbound = get_inbound_bonds(db, entity_type, entity_id, include_inactive=True)
 
-    # Merge and deduplicate by bond ID.
-    seen: set[str] = set()
-    all_bonds: list[Slot] = []
-    for bond in owned + inbound:
-        if bond.id not in seen:
-            seen.add(bond.id)
-            all_bonds.append(bond)
+    if owned_only:
+        all_bonds: list[Slot] = owned
+    else:
+        inbound = get_inbound_bonds(db, entity_type, entity_id, include_inactive=True)
+
+        # Merge and deduplicate by bond ID.
+        seen: set[str] = set()
+        all_bonds = []
+        for bond in owned + inbound:
+            if bond.id not in seen:
+                seen.add(bond.id)
+                all_bonds.append(bond)
 
     active: list[BondDisplayResponse] = []
     past: list[BondDisplayResponse] = []

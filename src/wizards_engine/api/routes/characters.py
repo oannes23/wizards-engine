@@ -288,7 +288,7 @@ def get_character(
     if character is None:
         raise_not_found("Character", character_id)
 
-    bonds_raw = get_bonds_display_for_entity(db, "character", character_id)
+    bonds_raw = get_bonds_display_for_entity(db, "character", character_id, owned_only=True)
     bonds = BondGroups(
         active=bonds_raw["active"],
         past=bonds_raw["past"],

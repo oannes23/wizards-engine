@@ -25,3 +25,24 @@ relations:
   - name: Target
     target: Iron Compact
     description: The Compact is monitoring the resistance. The timeline for suppression is unclear.
+  - name: Dependency
+    target: Olympian Assembly
+    description: >
+      If the Assembly rules against the Iron Compact, the Troikas coup
+      loses its divine legitimacy cover. The resistance is watching the
+      divine court proceedings through Kassian's informal communications.
+holdings:
+  - name: Academic Quarter Safehouses
+    target: Troikas
+    description: >
+      Three rented rooms in the Academic Quarter that Phila uses as
+      meeting points and dead-drop locations. All maintained under
+      false names through philosopher contacts. One is likely known
+      to the Compact's informant.
+  - name: Merchant Quarter Supply Cache
+    target: Troikas
+    description: >
+      A cache of food, documents, and limited coin maintained through
+      the sympathetic guild leaders Phila has recruited. Enough for
+      ten people to operate for three months. The guild leaders don't
+      know what they're funding exactly.

@@ -30,4 +30,42 @@ entries:
     author: "GM"
     character: null
     session: 4
+  - text: >
+      Korinna's perspective: the dead Chorus members she can still faintly hear
+      are not at peace. Several died violently and their shades retain the
+      disorientation of sudden death. She has not told Lysara this. She doesn't
+      know if it would help to know or make things worse. She is also aware that
+      hearing Chorus death-impressions is affecting her stability.
+    author: "Player Dara"
+    character: "Korinna"
+    session: 4
+  - text: >
+      Orestes locates references to three Chorus members in his documentation
+      records — their names appear as signatories on pre-purge divine-contract
+      authentications. One is still alive (this must be a survivor Lysara
+      knows). Two are not (the documentation doesn't say how he knows this,
+      but Korinna's expression when he reads the names aloud suggests she
+      confirms it through other means).
+    author: "Player Gale"
+    character: "Orestes"
+    session: 5
+  - text: >
+      Mikkos, who has been listening to this conversation, points out that the
+      Compact's information about Chorus survivors is probably coming through
+      Myrtos's network — which means there is a source somewhere. Not just
+      surveillance; someone is providing active intelligence. This is already
+      known about the Troikas resistance. The question is whether the same
+      source has Chorus contact.
+    author: "Player Evan"
+    character: "Mikkos"
+    session: 5
+  - text: >
+      Resolution point: the Scattered Chorus story cannot resolve until at least
+      three survivors are in one location and able to practice together. The
+      immediate goal shifts from "find survivors" to "find one specific survivor
+      and get her to safety." Sondra, in the fishing village east of Troikas,
+      is the closest. This becomes a concrete objective.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 5
 children: []

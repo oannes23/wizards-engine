@@ -1,0 +1,128 @@
+name: Selene
+detail_level: full
+description: >
+  An Argos city native who grew up watching the Iron Compact's administration
+  slowly displace the oracle traditions her mother practiced. She is a trained
+  urban navigator and infiltrator — the person you send when you need to move
+  through a surveilled city without leaving a trace. She is precise, economical,
+  and carries a persistent bitterness about the Compact that she channels into
+  operational effectiveness. She perceives divine presences as a heat shimmer
+  — a visual distortion that makes her blink, there and gone.
+notes: >
+  Detection method: heat shimmer — brief visual distortion before eyes
+  readjust. Argos native; knows the city's layout, sewers, unofficial routes,
+  and which guards take bribes, better than anyone in the group. Her mother
+  was a minor oracle at the city shrine — now closed. The mother is alive but
+  has stopped speaking about divine things. Selene took that as a capitulation
+  she cannot forgive, though she hasn't said this directly.
+secrets: >
+  Selene has made contact with the Iron Compact's local administrative staff —
+  not as an agent, but as a potential informant source. One clerk has been
+  providing document copies in exchange for coin. This is a significant
+  operational asset she hasn't disclosed to the full group because she doesn't
+  trust that everyone will handle the contact carefully.
+attributes:
+  magic_detection: heat shimmer visual distortion
+  hometown: Argos (full city knowledge)
+  notable_items:
+    - Set of infiltration tools (lockpicks, rope, dark cloak)
+    - Contact list written in personal cipher
+meters:
+  stress: 4
+  free_time: 0
+  plot: 2
+  gnosis: 1
+skills:
+  awareness: 3
+  composure: 2
+  influence: 2
+  finesse: 3
+  speed: 3
+  power: 1
+  knowledge: 2
+  technology: 2
+magic_stats:
+  being: {level: 0, xp: 0}
+  wyrding: {level: 1, xp: 1}
+  summoning: {level: 0, xp: 0}
+  enchanting: {level: 0, xp: 0}
+  dreaming: {level: 0, xp: 0}
+core_traits:
+  - template: Iron Memory
+    charge: 5
+  - template: Oath-Keeper
+    charge: 3
+role_traits:
+  - template: Shadow-Walker
+    charge: 1
+bonds:
+  - name: Operational Trust
+    target:
+      type: character
+      name: Enyo
+    description: >
+      Enyo's poison craft and Selene's city navigation are the group's
+      two most purely practical capabilities. They have developed a
+      working rhythm in the field that doesn't require discussion.
+    charges: 4
+  - name: Hometown Obligation
+    target:
+      type: location
+      name: Argos
+    description: >
+      Selene was born here and still has family here. The Compact's
+      administration isn't abstract to her — it's happening to people
+      she grew up with.
+    charges: 0
+    degradations: 0
+  - name: Grudging Respect
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Lysara's oracles are real and Selene believes in evidence. She
+      doesn't like the cryptic delivery but she has stopped arguing
+      that the visions are metaphor.
+    charges: 3
+  - name: Fraying Alliance
+    target:
+      type: group
+      name: Keepers of the Sacred Fire
+    description: >
+      Selene's mother had contact with the Keepers before the shrine
+      closed. Selene inherited the relationship but resents Vaela's
+      caution. She believes the Keepers are holding back.
+    charges: 1
+    degradations: 2
+  - name: Adversarial Claim
+    target:
+      type: group
+      name: Iron Compact
+    description: >
+      Personal. The Compact ended her mother's work, displaced her
+      city's governance, and she is watching it happen in real time.
+      The clerk contact is her way of fighting back within the limits
+      of her current resources.
+    charges: 0
+    degradations: 2
+magic_effects:
+  - name: City-Read
+    description: >
+      In a city she knows well, Selene can estimate crowd movements,
+      patrol schedules, and attention patterns with near-predictive
+      accuracy. Not divine — trained pattern recognition enhanced by
+      her Iron Memory trait and some latent divine heritage. In Argos
+      specifically, this is reliable enough to feel like foreknowledge.
+    effect_type: permanent
+    power_level: 1
+  - name: Still-Standing
+    description: >
+      Selene can hold herself completely motionless for extended periods —
+      breathing controlled, no fidgeting, eyes moving only when safe.
+      In the right environment she can stand in plain sight for an hour
+      without registering as present. Physical endurance, not magic,
+      though her heritage makes the stillness easier to sustain than
+      it should be.
+    effect_type: charged
+    power_level: 2
+    charges: {current: 1, max: 3}

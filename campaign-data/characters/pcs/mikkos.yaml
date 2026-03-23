@@ -1,0 +1,137 @@
+name: Mikkos
+detail_level: full
+description: >
+  A Troikas merchant's son who discovered his divine heritage when a sea-spirit
+  answered his first desperate prayer during a storm that should have killed him.
+  He survived by promising to carry the sea's messages inland — a commitment
+  he has been honoring ever since through a practice of weather-reading and
+  coastal ritual that he has developed from first principles. He is optimistic,
+  adaptable, and constitutionally incapable of holding a grudge. The group
+  finds this simultaneously invaluable and maddening. He perceives divine
+  presences as a salt-and-tide smell, even in landlocked territory.
+notes: >
+  Detection method: salt-and-tide scent — divine presences smell like the
+  sea regardless of location. Has strong merchant-quarter contacts in Troikas
+  from family connections. His mother doesn't know he survived the storm;
+  he's been traveling for eight months and hasn't sent word back. The sea-spirit
+  who answered him is a minor entity called Kyma — present at coastal approaches
+  but silent inland. Mikkos is operating far from his area of divine contact.
+attributes:
+  magic_detection: salt-and-tide scent
+  divine_contact: Kyma (minor sea-spirit, coastal proximity required)
+  notable_items:
+    - Navigation instrument (bronze astrolabe, gift from father)
+    - Water-sealed journal of sea-spirit contact records
+meters:
+  stress: 1
+  free_time: 2
+  plot: 5
+  gnosis: 6
+skills:
+  awareness: 2
+  composure: 3
+  influence: 3
+  finesse: 2
+  speed: 1
+  power: 1
+  knowledge: 2
+  technology: 3
+magic_stats:
+  being: {level: 1, xp: 1}
+  wyrding: {level: 2, xp: 2}
+  summoning: {level: 1, xp: 0}
+  enchanting: {level: 0, xp: 0}
+  dreaming: {level: 0, xp: 0}
+core_traits:
+  - template: Hero-Blooded
+    charge: 5
+  - template: Oath-Keeper
+    charge: 5
+role_traits:
+  - template: Tide-Caller
+    charge: 5
+bonds:
+  - name: Shared Purpose
+    target:
+      type: character
+      name: Enyo
+    description: >
+      Mikkos and Enyo both came from Troikas and both left under duress.
+      Different circumstances, similar outcome: they understand what
+      each other lost without needing to explain it.
+    charges: 5
+  - name: Cautious Alliance
+    target:
+      type: character
+      name: Theron
+    description: >
+      Theron's combat instincts and Mikkos's navigation instincts
+      complement each other well. They don't socialize much but trust
+      each other's professional judgment completely.
+    charges: 5
+  - name: Mutual Investment
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Mikkos has heard Lysara's oracles twice. He finds them genuinely
+      useful rather than frustratingly cryptic, which she notices.
+    charges: 4
+  - name: Family Trade Network
+    target:
+      type: group
+      name: Troikas Resistance
+    description: >
+      His father's merchant contacts overlap with the resistance's supply
+      network. He's been funneling goods their way without official
+      involvement.
+    charges: 5
+  - name: Contested Waters
+    target:
+      type: location
+      name: Argos Ford
+    description: >
+      Mikkos can feel the disruption to Aelion's watershed as a wrongness
+      in the water's behavior — the tidal patterns are inland but they
+      exist. The sluice gates are doing something that violates natural
+      water order.
+    charges: 3
+magic_effects:
+  - name: Weather Reading
+    description: >
+      Mikkos can accurately predict weather up to three days out in
+      coastal regions and one day inland. Sea-spirit contact provides
+      updates when in range; inland he extrapolates from pressure-sense
+      and wind patterns that he reads with trained sensitivity. Not
+      magic exactly — more trained divine heritage providing enhanced
+      meteorological perception.
+    effect_type: permanent
+    power_level: 2
+  - name: Calm Waters
+    description: >
+      Mikkos can negotiate a temporary calming of water bodies — rivers,
+      lakes, coastal approaches. The water considers the request and
+      usually agrees if there's no urgent reason to be agitated. Works
+      best near locations with established divine-mortal water compacts.
+      Completely ineffective on the open ocean (too much divine authority
+      for a minor contact to influence).
+    effect_type: charged
+    power_level: 3
+    charges: {current: 4, max: 4}
+  - name: Tide-Call
+    description: >
+      At coastal locations, Mikkos can request a favorable tide pattern —
+      high tide at a useful time, calm passage for a crossing, or the
+      opposite to create difficulty for pursuers. Kyma responds to this
+      when in range. Inland, the ability simply fails without effect.
+    effect_type: charged
+    power_level: 4
+    charges: {current: 2, max: 2}
+  - name: Message on the Current
+    description: >
+      Mikkos can send a short message via waterway — downstream of any
+      connected water body to a recipient he knows personally. The message
+      arrives as a distinct sensation (hearing their name in the water's
+      sound) rather than audible speech. Up to three sentences.
+    effect_type: instant
+    power_level: 1

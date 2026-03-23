@@ -27,3 +27,8 @@ bonds:
     description: >
       Knew the Chorus purge was coming and didn't warn them. Lysara doesn't
       know. Vaela supports Lysara out of guilt and genuine respect.
+  - name: Sacred Stewardship
+    target:
+      type: location
+      name: Olympos Peak
+    description: The Hidden Sanctuary is near the accessible edge of Olympos Peak. Vaela has tended it for forty years. She knows the approaches better than any mortal should.

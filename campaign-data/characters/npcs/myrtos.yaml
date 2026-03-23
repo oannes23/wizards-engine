@@ -24,3 +24,13 @@ bonds:
       type: character
       name: Enyo
     description: Views Enyo as an eventual asset. The offer remains open.
+  - name: Intelligence Network Hub
+    target:
+      type: location
+      name: Troikas
+    description: His primary operating territory. The Troikas coup was partly his operation. His informant network is densest here.
+  - name: Target Network
+    target:
+      type: group
+      name: Troikas Resistance
+    description: Active suppression project. His informant inside the resistance is waiting for activation timing.

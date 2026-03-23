@@ -1,0 +1,18 @@
+name: Argos Oracle Shrine Restoration
+segments: 6
+progress: 1
+associated_with:
+  type: location
+  name: Argos
+notes: >
+  Tracks the group's effort to restore the closed Argos oracle shrine to
+  functional use. The shrine was shut when the last independent oracle
+  died during the Chorus purge. Restoring it requires clearing the
+  Compact's administrative seal (segment 1 — partially done through
+  Orestes's documentation), finding a qualified oracle to operate it
+  (segment 2), performing the re-consecration ritual (segment 3),
+  securing divine recognition from at least one Olympian (segment 4),
+  establishing a cell of oracle-capable practitioners (segment 5), and
+  formally reopening with public ceremony (segment 6). The restored shrine
+  would also strengthen Lysara's prophetic clarity and provide a location
+  the Keepers could use as a secondary archive.

@@ -1,0 +1,128 @@
+name: Korinna
+detail_level: full
+description: >
+  A former Chorus oracle who survived the purge by fleeing into the Undermarsh
+  border territories, where she made contact with chthonic forces she still
+  doesn't fully understand. She emerged changed: her oracular gifts deepened
+  but her connection to the living world grew thin. She moves through crowds
+  like someone who has forgotten she is visible. Her divine perception registers
+  as an overwhelming cold — not just chthonic presences but all divine force,
+  now, feels like deep water pressing against her.
+notes: >
+  Detection method: pressure — all divine presence feels like being submerged
+  in cold deep water. The Undermarsh experience left marks she hasn't disclosed:
+  she can hear whispers from recent corpses within a day of their death. The
+  practical utility is real and the psychological cost is also real. She has
+  been operating at near-maximum stress since arriving with the group because
+  the Iron Compact's territory is permeated with suppressed death — sacrifices,
+  executions, "accidents" — and she hears all of it.
+secrets: >
+  The bargain she struck in the Undermarsh: a shade named Arkos offered her
+  passage back to the living world in exchange for a memory she has not yet
+  identified. She doesn't know which memory was taken — she only knows something
+  is missing. Arkos's interest in her is ongoing; he appears occasionally in
+  her peripheral vision. She has not told the group about Arkos.
+attributes:
+  magic_detection: deep-water pressure on all senses
+  undermarsh_contact: Arkos (shade, terms unclear)
+  notable_items:
+    - Copper-wire death-token (Undermarsh passage marker)
+    - Wax tablet with a list of names she doesn't recognize
+meters:
+  stress: 8
+  free_time: 2
+  plot: 3
+  gnosis: 5
+skills:
+  awareness: 3
+  composure: 1
+  influence: 1
+  finesse: 2
+  speed: 2
+  power: 1
+  knowledge: 3
+  technology: 0
+magic_stats:
+  being: {level: 2, xp: 3}
+  wyrding: {level: 1, xp: 0}
+  summoning: {level: 3, xp: 1}
+  enchanting: {level: 0, xp: 0}
+  dreaming: {level: 1, xp: 2}
+core_traits:
+  - template: Blood-Speaker
+    charge: 1
+  - template: Seer
+    charge: 0
+    is_active: false
+role_traits:
+  - template: Dream-Walker
+    charge: 2
+bonds:
+  - name: Shared Exile
+    target:
+      type: character
+      name: Lysara
+    description: >
+      Both are Chorus survivors. Korinna trusts Lysara more than anyone
+      else in the group, which is not saying much — trust is scarce when
+      you can hear the dead.
+    charges: 3
+    is_trauma: false
+  - name: Arkos's Debt
+    target:
+      type: character
+      name: The Dream Hound
+    description: >
+      The Dream Hound was present when Arkos granted passage. Whatever
+      Arkos is owed, the Hound knows. It has been watching Korinna
+      since she returned.
+    charges: 2
+    degradations: 1
+    is_trauma: true
+  - name: Obligation Unwanted
+    target:
+      type: group
+      name: The Scattered Chorus
+    description: >
+      She is a Chorus survivor and technically bound by the same oaths.
+      She doesn't want to be. The dead Chorus members she can still
+      hear make the obligation harder to refuse.
+    charges: 1
+    degradations: 3
+  - name: Territorial Awareness
+    target:
+      type: location
+      name: The Undermarsh
+    description: >
+      She spent time there. She knows its geography better than anyone
+      alive should. This is not an advantage she is glad to have.
+    charges: 4
+magic_effects:
+  - name: Whisper-Hearing
+    description: >
+      Korinna hears whispers from corpses within roughly a day of death.
+      The dead repeat their last conscious thoughts — not intelligible
+      speech but emotional impression, location echoes, and sometimes
+      specific words if the dying thought was verbal. Overwhelming in
+      battle zones and execution sites. She cannot turn it off.
+    effect_type: permanent
+    power_level: 2
+  - name: Shade Summoning
+    description: >
+      Korinna can attempt to call a specific shade into brief
+      manifestation — a visual presence only, no physical substance.
+      The shade must have died within the past year and she must have
+      known them in life or have an object that was theirs. The shade
+      is disoriented and rarely coherent for more than a few minutes.
+    effect_type: charged
+    power_level: 3
+    charges: {current: 1, max: 3}
+  - name: Death-Sense
+    description: >
+      Within a building or enclosed space, Korinna can determine where
+      death has occurred — not precise timing but relative recency and
+      the emotional register of the dying (violence, illness, age).
+      Useful for determining if a location has been used for executions
+      or concealed killings.
+    effect_type: instant
+    power_level: 2

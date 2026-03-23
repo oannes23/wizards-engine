@@ -1,0 +1,16 @@
+name: Troikas Resistance Exposure
+segments: 6
+progress: 5
+associated_with:
+  type: group
+  name: Troikas Resistance
+notes: >
+  Tracks how close the Iron Compact's intelligence arm is to fully identifying
+  and dismantling Phila's resistance network. Five of six segments are filled:
+  the Compact informant embedded in the network has reported three key members,
+  Myrtos has cross-referenced their locations with surveillance data, and a
+  suppression order is drafted but not yet executed. Only timing remains
+  uncertain. If the clock completes before the party intervenes, Phila's cell
+  is captured or forced underground permanently. At segment 5 the informant
+  has been identified by Myrtos but not yet activated — the next segment
+  represents the arrest order being issued.

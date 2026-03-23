@@ -17,3 +17,20 @@ notes: >
 features:
   - name: Paradigm Pressure
     description: The Iron Age's rise is visible here as a slow dimming of older shrine-light and a strengthening of Iron Voice's signature resonance.
+  - name: Divine Court Proceedings
+    description: >
+      The ongoing formal review of the Iron Compact's claims has created
+      unusual divine attention on the mortal realm. More divine entities
+      are paying attention than usual, which makes certain mortal actions
+      more consequential.
+bonds:
+  - name: Oversight Authority
+    target:
+      type: group
+      name: Olympian Assembly
+    description: The Assembly governs divine affairs from here. Their rulings carry force in both realms.
+  - name: Contested Jurisdiction
+    target:
+      type: character
+      name: Iron Voice
+    description: Iron Voice's expanding influence represents an encroachment on divine realm norms. The Assembly has noticed but not yet acted.

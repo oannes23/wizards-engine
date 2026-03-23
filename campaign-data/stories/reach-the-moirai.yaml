@@ -1,0 +1,66 @@
+name: Reaching the Moirai Directly
+summary: >
+  An abandoned attempt to establish direct communication with the Moirai —
+  the Fates — to ask them directly what outcome they are weaving for the
+  Argos situation. Lysara proposed it; Theron was enthusiastic; investigation
+  revealed that the Moirai do not receive visitors, and the attempt was
+  called off after Lysara's oracle trance at the ford produced what may have
+  been an involuntary partial contact. The story remains because the question
+  it raised has not been answered.
+status: abandoned
+tags: ["lysara", "moirai", "divine-access", "oracle"]
+owners:
+  - type: character
+    name: Lysara
+  - type: character
+    name: The Moirai
+entries:
+  - text: >
+      Lysara proposes the idea after Session 2: if the Moirai are already
+      using her as a channel, why not request a meeting? The Moirai's
+      spinning chamber on Olympos Peak is technically accessible to
+      mortals who approach with proper ritual preparation. Vaela is
+      consulted. Her response is immediate and blunt: the Moirai receive
+      petitions, not visitors. There is no ritual that produces a meeting.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 2
+  - text: >
+      Research phase: Orestes's documentation includes three historical
+      attempts to reach the Moirai directly. Two ended with the petitioners
+      dead. One produced a response — a trance oracle that the petitioner
+      reported as "the most accurate and least useful oracle she had ever
+      received." This is, he notes carefully, consistent with Lysara's
+      existing experience.
+    author: "Player Gale"
+    character: "Orestes"
+    session: 2
+  - text: >
+      Kassian, when asked (obliquely): "The Moirai note all inquiries.
+      Noting is not the same as answering. A very direct person might
+      interpret the distinction as encouragement to ask differently."
+      Kassian leaves before anyone can ask a follow-up question.
+    author: "GM"
+    character: null
+    session: 3
+  - text: >
+      The ford oracle in Session 3 may have been the Moirai's response to
+      the inquiry — involuntary, unscheduled, and addressed to Lysara
+      rather than to the group. "The stones remember what the river forgets."
+      This is either an answer to the divine-claims situation or an answer
+      to the direct-contact attempt. It cannot be both, or it is both.
+      The attempt is called off because the answer, if it was an answer,
+      was sufficient.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 3
+  - text: >
+      Abandoned. The question it raised — whether the Moirai are already
+      in contact and whether their voluntary oracles are responses to
+      specific questions being asked nearby — has not been resolved.
+      Lysara notes this in her personal records and considers it ongoing
+      regardless of the story's status.
+    author: "Player Asha"
+    character: "Lysara"
+    session: 4
+children: []

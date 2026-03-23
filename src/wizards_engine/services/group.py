@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.models.group import Group
@@ -78,10 +78,20 @@ def get_group(db: Session, group_id: str) -> Group | None:
     return db.get(Group, group_id)
 
 
+_ALLOWED_SORT_COLS_GROUP = {
+    "name": Group.name,
+    "created_at": Group.created_at,
+    "updated_at": Group.updated_at,
+}
+
+
 def list_groups_query(
     db: Session,
     *,
     include_deleted: bool = False,
+    name: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
 ):
     """Build a SQLAlchemy select statement for the Groups list with optional filters.
 
@@ -92,16 +102,25 @@ def list_groups_query(
         db: Active SQLAlchemy session.
         include_deleted: When ``True``, include soft-deleted groups.
             Defaults to ``False`` (exclude deleted).
+        name: Case-insensitive partial match on the group name.
+        sort_by: Column to sort by — ``"name"``, ``"created_at"``, or
+            ``"updated_at"``.  Defaults to ``"name"``.
+        sort_dir: Sort direction — ``"asc"`` or ``"desc"``.  Defaults to ``"asc"``.
 
     Returns:
-        A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.group.Group`.
+        A 2-tuple of ``(Select statement, order_by expression)`` targeting
+        :class:`~wizards_engine.models.group.Group`.
     """
     stmt = select(Group)
 
     if not include_deleted:
         stmt = stmt.where(Group.is_deleted.is_(False))
 
-    return stmt
+    if name is not None:
+        stmt = stmt.where(func.lower(Group.name).contains(name.lower()))
+
+    sort_col = _ALLOWED_SORT_COLS_GROUP.get(sort_by, Group.name)
+    return stmt, sort_col, sort_dir
 
 
 def update_group(

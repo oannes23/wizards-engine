@@ -27,11 +27,13 @@ def paginate(
     model,
     after: str | None = None,
     limit: int = _DEFAULT_LIMIT,
+    order_by=None,
 ) -> PaginatedResponse[Any]:
     """Apply ULID cursor pagination to a SQLAlchemy query and return results.
 
     The query must **not** already have an ``ORDER BY`` clause applied —
-    this function adds ``ORDER BY id DESC`` itself.
+    this function adds ``ORDER BY id DESC`` itself, unless ``order_by`` is
+    provided in which case that expression is used instead.
 
     Parameters
     ----------
@@ -50,6 +52,11 @@ def paginate(
     limit:
         Maximum number of items to return.  Clamped to
         :data:`_MAX_LIMIT`.  Defaults to :data:`_DEFAULT_LIMIT`.
+    order_by:
+        Optional SQLAlchemy column expression to override the default
+        ``ORDER BY id DESC``.  When provided, this expression replaces
+        the default ordering.  Cursor filtering (``id < after``) still
+        applies using the ``id`` column regardless of sort order.
 
     Returns
     -------
@@ -59,9 +66,12 @@ def paginate(
     """
     limit = min(limit, _MAX_LIMIT)
 
-    # Build the paginated query: filter by cursor, order newest-first, fetch
+    # Build the paginated query: apply ordering, filter by cursor, fetch
     # one extra row so we can detect whether more pages exist.
-    q = query.order_by(desc(model.id))
+    if order_by is not None:
+        q = query.order_by(order_by)
+    else:
+        q = query.order_by(desc(model.id))
 
     if after is not None:
         q = q.filter(model.id < after)

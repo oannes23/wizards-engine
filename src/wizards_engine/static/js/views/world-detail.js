@@ -322,6 +322,10 @@ window.views.worldDetail = (function () {
         '</div>' +
         traitsHtml +
         bondsHtml +
+        '<section class="cs-feed-section">' +
+          '<h3 class="cs-feed-section__heading">Recent Events</h3>' +
+          '<div id="wd-char-feed-container" class="cs-feed-section__container"></div>' +
+        '</section>' +
       '</div>'
     );
   }
@@ -402,6 +406,13 @@ window.views.worldDetail = (function () {
       .get("/api/v1/characters/" + id)
       .then(function (data) {
         if (!_mounted) return;
+
+        // Destroy any previous character feed list before replacing the DOM.
+        if (_charFeedList) {
+          _charFeedList.destroy();
+          _charFeedList = null;
+        }
+
         if (data.detail_level === "full") {
           // PC: render an inline read-only summary using shared components.
           el.innerHTML =
@@ -409,8 +420,15 @@ window.views.worldDetail = (function () {
               _buildBackButton() +
               _buildPcSummary(data) +
             '</div>';
+
+          // Mount FeedList for the "Recent Events" section.
+          var feedContainer = document.getElementById("wd-char-feed-container");
+          if (feedContainer) {
+            _charFeedList = new window.components.FeedList(feedContainer);
+            _charFeedList.load("/api/v1/characters/" + id + "/feed");
+          }
         } else {
-          // NPC: simplified summary
+          // NPC: simplified summary (no feed section)
           el.innerHTML =
             '<div class="wd-root">' +
               _buildBackButton() +
@@ -860,11 +878,18 @@ window.views.worldDetail = (function () {
   /** Whether the view is currently mounted. Set false by the hashchange teardown. */
   var _mounted = false;
 
+  /** FeedList instance for the character detail "Recent Events" section, or null. */
+  var _charFeedList = null;
+
   /**
    * Teardown: mark as unmounted and remove the hashchange listener.
    */
   function _teardown() {
     _mounted = false;
+    if (_charFeedList) {
+      _charFeedList.destroy();
+      _charFeedList = null;
+    }
     window.removeEventListener("hashchange", _onHashChange);
   }
 
@@ -899,6 +924,13 @@ window.views.worldDetail = (function () {
     // Reset mounted flag and attach hashchange teardown for this navigation.
     _mounted = true;
     _starredSet = {};
+
+    // Destroy any stale character feed list from a prior navigation.
+    if (_charFeedList) {
+      _charFeedList.destroy();
+      _charFeedList = null;
+    }
+
     window.removeEventListener("hashchange", _onHashChange);
     window.addEventListener("hashchange", _onHashChange);
 

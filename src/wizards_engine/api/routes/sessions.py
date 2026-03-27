@@ -108,28 +108,31 @@ def create_session(
     status_code=200,
     summary="List sessions",
     description=(
-        "Returns a paginated list of all sessions (no status filter — all states "
-        "are included).  ULID cursor pagination via ``?after=<ulid>&limit=N``."
+        "Returns a paginated list of sessions.  Optionally filter by "
+        "``?status=draft|active|ended``.  ULID cursor pagination via "
+        "``?after=<ulid>&limit=N``."
     ),
 )
 def list_sessions(
     after: str | None = None,
     limit: int = 50,
+    status: str | None = None,
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[SessionListResponse]:
-    """Return a paginated list of all sessions.
+    """Return a paginated list of sessions, optionally filtered by status.
 
     Args:
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
+        status: Optional status filter (``draft``, ``active``, or ``ended``).
         _current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
         ``PaginatedResponse`` wrapping a list of ``SessionListResponse`` objects.
     """
-    q = session_svc.list_sessions_query(db)
+    q = session_svc.list_sessions_query(db, status=status)
     page = paginate(db, q, model=SessionModel, after=after, limit=limit)
 
     return PaginatedResponse[SessionListResponse](

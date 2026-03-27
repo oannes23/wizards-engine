@@ -66,3 +66,10 @@ class SessionParticipant(Base):
     # Relationships.
     session: Mapped[Session] = relationship("Session", back_populates="participants")
     character: Mapped[Character] = relationship("Character")
+
+    @property
+    def character_name(self) -> str | None:
+        """Return the linked Character's name, or None if not loaded."""
+        if self.character is not None:
+            return self.character.name
+        return None

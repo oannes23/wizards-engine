@@ -153,20 +153,21 @@ def get_session(db: Session, session_id: str) -> SessionModel | None:
     return db.get(SessionModel, session_id)
 
 
-def list_sessions_query(db: Session) -> Any:
+def list_sessions_query(db: Session, *, status: str | None = None) -> Any:
     """Build a SQLAlchemy select statement for the Sessions list.
-
-    No filters are defined for sessions at this stage — the list returns all
-    sessions.  The caller (``api.pagination.paginate``) adds ordering and
-    LIMIT.
 
     Args:
         db: Active SQLAlchemy session.
+        status: Optional status filter — ``"draft"``, ``"active"``, or
+            ``"ended"``.  If ``None``, all sessions are returned.
 
     Returns:
         A SQLAlchemy ``Select`` statement targeting :class:`~wizards_engine.models.session.Session`.
     """
-    return select(SessionModel)
+    q = select(SessionModel)
+    if status is not None:
+        q = q.where(SessionModel.status == status)
+    return q
 
 
 def update_session(

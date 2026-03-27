@@ -593,3 +593,75 @@ class TestUpdateParticipant:
 
         assert response.status_code == 200
         assert response.json()["additional_contribution"] is False
+
+
+# ---------------------------------------------------------------------------
+# ParticipantResponse.character_name
+# ---------------------------------------------------------------------------
+
+
+class TestParticipantCharacterName:
+    def test_add_participant_includes_character_name(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """POST participant response includes the character's name."""
+        session = _make_session(db)
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            f"/api/v1/sessions/{session.id}/participants",
+            json={"character_id": seed_data["pc1"].id},
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert "character_name" in body
+        assert body["character_name"] == seed_data["pc1"].name
+
+    def test_session_detail_participants_include_character_name(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """GET session detail shows character_name in each participant."""
+        session = _make_session(db)
+        _make_participant(db, session.id, seed_data["pc1"].id)
+        _make_participant(db, session.id, seed_data["pc2"].id)
+
+        auth_as(client, seed_data["gm"])
+        response = client.get(f"/api/v1/sessions/{session.id}")
+        assert response.status_code == 200
+
+        participants = response.json()["participants"]
+        names = {p["character_name"] for p in participants}
+        assert seed_data["pc1"].name in names
+        assert seed_data["pc2"].name in names
+
+    def test_update_participant_includes_character_name(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """PATCH participant response includes the character's name."""
+        session = _make_session(db)
+        _make_participant(db, session.id, seed_data["pc1"].id)
+
+        auth_as(client, seed_data["gm"])
+        response = client.patch(
+            f"/api/v1/sessions/{session.id}/participants/{seed_data['pc1'].id}",
+            json={"additional_contribution": True},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["character_name"] == seed_data["pc1"].name
+
+    def test_session_list_participants_include_character_name(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """GET sessions list includes character_name in embedded participants."""
+        session = _make_session(db)
+        _make_participant(db, session.id, seed_data["pc1"].id)
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions")
+        assert response.status_code == 200
+
+        items = response.json()["items"]
+        session_item = next(s for s in items if s["id"] == session.id)
+        assert len(session_item["participants"]) == 1
+        assert session_item["participants"][0]["character_name"] == seed_data["pc1"].name

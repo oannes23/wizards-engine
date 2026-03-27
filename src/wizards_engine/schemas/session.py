@@ -111,6 +111,9 @@ class ParticipantResponse(BaseModel):
         ULID of the session this participant belongs to.
     character_id:
         ULID of the registered character.
+    character_name:
+        Display name of the registered character, resolved from the
+        ``Character`` relationship.  Denormalized for read convenience.
     additional_contribution:
         Whether the participant flagged an Additional Contribution.
     """
@@ -119,6 +122,7 @@ class ParticipantResponse(BaseModel):
 
     session_id: str
     character_id: str
+    character_name: str | None = None
     additional_contribution: bool
 
 

@@ -319,6 +319,74 @@ class TestListSessions:
         assert "participants" in items[0]
         assert isinstance(items[0]["participants"], list)
 
+    def test_list_filter_by_status_active(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """?status=active returns only active sessions."""
+        _make_session(db, status="draft")
+        _make_session(db, status="active")
+        _make_session(db, status="ended")
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions?status=active")
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert len(items) == 1
+        assert all(s["status"] == "active" for s in items)
+
+    def test_list_filter_by_status_draft(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """?status=draft returns only draft sessions."""
+        _make_session(db, status="draft")
+        _make_session(db, status="active")
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions?status=draft")
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert len(items) == 1
+        assert all(s["status"] == "draft" for s in items)
+
+    def test_list_filter_by_status_ended(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """?status=ended returns only ended sessions."""
+        _make_session(db, status="draft")
+        _make_session(db, status="ended")
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions?status=ended")
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert len(items) == 1
+        assert all(s["status"] == "ended" for s in items)
+
+    def test_list_no_status_filter_returns_all(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """Omitting ?status returns sessions of all statuses."""
+        _make_session(db, status="draft")
+        _make_session(db, status="active")
+        _make_session(db, status="ended")
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions")
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert len(items) == 3
+
+    def test_list_filter_unknown_status_returns_empty(
+        self, client: TestClient, seed_data: dict, db: DBSession
+    ):
+        """?status=bogus returns an empty list (no match), not an error."""
+        _make_session(db, status="draft")
+
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/sessions?status=bogus")
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
 
 # ---------------------------------------------------------------------------
 # GET /api/v1/sessions/{id}

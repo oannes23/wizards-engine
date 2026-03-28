@@ -153,11 +153,12 @@ The GM can optionally own a character via `POST /api/v1/me/character`, which acc
 - **Rationale**: The only client is a browser-based web UI. Cookies are set automatically on every request. No need for programmatic API access for MVP.
 - **Implications**: Non-browser clients (scripts, bots) cannot authenticate. Can be added later if needed.
 
-### Two-Role Model
+### Roles
 
-- **Decision**: Only two roles — GM and Player. No spectator role for MVP.
-- **Rationale**: The game has exactly two types of users with clearly different capabilities. More granular permissions add complexity without value. Spectators can be accommodated by the GM sharing their screen.
-- **Implications**: Authorization checks are simple role-based conditionals.
+- **Decision**: Three roles — GM, Player, and Viewer.
+- **Rationale**: The GM has full read/write access. Players interact through characters. Viewers have GM-level read access but cannot take any actions — they are read-only spectators. This enables trusted observers (friends, co-GMs, note-takers) to follow the campaign without needing GM credentials.
+- **Implications**: Auth dependency layer distinguishes between privileged read access (GM + Viewer) and mutation rights (GM only). Viewer accounts are created via invites with a role field.
+- **Alternatives considered**: Sharing GM credentials (security risk, no audit trail), screen sharing (no independent access).
 
 ### GM as Privileged Player
 

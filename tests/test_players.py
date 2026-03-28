@@ -7,7 +7,9 @@ GET /api/v1/players
   - Response includes: id, display_name, role, character_id, is_active
   - Non-GM caller does NOT receive login_url
   - GM caller receives login_url per player in /login/<code> format
-  - Returns all users (GM + players) — not filtered
+  - GM sees all users (GM + players + viewers)
+  - Player sees only GM + player users (viewers filtered out)
+  - Viewer sees all users but without login_urls
   - Not paginated — flat list (no items/next_cursor/has_more wrapper)
   - Unauthenticated caller receives 401
   - Inactive users are included in the roster
@@ -26,15 +28,15 @@ from tests.conftest import auth_as
 
 class TestListPlayers:
     def test_returns_all_users(self, client: TestClient, seed_data: dict):
-        """All users (GM + 3 players) are returned in the roster."""
+        """GM sees all users (GM + 3 players + 1 viewer) in the roster."""
         auth_as(client, seed_data["gm"])
         response = client.get("/api/v1/players")
 
         assert response.status_code == 200
         body = response.json()
         assert isinstance(body, list)
-        # Seed data has 1 GM + 3 players = 4 users total.
-        assert len(body) == 4
+        # Seed data has 1 GM + 3 players + 1 viewer = 5 users total.
+        assert len(body) == 5
 
     def test_response_includes_required_fields(self, client: TestClient, seed_data: dict):
         """Each entry contains id, display_name, role, character_id, is_active."""
@@ -161,11 +163,12 @@ class TestLoginUrlVisibility:
             assert "login_url" not in entry
 
     def test_player_can_access_roster(self, client: TestClient, seed_data: dict):
-        """Non-GM player receives 200 and all four users."""
+        """Player receives 200 and sees GM + player users only (viewer excluded)."""
         auth_as(client, seed_data["player2"])
         response = client.get("/api/v1/players")
 
         assert response.status_code == 200
+        # Player sees 1 GM + 3 players = 4 users (viewer filtered out).
         assert len(response.json()) == 4
 
     def test_player_roster_contains_expected_fields_only(
@@ -178,3 +181,52 @@ class TestLoginUrlVisibility:
         expected_keys = {"id", "display_name", "role", "character_id", "is_active"}
         for entry in response.json():
             assert set(entry.keys()) == expected_keys
+
+
+# ---------------------------------------------------------------------------
+# Viewer-specific roster behaviour (Story 9.1.7)
+# ---------------------------------------------------------------------------
+
+
+class TestViewerRoster:
+    def test_viewer_can_access_roster(self, client: TestClient, seed_data: dict):
+        """Viewer receives 200 and sees all users (GM + players + viewer)."""
+        auth_as(client, seed_data["viewer"])
+        response = client.get("/api/v1/players")
+
+        assert response.status_code == 200
+        # Viewer sees all 5 users (1 GM + 3 players + 1 viewer).
+        assert len(response.json()) == 5
+
+    def test_viewer_does_not_receive_login_url(self, client: TestClient, seed_data: dict):
+        """Viewer caller does not receive login_url in any entry."""
+        auth_as(client, seed_data["viewer"])
+        response = client.get("/api/v1/players")
+
+        assert response.status_code == 200
+        for entry in response.json():
+            assert "login_url" not in entry
+
+    def test_viewer_sees_viewer_users(self, client: TestClient, seed_data: dict):
+        """Viewer can see the viewer account in the roster (unlike players)."""
+        auth_as(client, seed_data["viewer"])
+        response = client.get("/api/v1/players")
+
+        ids = {entry["id"] for entry in response.json()}
+        assert seed_data["viewer"].id in ids
+
+    def test_player_does_not_see_viewer(self, client: TestClient, seed_data: dict):
+        """Player roster does not include viewer accounts."""
+        auth_as(client, seed_data["player1"])
+        response = client.get("/api/v1/players")
+
+        ids = {entry["id"] for entry in response.json()}
+        assert seed_data["viewer"].id not in ids
+
+    def test_gm_sees_viewer_in_roster(self, client: TestClient, seed_data: dict):
+        """GM roster includes viewer accounts."""
+        auth_as(client, seed_data["gm"])
+        response = client.get("/api/v1/players")
+
+        ids = {entry["id"] for entry in response.json()}
+        assert seed_data["viewer"].id in ids

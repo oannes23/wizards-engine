@@ -17,6 +17,7 @@ from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role
 from wizards_engine.schemas.character import CharacterResponse
 from wizards_engine.services.player_actions import execute_recharge_trait
 
@@ -106,7 +107,9 @@ def recharge_trait(
     if character is None or character.is_deleted:
         raise_not_found("Character", character_id)
 
-    if current_user.role != "gm" and current_user.character_id != character_id:
+    if current_user.role != Role.GM and (
+        current_user.role != Role.PLAYER or current_user.character_id != character_id
+    ):
         raise_forbidden("You do not have permission to perform this action for this character.")
 
     return execute_recharge_trait(

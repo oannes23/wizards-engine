@@ -91,9 +91,9 @@ def test_isolation_engines_are_distinct():
 
 
 def test_seed_data_user_count(db, seed_data):
-    """seed_data creates exactly 4 users: 1 GM + 3 players."""
+    """seed_data creates exactly 5 users: 1 GM + 3 players + 1 viewer."""
     total = db.query(User).count()
-    assert total == 4
+    assert total == 5
 
 
 def test_seed_data_character_count(db, seed_data):

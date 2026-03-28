@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
+from wizards_engine.roles import Role, actor_type_for, has_full_visibility
 from wizards_engine.api.pagination import paginate
 from wizards_engine.api.responses import raise_forbidden, raise_not_found, validation_error_response
 from wizards_engine.api.types import UlidStr
@@ -68,8 +69,8 @@ def _get_proposal_or_404(db: Session, proposal_id: str) -> Proposal:
 def _assert_can_read(proposal: Proposal, current_user: User) -> None:
     """Raise 404 if the player cannot read this proposal.
 
-    GMs can read any proposal.  Players can only read proposals whose
-    ``character_id`` matches their own ``character_id``.  We raise 404
+    GMs and Viewers can read any proposal.  Players can only read proposals
+    whose ``character_id`` matches their own ``character_id``.  We raise 404
     (not 403) to avoid leaking existence.
 
     Args:
@@ -79,7 +80,7 @@ def _assert_can_read(proposal: Proposal, current_user: User) -> None:
     Raises:
         HTTPException(404): If the player does not own this proposal.
     """
-    if current_user.role == "gm":
+    if has_full_visibility(current_user):
         return
     if proposal.character_id != current_user.character_id:
         raise_not_found("Proposal", proposal.id)
@@ -155,9 +156,9 @@ def create_proposal(
             authenticated user.
         HTTPException(404): If the referenced character does not exist.
     """
-    # GMs do not submit proposals.
-    if current_user.role == "gm":
-        raise_forbidden("The GM cannot submit player proposals.")
+    # Only players may submit proposals.
+    if current_user.role != Role.PLAYER:
+        raise_forbidden("Only players can submit proposals.")
 
     # Validate that character_id belongs to this player.
     if current_user.character_id != body.character_id:
@@ -228,8 +229,9 @@ def calculate_proposal(
         HTTPException(422): If ``character_id`` does not belong to the user.
         HTTPException(404): If the character does not exist.
     """
-    if current_user.role == "gm":
-        raise_forbidden("The GM cannot submit player proposals.")
+    # Only players may use the calculate endpoint.
+    if current_user.role != Role.PLAYER:
+        raise_forbidden("Only players can use the proposal calculate endpoint.")
 
     if current_user.character_id != body.character_id:
         raise HTTPException(
@@ -310,7 +312,7 @@ def list_proposals(
 
     # Players are restricted to their own proposals.
     owner_character_id: str | None = None
-    if current_user.role != "gm":
+    if not has_full_visibility(current_user):
         owner_character_id = current_user.character_id
 
     q = proposal_svc.list_proposals_query(
@@ -414,7 +416,7 @@ def update_proposal(
     proposal = _get_proposal_or_404(db, proposal_id)
     _assert_can_mutate(proposal, current_user)
 
-    actor_type = "gm" if current_user.role == "gm" else "player"
+    actor_type = actor_type_for(current_user)
 
     proposal = proposal_svc.update_proposal(
         db,

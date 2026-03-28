@@ -45,10 +45,16 @@ class MeResponse(BaseModel):
     display_name:
         The user's current display name.
     role:
-        ``"gm"`` or ``"player"``.
+        ``"gm"``, ``"player"``, or ``"viewer"``.
     character_id:
         ULID of the linked Character, or ``None`` for users without a linked
-        character (e.g. the GM).
+        character (e.g. the GM or a viewer).
+    can_view_gm_content:
+        ``True`` if the user has a privileged role (GM or viewer) and may see
+        all game state.  Populated by the route handler.
+    can_take_gm_actions:
+        ``True`` if the user is the GM and may perform GM-only actions.
+        Populated by the route handler.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -57,6 +63,8 @@ class MeResponse(BaseModel):
     display_name: str
     role: str
     character_id: str | None
+    can_view_gm_content: bool = False
+    can_take_gm_actions: bool = False
 
 
 class UpdateMeRequest(BaseModel):
@@ -82,7 +90,8 @@ class SetupResponse(BaseModel):
     display_name:
         The GM's display name as stored.
     role:
-        Always ``"gm"`` for the setup endpoint.
+        Always ``"gm"`` for the setup endpoint.  Other possible values across
+        the system are ``"player"`` and ``"viewer"``.
     login_url:
         Magic link URL the GM can use to authenticate: ``/login/<code>``.
     """
@@ -117,10 +126,10 @@ class LoginUserResponse(BaseModel):
     display_name:
         The user's current display name.
     role:
-        ``"gm"`` or ``"player"``.
+        ``"gm"``, ``"player"``, or ``"viewer"``.
     character_id:
         ULID of the linked Character, or ``None`` for users without a linked
-        character (e.g. the GM).
+        character (e.g. the GM or a viewer).
     type:
         Always ``"user"`` — discriminates this response from the invite variant.
     """
@@ -155,6 +164,8 @@ class JoinRequest(BaseModel):
         The invite code to redeem — must match an unconsumed ``Invite.id``.
     character_name:
         Name for the new Character.  1–200 characters, trimmed, non-empty.
+        Required when the invite is for the ``"player"`` role; omit or pass
+        ``null`` for ``"viewer"`` invites.
     display_name:
         Display name for the new User.  1–50 characters, trimmed, non-empty.
     """
@@ -162,13 +173,25 @@ class JoinRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     code: str
-    character_name: str
+    character_name: str | None = None
     display_name: str
 
     @field_validator("character_name")
     @classmethod
-    def validate_character_name(cls, v: str) -> str:
-        """Ensure character_name is non-empty and at most 200 characters."""
+    def validate_character_name(cls, v: str | None) -> str | None:
+        """Validate character_name when provided; pass through None unchanged.
+
+        Args:
+            v: The character name string (stripped) or None.
+
+        Returns:
+            The validated string, or None.
+
+        Raises:
+            ValueError: If ``v`` is provided but empty or longer than 200 chars.
+        """
+        if v is None:
+            return None
         if not v:
             raise ValueError("character_name must not be empty")
         if len(v) > 200:
@@ -192,7 +215,8 @@ class JoinResponse(BaseModel):
     display_name:
         The player's display name as stored.
     role:
-        Always ``"player"`` for the join endpoint.
+        Always ``"player"`` for the join endpoint.  Other possible values
+        across the system are ``"gm"`` and ``"viewer"``.
     character_id:
         ULID of the newly created Character linked to this User.
     """

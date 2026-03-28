@@ -377,6 +377,23 @@ def test_import_gm_user_has_no_character(db, tmp_path):
     assert gm.character_id is None
 
 
+def test_import_viewer_user_has_no_character(db, tmp_path):
+    """Viewer users are imported with role='viewer' and character_id=None."""
+    _make_minimal_campaign(tmp_path)
+    _write(tmp_path / "users" / "viewer-iris.yaml", """\
+        display_name: Viewer Iris
+        role: viewer
+        character: null
+    """)
+    CampaignImporter(db, tmp_path).import_all()
+
+    viewer = db.execute(
+        select(User).where(User.display_name == "Viewer Iris")
+    ).scalar_one()
+    assert viewer.role == "viewer"
+    assert viewer.character_id is None
+
+
 def test_import_session_created(db, tmp_path):
     """Sessions are created with correct status, date, and time_now."""
     _make_minimal_campaign(tmp_path)

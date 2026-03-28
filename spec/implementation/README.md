@@ -111,6 +111,18 @@ YAML-based campaign import/export system (CLI-only tool, no new API endpoints). 
 
 ---
 
+## Phase 9: Viewer Role
+
+| Epic | File | Stories | Depends On | Blocks |
+|------|------|---------|------------|--------|
+| **9.1** — Viewer Role | [phase9-viewer-role.md](phase9-viewer-role.md) | 11 | Phases 1–8 | — |
+
+Third user role with GM-level read access but no mutation capability. Centralized Role StrEnum, auth dependency refactor, visibility updates, and frontend handoff documentation.
+
+**Parallelism**: 9.1.1 and 9.1.2 parallel → {9.1.3, 9.1.4, 9.1.8} parallel → {9.1.5, 9.1.6} parallel → 9.1.7 → {9.1.10, 9.1.11} parallel
+
+---
+
 ## Dependency Graph
 
 ```
@@ -166,11 +178,11 @@ Phase 7 (sequential, depends on all prior phases)
 
 | Metric | Count |
 |--------|-------|
-| Phases | 6 complete (1–6) + Phase 7 |
-| Epics | 20 complete + 1 new (campaign tooling) |
-| Stories | 52 complete + 8 new (campaign tooling) |
-| Max parallel tracks | 2 (7.1.3 + 7.1.4 after 7.1.2) |
-| Estimated new backend tests | ~120 (across Phase 7) |
+| Phases | 8 complete (1–8) + Phase 9 in progress |
+| Epics | 28 complete + 1 new (viewer role) |
+| Stories | 69 complete + 11 new (viewer role) |
+| Max parallel tracks | 2 (9.1.3/9.1.4/9.1.8 after 9.1.1+9.1.2; 9.1.10/9.1.11 after 9.1.7) |
+| Estimated new backend tests | ~40 (across Phase 9) |
 
 ---
 
@@ -206,3 +218,4 @@ Phase 7 (sequential, depends on all prior phases)
 | 8.5 — Character Detail View Overhaul | 🟢 Complete | 4/4 |
 | 8.6 — Game Object CRUD Forms | 🟢 Complete | 3/3 |
 | 8.7 — Comprehensive Example Campaign Data | 🟢 Complete | 3/3 |
+| 9.1 — Viewer Role | 🟢 Complete | 11/11 |

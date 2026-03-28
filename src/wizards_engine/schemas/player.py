@@ -24,7 +24,7 @@ class PlayerResponse(BaseModel):
     display_name:
         Player's display name (1–50 characters).
     role:
-        ``"gm"`` or ``"player"``.
+        ``"gm"``, ``"player"``, or ``"viewer"``.
     character_id:
         ULID of the linked Character, or ``None`` if the user has no character
         (e.g. a GM who has not created a character).

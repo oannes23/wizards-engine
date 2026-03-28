@@ -20,6 +20,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
+from wizards_engine.roles import Role
 from wizards_engine.api.pagination import paginate
 from wizards_engine.api.responses import raise_forbidden, raise_not_found, validation_error_response
 from wizards_engine.api.types import UlidStr
@@ -510,7 +511,7 @@ def update_character(
         raise_not_found("Character", character_id)
 
     # Authorization: GM can edit any character; a player can only edit their own.
-    if current_user.role != "gm" and current_user.character_id != character_id:
+    if current_user.role != Role.GM and current_user.character_id != character_id:
         raise_forbidden("You do not have permission to edit this character.")
 
     # Build the updates dict from only the fields the caller explicitly provided.

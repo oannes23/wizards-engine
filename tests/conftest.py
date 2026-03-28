@@ -185,8 +185,8 @@ def seed_data(db) -> dict:
 
     Returns:
         A dict with keys: ``gm``, ``player1``, ``player2``, ``player3``,
-        ``pc1``, ``pc2``, ``pc3``, ``npc1``, ``npc2``, ``group``,
-        ``region``, ``district``, ``pc1_bond``, ``pc2_bond``,
+        ``viewer``, ``pc1``, ``pc2``, ``pc3``, ``npc1``, ``npc2``,
+        ``group``, ``region``, ``district``, ``pc1_bond``, ``pc2_bond``,
         ``npc1_bond``, ``npc2_bond``.
     """
     return _seed_data_fn(db)

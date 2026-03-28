@@ -21,7 +21,7 @@ class User(TimestampMixin, Base):
     __tablename__ = "users"
 
     display_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    role: Mapped[str] = mapped_column(String(10), nullable=False)  # 'gm' | 'player'
+    role: Mapped[str] = mapped_column(String(10), nullable=False)  # 'gm' | 'player' | 'viewer'
     login_code: Mapped[str] = mapped_column(String, nullable=False, index=True)
     character_id: Mapped[str | None] = mapped_column(
         String(26),
@@ -61,6 +61,7 @@ class Invite(Base):
         nullable=False,
     )
     is_consumed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    role: Mapped[str] = mapped_column(String(10), nullable=False, default="player")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=_utcnow,

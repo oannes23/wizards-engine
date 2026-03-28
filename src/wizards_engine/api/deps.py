@@ -5,8 +5,10 @@ Provides injectable dependencies that routes can declare as parameters:
 - ``get_current_user``: reads the ``login_code`` cookie, looks up the user in
   the database, and returns the active User object.  Raises 401 if the cookie
   is missing, invalid, or belongs to an inactive account.
-- ``require_gm``: thin wrapper around ``get_current_user`` that additionally
-  enforces the GM role, raising 403 for non-GM callers.
+- ``require_role``: factory that returns a dependency enforcing one or more
+  allowed roles, raising 403 for callers without a matching role.
+- ``require_gm``: pre-built dependency alias — requires the GM role.
+- ``require_privileged``: pre-built dependency alias — requires GM or Viewer.
 """
 
 from fastapi import Depends, HTTPException, Request
@@ -16,6 +18,7 @@ from sqlalchemy.orm import Session
 from wizards_engine.api.auth import COOKIE_NAME
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
+from wizards_engine.roles import PRIVILEGED_ROLES, Role
 
 
 def get_current_user(
@@ -63,25 +66,42 @@ def get_current_user(
     return user
 
 
-def require_gm(current_user: User = Depends(get_current_user)) -> User:
-    """Require the current user to have the GM role.
+def require_role(*allowed: str):
+    """Return a FastAPI dependency that requires one of the given roles.
 
-    Wraps ``get_current_user`` and additionally checks that the authenticated
-    user has ``role = 'gm'``.
+    Usage::
 
-    Raises:
-        HTTPException(403): if the authenticated user is not the GM
-            (``insufficient_role``).
+        @router.get("/gm-only", dependencies=[Depends(require_role(Role.GM))])
+        @router.get("/gm-or-viewer", dependencies=[Depends(require_role(Role.GM, Role.VIEWER))])
 
     Args:
-        current_user: The authenticated user (injected via ``get_current_user``).
+        *allowed: One or more :class:`~wizards_engine.roles.Role` values (or
+            equivalent strings) that are permitted to call the endpoint.
 
     Returns:
-        The authenticated User, guaranteed to have ``role = 'gm'``.
+        A FastAPI dependency callable that accepts the current user and raises
+        403 if their role is not in *allowed*.
     """
-    if current_user.role != "gm":
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "insufficient_role", "message": "This action requires GM privileges."}},
-        )
-    return current_user
+    allowed_set = frozenset(allowed)
+
+    def _dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_set:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": {
+                        "code": "insufficient_role",
+                        "message": "This action requires GM privileges.",
+                    }
+                },
+            )
+        return current_user
+
+    return _dependency
+
+
+#: Require the GM role.  Drop-in replacement for the old ``require_gm``.
+require_gm = require_role(Role.GM)
+
+#: Require GM **or** Viewer — used on read-only GM endpoints.
+require_privileged = require_role(*PRIVILEGED_ROLES)

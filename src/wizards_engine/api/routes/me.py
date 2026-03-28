@@ -22,6 +22,7 @@ from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
 from wizards_engine.models.user import User
+from wizards_engine.roles import PRIVILEGED_ROLES, Role
 from wizards_engine.schemas.auth import MeResponse, UpdateMeRequest
 from wizards_engine.schemas.character import CharacterResponse, CreateCharacterRequest
 from wizards_engine.services.onboarding import _FULL_MAGIC_STATS, _FULL_SKILLS
@@ -57,6 +58,8 @@ def get_me(
         display_name=current_user.display_name,
         role=current_user.role,
         character_id=current_user.character_id,
+        can_view_gm_content=current_user.role in PRIVILEGED_ROLES,
+        can_take_gm_actions=current_user.role == Role.GM,
     )
 
 
@@ -99,6 +102,8 @@ def patch_me(
         display_name=current_user.display_name,
         role=current_user.role,
         character_id=current_user.character_id,
+        can_view_gm_content=current_user.role in PRIVILEGED_ROLES,
+        can_take_gm_actions=current_user.role == Role.GM,
     )
 
 

@@ -16,6 +16,7 @@ from wizards_engine.api.deps import get_current_user
 from wizards_engine.api.responses import raise_forbidden
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role
 from wizards_engine.schemas.character import MagicEffectResponse
 from wizards_engine.schemas.magic_effect import UseEffectRequest
 from wizards_engine.services import magic_effect as magic_effect_svc
@@ -29,7 +30,11 @@ def _check_effect_ownership(
     effect_character_id: str,
     effect_id: str,
 ) -> None:
-    """Raise 403 if the caller is not the GM and does not own the character.
+    """Raise 403 if the caller is not the GM/player-owner of the character.
+
+    Only the GM or the player who owns the character may use or retire effects.
+    Viewer is not permitted to take write actions even though they have full
+    read visibility.
 
     Args:
         current_user: The authenticated user.
@@ -39,11 +44,11 @@ def _check_effect_ownership(
 
     Raises:
         HTTPException(403): If the caller is not the GM and their linked
-            character is not ``character_id``.
+            character is not ``character_id``, or if the caller is a viewer.
     """
-    if current_user.role == "gm":
+    if current_user.role == Role.GM:
         return
-    if current_user.character_id != character_id:
+    if current_user.role != Role.PLAYER or current_user.character_id != character_id:
         raise_forbidden("You do not have permission to act on this character's effects.")
 
 

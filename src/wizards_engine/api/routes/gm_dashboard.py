@@ -11,7 +11,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from wizards_engine.api.deps import require_gm
+from wizards_engine.api.deps import require_privileged
 from wizards_engine.db import get_db
 from wizards_engine.services.proposal.constants import (
     FREE_TIME_MAX,
@@ -59,7 +59,7 @@ router = APIRouter()
     ),
 )
 def gm_dashboard(
-    _gm: User = Depends(require_gm),
+    _user: User = Depends(require_privileged),
     db: Session = Depends(get_db),
 ) -> GmDashboardResponse:
     """Return aggregated game-state data for the GM dashboard.
@@ -68,7 +68,8 @@ def gm_dashboard(
     response.  All queries are read-only.
 
     Args:
-        _gm: The authenticated GM user (injected; enforces GM-only access).
+        _user: The authenticated GM or Viewer user (injected; enforces
+            privileged-only access).
         db: Injected SQLAlchemy session.
 
     Returns:
@@ -122,7 +123,7 @@ def gm_dashboard(
     ),
 )
 def gm_queue_summary(
-    _gm: User = Depends(require_gm),
+    _user: User = Depends(require_privileged),
     db: Session = Depends(get_db),
 ) -> GmQueueSummaryResponse:
     """Return PC cards and group cards for the GM queue view.
@@ -132,7 +133,8 @@ def gm_queue_summary(
     event data.  All queries are read-only.
 
     Args:
-        _gm: The authenticated GM user (injected; enforces GM-only access).
+        _user: The authenticated GM or Viewer user (injected; enforces
+            privileged-only access).
         db: Injected SQLAlchemy session.
 
     Returns:

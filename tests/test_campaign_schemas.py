@@ -118,6 +118,13 @@ class TestUserYaml:
         )
         assert user.character == "Alexander"
 
+    def test_valid_viewer_user(self):
+        user = UserYaml.model_validate(
+            {"display_name": "Viewer Iris", "role": "viewer", "character": None}
+        )
+        assert user.role == "viewer"
+        assert user.character is None
+
     def test_invalid_role_rejected(self):
         with pytest.raises(ValidationError, match="role must be"):
             UserYaml.model_validate({"display_name": "Alice", "role": "admin"})

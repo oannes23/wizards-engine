@@ -54,6 +54,7 @@ from wizards_engine.models.proposal import Proposal
 from wizards_engine.models.session import Session as SessionModel, SessionParticipant
 from wizards_engine.models.slot import Slot
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role
 from wizards_engine.services.event import create_event
 
 
@@ -176,8 +177,8 @@ def _resolve_context(db: Session) -> _SeedContext:
 
     # Users.
     all_users = db.scalars(select(User)).all()
-    ctx.gm = next((u for u in all_users if u.role == "gm"), None)
-    ctx.players = [u for u in all_users if u.role == "player"]
+    ctx.gm = next((u for u in all_users if u.role == Role.GM), None)
+    ctx.players = [u for u in all_users if u.role == Role.PLAYER]
 
     if not all_users:
         raise RuntimeError(

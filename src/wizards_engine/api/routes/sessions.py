@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
+from wizards_engine.roles import Role, actor_type_for
 from wizards_engine.api.pagination import paginate, paginate_with_filter
 from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.api.types import UlidStr
@@ -562,8 +563,10 @@ def add_participant(
             },
         )
 
-    # Player ownership check — GM bypasses.
-    if current_user.role != "gm":
+    # Player ownership check — GM bypasses, viewer is blocked entirely.
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers cannot register session participants.")
+    if current_user.role != Role.GM:
         if current_user.character_id != body.character_id:
             raise_forbidden("You can only register your own character.", code="character_not_owned")
 
@@ -613,7 +616,7 @@ def add_participant(
     # created via the normal lifecycle (start_session enforces this), but we
     # guard defensively in case of direct DB manipulation in tests.
     if session.status == "active" and session.time_now is not None:
-        actor_type = "gm" if current_user.role == "gm" else "player"
+        actor_type = actor_type_for(current_user)
         session_svc.distribute_to_participant(
             db,
             session=session,
@@ -688,8 +691,10 @@ def remove_participant(
             },
         )
 
-    # Player authorization — players can only remove themselves.
-    if current_user.role != "gm":
+    # Player authorization — players can only remove themselves, viewer is blocked.
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers cannot remove session participants.")
+    if current_user.role != Role.GM:
         if current_user.character_id != character_id:
             raise_forbidden("You can only remove your own character from a session.", code="character_not_owned")
 
@@ -766,8 +771,10 @@ def update_participant(
             },
         )
 
-    # Player authorization — players can only update their own record.
-    if current_user.role != "gm":
+    # Player authorization — players can only update their own record, viewer is blocked.
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers cannot update session participants.")
+    if current_user.role != Role.GM:
         if current_user.character_id != character_id:
             raise_forbidden("You can only update your own participant record.", code="character_not_owned")
 

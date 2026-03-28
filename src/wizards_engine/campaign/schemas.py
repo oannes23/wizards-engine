@@ -23,6 +23,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from wizards_engine.roles import Role
+
 
 # ---------------------------------------------------------------------------
 # Shared / primitive models
@@ -111,8 +113,8 @@ class UserYaml(BaseModel):
     @model_validator(mode="after")
     def validate_role(self) -> "UserYaml":
         """Ensure role is gm or player."""
-        if self.role not in {"gm", "player"}:
-            raise ValueError(f"role must be 'gm' or 'player', got {self.role!r}")
+        if self.role not in {Role.GM, Role.PLAYER, Role.VIEWER}:
+            raise ValueError(f"role must be 'gm', 'player', or 'viewer', got {self.role!r}")
         return self
 
 

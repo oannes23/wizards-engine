@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 from wizards_engine.models.event import Event, EventTarget
 from wizards_engine.models.story import Story
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role, has_full_visibility
 from wizards_engine.services.presence import (
     AdjList,
     NodeKey,
@@ -273,10 +274,12 @@ def can_user_see_event(db: Session, user: User, event: Event) -> bool:
         ``True`` if the user may see the event; ``False`` otherwise.
     """
     visibility = event.visibility
-    is_gm = user.role == "gm"
 
-    # GM always sees everything (silent and gm_only checked first).
-    if is_gm:
+    # GM and Viewer have full visibility, with one exception: Viewers are
+    # excluded from ``silent`` events (system plumbing the GM sees only).
+    if has_full_visibility(user):
+        if user.role == Role.VIEWER and visibility == "silent":
+            return False
         return True
 
     # Players never see gm_only events.
@@ -390,8 +393,8 @@ def can_user_see_story(db: Session, user: User, story: Story) -> bool:
     Returns:
         ``True`` if the user may see the story; ``False`` otherwise.
     """
-    # 1. GM sees everything.
-    if user.role == "gm":
+    # 1. GM and Viewer see all Stories.
+    if has_full_visibility(user):
         return True
 
     # 2. Check visibility_overrides (list of user IDs).

@@ -17,13 +17,13 @@ DELETE /game/invites/{id}  — GM only.  Hard-delete an unconsumed invite.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from wizards_engine.api.deps import require_gm
+from wizards_engine.api.deps import require_gm, require_privileged
 from wizards_engine.api.pagination import paginate
 from wizards_engine.api.responses import raise_not_found
 from wizards_engine.db import get_db
 from wizards_engine.models.user import Invite, User
 from wizards_engine.schemas.common import PaginatedResponse
-from wizards_engine.schemas.invite import InviteResponse
+from wizards_engine.schemas.invite import CreateInviteRequest, InviteResponse
 from wizards_engine.services import invite as invite_svc
 
 router = APIRouter()
@@ -35,18 +35,27 @@ router = APIRouter()
     status_code=201,
     summary="Create an invite",
     description=(
-        "GM only.  Generates a bare invite with a ULID as the shareable code.  "
+        "GM only.  Generates an invite with a ULID as the shareable code.  "
         "The invite ID IS the code — no separate code column exists.  "
-        "Returns 201 with invite info including the magic link URL (``/login/<id>``)."
+        "Accepts an optional JSON body with a ``role`` field (``\"player\"`` or "
+        "``\"viewer\"``; defaults to ``\"player\"`` when omitted or when no body "
+        "is sent).  Returns 201 with invite info including the magic link URL "
+        "(``/login/<id>``)."
     ),
 )
 def create_invite(
+    body: CreateInviteRequest = CreateInviteRequest(),
     _gm: User = Depends(require_gm),
     db: Session = Depends(get_db),
 ) -> InviteResponse:
-    """Generate a new bare invite code.
+    """Generate a new invite code with the requested role.
+
+    Callers that send no body receive a player invite by default, preserving
+    backwards compatibility with existing callers.
 
     Args:
+        body: Optional request body specifying the invite ``role``.
+            Defaults to a player invite when omitted.
         _gm: The authenticated GM (injected; ensures GM-only access).
         db: Injected SQLAlchemy session.
 
@@ -54,7 +63,7 @@ def create_invite(
         ``InviteResponse`` for the newly created invite (201), including
         the computed ``login_url`` magic link.
     """
-    invite = invite_svc.create_invite(db)
+    invite = invite_svc.create_invite(db, role=body.role)
     return InviteResponse.model_validate(invite)
 
 
@@ -71,7 +80,7 @@ def create_invite(
 def list_invites(
     after: str | None = None,
     limit: int = 50,
-    _gm: User = Depends(require_gm),
+    _user: User = Depends(require_privileged),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[InviteResponse]:
     """Return a paginated list of all invites.
@@ -79,7 +88,8 @@ def list_invites(
     Args:
         after: ULID cursor for pagination (return items older than this ID).
         limit: Page size (default 50, max 100).
-        _gm: The authenticated GM (injected; ensures GM-only access).
+        _user: The authenticated GM or Viewer (injected; ensures privileged
+            access).
         db: Injected SQLAlchemy session.
 
     Returns:

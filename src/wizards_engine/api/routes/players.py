@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role, has_full_visibility
 from wizards_engine.schemas.player import PlayerGMResponse, PlayerResponse
 
 router = APIRouter()
@@ -61,7 +62,8 @@ def list_players(
     """
     users: list[User] = db.scalars(select(User).order_by(User.id)).all()
 
-    if current_user.role == "gm":
+    if current_user.role == Role.GM:
+        # GM sees all users with login URLs.
         return [
             PlayerGMResponse(
                 id=u.id,
@@ -74,7 +76,12 @@ def list_players(
             for u in users
         ]
 
-    return [PlayerResponse.model_validate(u) for u in users]
+    if current_user.role == Role.VIEWER:
+        # Viewer sees all users but without login URLs.
+        return [PlayerResponse.model_validate(u) for u in users]
+
+    # Player sees only GM + player users (viewers filtered out).
+    return [PlayerResponse.model_validate(u) for u in users if u.role != Role.VIEWER]
 
 
 @router.post(

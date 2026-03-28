@@ -137,8 +137,8 @@ def test_export_meta_has_timestamp(db, seed_data, tmp_path):
 
 def test_export_users_count(db, seed_data, tmp_path):
     _, result = run_export(db, tmp_path)
-    # seed_data has 4 active users (gm + 3 players)
-    assert result.users == 4
+    # seed_data has 5 active users (gm + 3 players + 1 viewer)
+    assert result.users == 5
 
 
 def test_export_user_files_exist(db, seed_data, tmp_path):
@@ -146,7 +146,8 @@ def test_export_user_files_exist(db, seed_data, tmp_path):
     usr_dir = tmp_path / "users"
     assert usr_dir.is_dir()
     yaml_files = list(usr_dir.glob("*.yaml"))
-    assert len(yaml_files) == 4
+    # seed_data has 5 active users (gm + 3 players + 1 viewer)
+    assert len(yaml_files) == 5
 
 
 def test_export_user_schema_validates(db, seed_data, tmp_path):
@@ -985,8 +986,8 @@ def test_export_deleted_user_excluded(db, seed_data, tmp_path):
     db.commit()
 
     _, result = run_export(db, tmp_path)
-    # Still 4 — the seed has 4 active users; the inactive one should be excluded.
-    assert result.users == 4
+    # Still 5 — the seed has 5 active users; the inactive one should be excluded.
+    assert result.users == 5
     names_on_disk = [
         load_yaml(f)["display_name"]
         for f in (tmp_path / "users").glob("*.yaml")

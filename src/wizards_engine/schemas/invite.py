@@ -1,13 +1,46 @@
 """Pydantic schemas for Invite API endpoints.
 
-Covers response shapes for the ``/api/v1/game/invites`` resource.
-There is no request body for POST — the GM generates bare invites
-with no configuration options.
+Covers request and response shapes for the ``/api/v1/game/invites`` resource.
 """
 
 import datetime as _dt
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
+
+from wizards_engine.roles import Role
+
+
+class CreateInviteRequest(BaseModel):
+    """Optional request body for POST /game/invites.
+
+    Attributes
+    ----------
+    role:
+        The role to assign to the user who redeems this invite.
+        Must be ``"player"`` or ``"viewer"``.  Defaults to ``"player"``.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    role: str = Role.PLAYER
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        """Ensure role is one of the accepted invite roles.
+
+        Args:
+            v: The role string after whitespace stripping.
+
+        Returns:
+            The validated role string.
+
+        Raises:
+            ValueError: If role is not ``"player"`` or ``"viewer"``.
+        """
+        if v not in {Role.PLAYER, Role.VIEWER}:
+            raise ValueError(f"role must be 'player' or 'viewer', got '{v}'")
+        return v
 
 
 class InviteResponse(BaseModel):
@@ -22,6 +55,8 @@ class InviteResponse(BaseModel):
         separate code column.
     is_consumed:
         ``True`` if the invite has been redeemed by a player joining.
+    role:
+        The role the redeemer will receive: ``"player"`` or ``"viewer"``.
     login_url:
         Computed magic link URL: ``/login/{id}``.  The player visits this
         URL to redeem the invite or (after redemption) to log in.
@@ -33,6 +68,7 @@ class InviteResponse(BaseModel):
 
     id: str
     is_consumed: bool
+    role: str
     created_at: _dt.datetime
 
     @computed_field  # type: ignore[prop-decorator]

@@ -11,6 +11,7 @@ Users:
   ``player1``   — Player 1 user linked to character ``pc1``
   ``player2``   — Player 2 user linked to character ``pc2``
   ``player3``   — Player 3 user linked to character ``pc3``
+  ``viewer``    — 1 Viewer user (no character link)
 
 Characters:
   ``pc1``       — Full character (Player 1's PC)
@@ -101,8 +102,8 @@ def seed_data(db: Session) -> dict:
 
     Returns:
         A dict with keys: ``gm``, ``player1``, ``player2``, ``player3``,
-        ``pc1``, ``pc2``, ``pc3``, ``npc1``, ``npc2``, ``group``,
-        ``region``, ``district``, ``pc1_bond``, ``pc2_bond``,
+        ``viewer``, ``pc1``, ``pc2``, ``pc3``, ``npc1``, ``npc2``,
+        ``group``, ``region``, ``district``, ``pc1_bond``, ``pc2_bond``,
         ``npc1_bond``, ``npc2_bond``.
     """
     # ------------------------------------------------------------------
@@ -147,8 +148,14 @@ def seed_data(db: Session) -> dict:
         is_active=True,
         character_id=pc3.id,
     )
+    viewer = User(
+        display_name="Viewer 1",
+        role="viewer",
+        login_code=secrets.token_urlsafe(32),
+        is_active=True,
+    )
 
-    db.add_all([gm, player1, player2, player3])
+    db.add_all([gm, player1, player2, player3, viewer])
     db.flush()
 
     # ------------------------------------------------------------------
@@ -228,7 +235,7 @@ def seed_data(db: Session) -> dict:
 
     # Refresh all objects so callers can access .id and other DB-generated attrs.
     for obj in [
-        gm, player1, player2, player3,
+        gm, player1, player2, player3, viewer,
         pc1, pc2, pc3, npc1, npc2,
         group, region, district,
         pc1_bond, pc2_bond, npc1_bond, npc2_bond,
@@ -240,6 +247,7 @@ def seed_data(db: Session) -> dict:
         "player1": player1,
         "player2": player2,
         "player3": player3,
+        "viewer": viewer,
         "pc1": pc1,
         "pc2": pc2,
         "pc3": pc3,

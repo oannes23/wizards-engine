@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import get_current_user, require_gm
+from wizards_engine.roles import Role
 from wizards_engine.api.pagination import paginate
 from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.db import get_db
@@ -766,7 +767,7 @@ def update_entry(
     if entry is None or entry.story_id != story_id:
         raise _entry_not_found(entry_id)
 
-    if current_user.role != "gm" and entry.author_id != current_user.id:
+    if current_user.role != Role.GM and entry.author_id != current_user.id:
         raise_forbidden("You can only edit your own story entries.")
 
     entry = story_svc.update_story_entry(
@@ -827,7 +828,7 @@ def delete_entry(
     if entry is None or entry.story_id != story_id:
         raise _entry_not_found(entry_id)
 
-    if current_user.role != "gm" and entry.author_id != current_user.id:
+    if current_user.role != Role.GM and entry.author_id != current_user.id:
         raise_forbidden("You can only delete your own story entries.")
 
     story_svc.delete_story_entry(db, entry, deleted_by=current_user.id)

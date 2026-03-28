@@ -174,6 +174,7 @@ Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/m
 | 6 | 6.4 — World Browser & Feed | [phase6-world-browser.md](implementation/phase6-world-browser.md) | 4 | 🟢 |
 | 6 | 6.5 — GM Tools & Session Management | [phase6-gm-tools.md](implementation/phase6-gm-tools.md) | 5 | 🟢 |
 | 6 | 6.6 — Polish & Integration | [phase6-polish.md](implementation/phase6-polish.md) | 3 | 🟢 |
+| 9 | 9.1 — Viewer Role | [phase9-viewer-role.md](implementation/phase9-viewer-role.md) | 11 | 🟢 |
 
 ---
 
@@ -203,6 +204,13 @@ game-objects (primitive)        events (primitive)        auth (primitive)
 ---
 
 ## Recent Changes
+
+### 2026-03-28: Phase 9 — Viewer Role Added
+
+- **2026-03-28**: Phase 9 — Viewer Role added (Epic 9.1, 11 stories). Three-role model replaces two-role model.
+- **spec/domains/auth.md**: "Two-Role Model" decision block replaced with "Roles" — three roles: GM, Player, Viewer. Viewer has GM-level read access but cannot take any mutating actions.
+- **spec/glossary.md**: "Viewer" entry added (alphabetically between Invite Code and ULID).
+- **VIEWER_ROLE_HANDOFF.md**: Frontend handoff document created at repository root — API contract changes, endpoint access matrix, viewer creation flow, event visibility rules, and integration checklist.
 
 ### 2026-03-19: Epic 6.6 Complete — All Epics Done
 

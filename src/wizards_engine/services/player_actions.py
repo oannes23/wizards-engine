@@ -23,6 +23,7 @@ from wizards_engine.models.character import Character
 from wizards_engine.models.slot import Slot
 from wizards_engine.models.user import User
 from wizards_engine.schemas.character import CharacterResponse
+from wizards_engine.roles import actor_type_for
 from wizards_engine.services.event import create_event
 from wizards_engine.services.exceptions import (
     BusinessRuleViolation,
@@ -121,7 +122,7 @@ def execute_find_time(
     create_event(
         db,
         type="player.find_time",
-        actor_type="gm" if actor_user.role == "gm" else "player",
+        actor_type=actor_type_for(actor_user),
         actor_id=actor_user.id,
         visibility="private",
         changes={
@@ -253,7 +254,7 @@ def execute_recharge_trait(
     create_event(
         db,
         type="player.recharge_trait",
-        actor_type="gm" if actor_user.role == "gm" else "player",
+        actor_type=actor_type_for(actor_user),
         actor_id=actor_user.id,
         visibility="private",
         narrative=narrative,
@@ -390,7 +391,7 @@ def execute_maintain_bond(
     create_event(
         db,
         type="player.maintain_bond",
-        actor_type="gm" if actor_user.role == "gm" else "player",
+        actor_type=actor_type_for(actor_user),
         actor_id=actor_user.id,
         visibility="private",
         narrative=narrative,

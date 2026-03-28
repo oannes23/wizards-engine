@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from wizards_engine.api.auth import set_auth_cookie
 from wizards_engine.db import get_db
 from wizards_engine.models.user import User
+from wizards_engine.roles import Role
 from wizards_engine.schemas.auth import SetupRequest, SetupResponse
 
 router = APIRouter()
@@ -54,7 +55,7 @@ def setup(
         JSONResponse(409): If a user with ``role = 'gm'`` already exists
             (``already_setup`` error code).
     """
-    existing_gm = db.scalars(select(User).where(User.role == "gm")).first()
+    existing_gm = db.scalars(select(User).where(User.role == Role.GM)).first()
     if existing_gm is not None:
         raise HTTPException(
             status_code=409,
@@ -65,7 +66,7 @@ def setup(
 
     gm = User(
         display_name=body.display_name,
-        role="gm",
+        role=Role.GM,
         login_code=login_code,
         is_active=True,
     )

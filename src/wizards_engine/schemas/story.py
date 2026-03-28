@@ -299,16 +299,23 @@ class StoryDetailResponse(StoryResponse):
     """Detail response for GET /api/v1/stories/{id}.
 
     Extends ``StoryResponse`` with the owners list and narrative entries.
-    Entries are sorted by ``created_at`` ascending; soft-deleted entries
-    are excluded.
+    Inline entries are capped at the 20 most recent (by ``created_at``);
+    use ``GET /stories/{id}/entries`` for full paginated access.
 
     Attributes
     ----------
     owners:
         List of owner records (type + id) for this Story.
     entries:
-        List of non-deleted narrative entries, oldest first.
+        List of non-deleted narrative entries (newest 20), oldest first.
+    has_more_entries:
+        ``True`` if the story has more entries than the inline cap.
+    entries_cursor:
+        Reserved for future use.  Currently always ``None``; clients
+        should call ``GET /stories/{id}/entries`` to paginate.
     """
 
     owners: list[StoryOwnerResponse]
     entries: list[StoryEntryResponse]
+    has_more_entries: bool = False
+    entries_cursor: str | None = None

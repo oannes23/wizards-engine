@@ -31,6 +31,7 @@ from .constants import (
     TRAIT_LIMITS,
 )
 from .crud import (
+    calculate_effect,
     create_proposal,
     delete_proposal,
     get_proposal,
@@ -61,6 +62,7 @@ __all__ = [
     "calculate_new_bond",
     "_gnosis_equiv_to_sacrifice_dice",
     # CRUD
+    "calculate_effect",
     "create_proposal",
     "get_proposal",
     "list_proposals_query",

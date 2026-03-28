@@ -8,6 +8,7 @@ Endpoints
 POST   /stories                       — GM only.  Create a story.
 GET    /stories                       — Authenticated.  List with filters + pagination.
 GET    /stories/{id}                  — Authenticated.  Story detail with owners + entries.
+GET    /stories/{id}/entries          — Authenticated.  Paginated entries for a story.
 PATCH  /stories/{id}                  — GM only.  Update story fields.
 DELETE /stories/{id}                  — GM only.  Soft delete.
 POST   /stories/{id}/owners           — GM only.  Add a Game Object as owner.
@@ -22,7 +23,7 @@ from wizards_engine.api.deps import get_current_user, require_gm
 from wizards_engine.api.pagination import paginate
 from wizards_engine.api.responses import raise_forbidden, raise_not_found
 from wizards_engine.db import get_db
-from wizards_engine.models.story import Story
+from wizards_engine.models.story import Story, StoryEntry
 from wizards_engine.models.user import User
 from wizards_engine.schemas.common import PaginatedResponse
 from wizards_engine.schemas.story import (
@@ -62,8 +63,15 @@ def _entry_not_found(entry_id: str) -> None:
     raise_not_found("Story entry", entry_id)
 
 
+_INLINE_ENTRY_CAP = 20
+
+
 def _build_detail_response(db: Session, story: Story) -> StoryDetailResponse:
-    """Construct a StoryDetailResponse including owners and sorted entries.
+    """Construct a StoryDetailResponse including owners and capped entries.
+
+    Inline entries are limited to the 20 most recent (by ``created_at``).
+    If the story has more entries, ``has_more_entries`` is ``True`` and
+    the client should use ``GET /stories/{id}/entries`` to paginate.
 
     Args:
         db: Active SQLAlchemy session.
@@ -75,14 +83,20 @@ def _build_detail_response(db: Session, story: Story) -> StoryDetailResponse:
     owners = [
         StoryOwnerResponse(type=o.owner_type, id=o.owner_id) for o in story.owners
     ]
-    entries_orm = story_svc.get_story_entries(db, story.id)
-    entries = [StoryEntryResponse.model_validate(e) for e in entries_orm]
+    all_entries_orm = story_svc.get_story_entries(db, story.id)
+    total = len(all_entries_orm)
+    has_more = total > _INLINE_ENTRY_CAP
+
+    capped = all_entries_orm[-_INLINE_ENTRY_CAP:] if has_more else all_entries_orm
+    entries = [StoryEntryResponse.model_validate(e) for e in capped]
 
     base = StoryResponse.model_validate(story)
     return StoryDetailResponse(
         **base.model_dump(),
         owners=owners,
         entries=entries,
+        has_more_entries=has_more,
+        entries_cursor=None,
     )
 
 
@@ -353,6 +367,65 @@ def get_story(
     if not can_user_see_story(db, current_user, story):
         raise _story_not_found(story_id)
     return _build_detail_response(db, story)
+
+
+# ---------------------------------------------------------------------------
+# GET /stories/{id}/entries — paginated entries
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/stories/{story_id}/entries",
+    response_model=PaginatedResponse[StoryEntryResponse],
+    status_code=200,
+    summary="List story entries (paginated)",
+    description=(
+        "Returns a paginated list of non-deleted narrative entries for a story, "
+        "sorted by ``created_at`` ascending (oldest first).  "
+        "Cursor pagination via ``?after=<cursor>&limit=N``.  "
+        "Returns 404 if the story does not exist or is not visible to the caller."
+    ),
+)
+def list_story_entries(
+    story_id: str,
+    after: str | None = None,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PaginatedResponse[StoryEntryResponse]:
+    """Return a paginated list of entries for a story.
+
+    Args:
+        story_id: ULID of the story.
+        after: Cursor for pagination continuation.
+        limit: Page size (default 50, max 100).
+        current_user: Authenticated user (any role).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``PaginatedResponse`` of ``StoryEntryResponse`` objects.
+
+    Raises:
+        HTTPException(404): If the story does not exist or is not visible.
+    """
+    story = story_svc.get_story(db, story_id)
+    if story is None:
+        raise _story_not_found(story_id)
+    if not can_user_see_story(db, current_user, story):
+        raise _story_not_found(story_id)
+
+    q = story_svc.list_story_entries_query(story.id)
+    page = paginate(
+        db, q, model=StoryEntry,
+        after=after, limit=limit,
+        sort_col=StoryEntry.created_at, sort_dir="asc",
+    )
+
+    return PaginatedResponse[StoryEntryResponse](
+        items=[StoryEntryResponse.model_validate(e) for e in page.items],
+        next_cursor=page.next_cursor,
+        has_more=page.has_more,
+    )
 
 
 # ---------------------------------------------------------------------------

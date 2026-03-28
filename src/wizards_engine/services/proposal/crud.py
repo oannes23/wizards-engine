@@ -24,6 +24,50 @@ from .calculators import (
 from .constants import DOWNTIME_ACTION_TYPES
 
 
+def calculate_effect(
+    db: Session,
+    *,
+    character_id: str,
+    action_type: str,
+    selections: dict[str, Any],
+) -> dict[str, Any]:
+    """Compute the ``calculated_effect`` for a proposal without persisting.
+
+    Dispatches to the appropriate calculator based on *action_type*.
+    Session actions receive ``(db, character_id, selections)``; downtime
+    actions load the :class:`Character` first.
+
+    Returns ``{}`` when *action_type* is unrecognised or the character
+    cannot be found for a downtime action.
+    """
+    if action_type == "use_skill":
+        return calculate_use_skill(
+            db, character_id=character_id, selections=selections
+        )
+    if action_type == "use_magic":
+        return calculate_use_magic(
+            db, character_id=character_id, selections=selections
+        )
+    if action_type == "charge_magic":
+        return calculate_charge_magic(
+            db, character_id=character_id, selections=selections
+        )
+    if action_type in DOWNTIME_ACTION_TYPES:
+        character: Character | None = db.get(Character, character_id)
+        if character is not None:
+            if action_type == "regain_gnosis":
+                return calculate_regain_gnosis(db, character, selections)
+            if action_type == "work_on_project":
+                return calculate_work_on_project(db, character, selections)
+            if action_type == "rest":
+                return calculate_rest(db, character, selections)
+            if action_type == "new_trait":
+                return calculate_new_trait(db, character, selections)
+            if action_type == "new_bond":
+                return calculate_new_bond(db, character, selections)
+    return {}
+
+
 def create_proposal(
     db: Session,
     *,
@@ -35,9 +79,8 @@ def create_proposal(
 ) -> Proposal:
     """Create a new player-submitted proposal in ``pending`` status.
 
-    For ``use_skill`` proposals, computes and stores the ``calculated_effect``
-    immediately.  For all other action types, ``calculated_effect`` is set to
-    ``{}`` (deferred to later stories).
+    Computes and stores the ``calculated_effect`` immediately via
+    :func:`calculate_effect`.
 
     Args:
         db: Active SQLAlchemy session.
@@ -50,32 +93,9 @@ def create_proposal(
     Returns:
         The newly created and flushed Proposal instance.
     """
-    calculated_effect: dict[str, Any] = {}
-    if action_type == "use_skill":
-        calculated_effect = calculate_use_skill(
-            db, character_id=character_id, selections=selections
-        )
-    elif action_type == "use_magic":
-        calculated_effect = calculate_use_magic(
-            db, character_id=character_id, selections=selections
-        )
-    elif action_type == "charge_magic":
-        calculated_effect = calculate_charge_magic(
-            db, character_id=character_id, selections=selections
-        )
-    elif action_type in DOWNTIME_ACTION_TYPES:
-        character: Character | None = db.get(Character, character_id)
-        if character is not None:
-            if action_type == "regain_gnosis":
-                calculated_effect = calculate_regain_gnosis(db, character, selections)
-            elif action_type == "work_on_project":
-                calculated_effect = calculate_work_on_project(db, character, selections)
-            elif action_type == "rest":
-                calculated_effect = calculate_rest(db, character, selections)
-            elif action_type == "new_trait":
-                calculated_effect = calculate_new_trait(db, character, selections)
-            elif action_type == "new_bond":
-                calculated_effect = calculate_new_bond(db, character, selections)
+    calculated_effect = calculate_effect(
+        db, character_id=character_id, action_type=action_type, selections=selections
+    )
 
     proposal = Proposal(
         character_id=character_id,
@@ -152,55 +172,13 @@ def update_proposal(
         proposal.selections = selections
 
     # Recalculate effect whenever selections change (or on revision).
-    if proposal.action_type == "use_skill" and (
-        selections is not None or was_rejected
-    ):
-        proposal.calculated_effect = calculate_use_skill(
+    if selections is not None or was_rejected:
+        proposal.calculated_effect = calculate_effect(
             db,
             character_id=proposal.character_id,
+            action_type=proposal.action_type,
             selections=proposal.selections,
         )
-    elif proposal.action_type == "use_magic" and (
-        selections is not None or was_rejected
-    ):
-        proposal.calculated_effect = calculate_use_magic(
-            db,
-            character_id=proposal.character_id,
-            selections=proposal.selections,
-        )
-    elif proposal.action_type == "charge_magic" and (
-        selections is not None or was_rejected
-    ):
-        proposal.calculated_effect = calculate_charge_magic(
-            db,
-            character_id=proposal.character_id,
-            selections=proposal.selections,
-        )
-    elif proposal.action_type in DOWNTIME_ACTION_TYPES and (
-        selections is not None or was_rejected
-    ):
-        dt_character: Character | None = db.get(Character, proposal.character_id)
-        if dt_character is not None:
-            if proposal.action_type == "regain_gnosis":
-                proposal.calculated_effect = calculate_regain_gnosis(
-                    db, dt_character, proposal.selections
-                )
-            elif proposal.action_type == "work_on_project":
-                proposal.calculated_effect = calculate_work_on_project(
-                    db, dt_character, proposal.selections
-                )
-            elif proposal.action_type == "rest":
-                proposal.calculated_effect = calculate_rest(
-                    db, dt_character, proposal.selections
-                )
-            elif proposal.action_type == "new_trait":
-                proposal.calculated_effect = calculate_new_trait(
-                    db, dt_character, proposal.selections
-                )
-            elif proposal.action_type == "new_bond":
-                proposal.calculated_effect = calculate_new_bond(
-                    db, dt_character, proposal.selections
-                )
 
     if was_rejected:
         proposal.status = "pending"

@@ -29,6 +29,7 @@ from wizards_engine.models.user import User
 from wizards_engine.schemas.common import PaginatedResponse
 from wizards_engine.schemas.proposal import (
     ApproveProposalRequest,
+    CalculateEffectResponse,
     CreateProposalRequest,
     ProposalResponse,
     RejectProposalRequest,
@@ -189,6 +190,74 @@ def create_proposal(
         actor_id=current_user.id,
     )
     return ProposalResponse.model_validate(proposal)
+
+
+# ---------------------------------------------------------------------------
+# POST /proposals/calculate — dry-run calculation
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/proposals/calculate",
+    response_model=CalculateEffectResponse,
+    status_code=200,
+    summary="Dry-run proposal calculation",
+    description=(
+        "Authenticated player.  Computes the ``calculated_effect`` for a "
+        "proposed action without creating a proposal record.  Uses the same "
+        "request body as ``POST /proposals``.  No side effects."
+    ),
+)
+def calculate_proposal(
+    body: CreateProposalRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CalculateEffectResponse:
+    """Compute calculated_effect without persisting a proposal.
+
+    Args:
+        body: Validated request body (same shape as create proposal).
+        current_user: Authenticated user (GM blocked).
+        db: Injected SQLAlchemy session.
+
+    Returns:
+        ``CalculateEffectResponse`` wrapping the computed effect dict.
+
+    Raises:
+        HTTPException(403): If the caller is the GM.
+        HTTPException(422): If ``character_id`` does not belong to the user.
+        HTTPException(404): If the character does not exist.
+    """
+    if current_user.role == "gm":
+        raise_forbidden("The GM cannot submit player proposals.")
+
+    if current_user.character_id != body.character_id:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": {
+                    "code": "validation_error",
+                    "message": "Validation failed",
+                    "details": {
+                        "fields": {
+                            "character_id": "character_id must belong to the authenticated user"
+                        }
+                    },
+                }
+            },
+        )
+
+    character = db.get(Character, body.character_id)
+    if character is None:
+        raise_not_found("Character", body.character_id)
+
+    calculated_effect = proposal_svc.calculate_effect(
+        db,
+        character_id=body.character_id,
+        action_type=body.action_type,
+        selections=body.selections,
+    )
+    return CalculateEffectResponse(calculated_effect=calculated_effect)
 
 
 # ---------------------------------------------------------------------------

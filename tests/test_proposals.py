@@ -17,6 +17,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from sqlalchemy import func, select
+
 from tests.conftest import auth_as
 from wizards_engine.models.proposal import Proposal
 
@@ -1119,3 +1121,129 @@ class TestNullableNarrative:
         )
         assert approval_event is not None
         assert approval_event.narrative is None
+
+
+# ===========================================================================
+# POST /proposals/calculate — dry-run calculation
+# ===========================================================================
+
+
+class TestCalculateProposalAuth:
+    """Auth and ownership checks mirror POST /proposals."""
+
+    def test_unauthenticated_returns_401(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": "00000000000000000000000001",
+                "action_type": "use_skill",
+                "narrative": "I look around.",
+            },
+        )
+        assert response.status_code == 401
+
+    def test_gm_cannot_calculate(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        auth_as(client, seed_data["gm"])
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "narrative": "I look around.",
+            },
+        )
+        assert response.status_code == 403
+
+    def test_wrong_character_id_returns_422(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": seed_data["pc2"].id,
+                "action_type": "use_skill",
+                "narrative": "I look around.",
+            },
+        )
+        assert response.status_code == 422
+
+
+class TestCalculateProposalHappyPath:
+    """Successful dry-run calculations return 200 with calculated_effect."""
+
+    def test_use_skill_returns_calculated_effect(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "narrative": "I check for traps.",
+                "selections": {"skill": "awareness"},
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert "calculated_effect" in body
+        effect = body["calculated_effect"]
+        assert effect["skill"] == "awareness"
+        assert "dice_pool" in effect
+        assert "costs" in effect
+
+    def test_downtime_action_returns_calculated_effect(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        pc1 = seed_data["pc1"]
+        pc1.free_time = 1
+        db.flush()
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": pc1.id,
+                "action_type": "rest",
+                "narrative": "Taking a break.",
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        effect = body["calculated_effect"]
+        assert "stress_healed" in effect
+        assert "costs" in effect
+
+    def test_no_proposal_created(
+        self, client: TestClient, seed_data: dict, db: Session
+    ) -> None:
+        """Calculate endpoint must not persist a proposal record."""
+        count_before = db.scalar(select(func.count()).select_from(Proposal))
+        auth_as(client, seed_data["player1"])
+        client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "narrative": "I look around.",
+                "selections": {"skill": "awareness"},
+            },
+        )
+        count_after = db.scalar(select(func.count()).select_from(Proposal))
+        assert count_after == count_before
+
+    def test_invalid_action_type_returns_422(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals/calculate",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "fly_to_moon",
+                "narrative": "Fly to the moon.",
+            },
+        )
+        assert response.status_code == 422

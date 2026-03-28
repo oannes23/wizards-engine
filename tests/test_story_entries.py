@@ -646,3 +646,127 @@ class TestStoryDetailEntries:
         assert gm_entry["id"] in entry_ids
         assert p1_entry["id"] in entry_ids
         assert p2_entry["id"] in entry_ids
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/stories/{id}/entries — paginated entries endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestListStoryEntriesPaginated:
+    """Tests for the new cursor-paginated entries sub-resource."""
+
+    def test_returns_entries_oldest_first(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        e1 = _create_entry(client, story_id, text="First")
+        e2 = _create_entry(client, story_id, text="Second")
+
+        resp = client.get(f"/api/v1/stories/{story_id}/entries")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["items"]) == 2
+        assert body["items"][0]["id"] == e1["id"]
+        assert body["items"][1]["id"] == e2["id"]
+        assert body["has_more"] is False
+        assert body["next_cursor"] is None
+
+    def test_pagination_with_cursor(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        entries = [_create_entry(client, story_id, text=f"Entry {i}") for i in range(5)]
+
+        # Request with limit=2
+        resp1 = client.get(f"/api/v1/stories/{story_id}/entries?limit=2")
+        assert resp1.status_code == 200
+        page1 = resp1.json()
+        assert len(page1["items"]) == 2
+        assert page1["has_more"] is True
+        assert page1["next_cursor"] is not None
+
+        # Continue with cursor
+        resp2 = client.get(
+            f"/api/v1/stories/{story_id}/entries?limit=2&after={page1['next_cursor']}"
+        )
+        page2 = resp2.json()
+        assert len(page2["items"]) == 2
+        assert page2["has_more"] is True
+
+        # Third page has the last entry
+        resp3 = client.get(
+            f"/api/v1/stories/{story_id}/entries?limit=2&after={page2['next_cursor']}"
+        )
+        page3 = resp3.json()
+        assert len(page3["items"]) == 1
+        assert page3["has_more"] is False
+
+        # All 5 entries returned across pages, in order
+        all_ids = [e["id"] for e in page1["items"] + page2["items"] + page3["items"]]
+        assert all_ids == [e["id"] for e in entries]
+
+    def test_soft_deleted_entries_excluded(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        e1 = _create_entry(client, story_id, text="Keep me")
+        e2 = _create_entry(client, story_id, text="Delete me")
+
+        # Soft-delete e2
+        client.delete(f"/api/v1/stories/{story_id}/entries/{e2['id']}")
+
+        resp = client.get(f"/api/v1/stories/{story_id}/entries")
+        body = resp.json()
+        assert len(body["items"]) == 1
+        assert body["items"][0]["id"] == e1["id"]
+
+    def test_story_not_found_returns_404(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        resp = client.get("/api/v1/stories/00000000000000000000000099/entries")
+        assert resp.status_code == 404
+
+    def test_empty_story_returns_empty_list(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        resp = client.get(f"/api/v1/stories/{story_id}/entries")
+        body = resp.json()
+        assert body["items"] == []
+        assert body["has_more"] is False
+
+    def test_unauthenticated_returns_401(self, client: TestClient):
+        resp = client.get("/api/v1/stories/anything/entries")
+        assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/stories/{id} — inline entries capping
+# ---------------------------------------------------------------------------
+
+
+class TestDetailEntriesCapping:
+    """Detail endpoint caps inline entries at 20 most recent."""
+
+    def test_detail_caps_at_20_entries(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        entries = [
+            _create_entry(client, story_id, text=f"Entry {i}") for i in range(25)
+        ]
+
+        detail = client.get(f"/api/v1/stories/{story_id}").json()
+        assert len(detail["entries"]) == 20
+        assert detail["has_more_entries"] is True
+        # Should be the newest 20 entries (entries[5:])
+        inline_ids = [e["id"] for e in detail["entries"]]
+        expected_ids = [e["id"] for e in entries[5:]]
+        assert inline_ids == expected_ids
+
+    def test_detail_under_cap_returns_all(self, client: TestClient, seed_data: dict):
+        auth_as(client, seed_data["gm"])
+        story_id = _create_story(client)
+        entries = [
+            _create_entry(client, story_id, text=f"Entry {i}") for i in range(10)
+        ]
+
+        detail = client.get(f"/api/v1/stories/{story_id}").json()
+        assert len(detail["entries"]) == 10
+        assert detail["has_more_entries"] is False
+        assert detail["entries_cursor"] is None

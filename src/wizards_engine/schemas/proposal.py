@@ -243,3 +243,19 @@ class ProposalResponse(BaseModel):
     clock_id: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class CalculateEffectResponse(BaseModel):
+    """Response body for POST /api/v1/proposals/calculate.
+
+    Wraps the computed ``calculated_effect`` dict without creating a
+    proposal record.
+
+    Attributes
+    ----------
+    calculated_effect:
+        The server-computed effect for the given action type and
+        selections.  Shape is action-type-specific.
+    """
+
+    calculated_effect: dict

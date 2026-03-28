@@ -320,6 +320,18 @@ def get_story_entries(db: Session, story_id: str) -> list[StoryEntry]:
     ).all()
 
 
+def list_story_entries_query(story_id: str):
+    """Build a select statement for paginated story entries.
+
+    Returns non-deleted entries for the given story.  Ordering and
+    pagination are applied by the caller via :func:`paginate`.
+    """
+    return (
+        select(StoryEntry)
+        .where(StoryEntry.story_id == story_id, StoryEntry.is_deleted.is_(False))
+    )
+
+
 # ---------------------------------------------------------------------------
 # Entries sub-resource
 # ---------------------------------------------------------------------------

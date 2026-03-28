@@ -695,6 +695,9 @@ def create_entry(
     Raises:
         HTTPException(404): If the story does not exist.
     """
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers have read-only access.")
+
     story = story_svc.get_story(db, story_id)
     if story is None:
         raise _story_not_found(story_id)
@@ -759,6 +762,9 @@ def update_entry(
             does not belong to this story.
         HTTPException(403): If a non-GM player attempts to edit another user's entry.
     """
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers have read-only access.")
+
     story = story_svc.get_story(db, story_id)
     if story is None:
         raise _story_not_found(story_id)
@@ -820,6 +826,9 @@ def delete_entry(
             does not belong to this story.
         HTTPException(403): If a non-GM player attempts to delete another user's entry.
     """
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers have read-only access.")
+
     story = story_svc.get_story(db, story_id)
     if story is None:
         raise _story_not_found(story_id)

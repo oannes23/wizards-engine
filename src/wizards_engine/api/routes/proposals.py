@@ -90,16 +90,21 @@ def _assert_can_mutate(proposal: Proposal, current_user: User) -> None:
     """Raise 403/404 if the user cannot edit or delete this proposal.
 
     Players can only mutate their own proposals.  GMs can mutate any
-    non-approved proposal.  Approved proposals cannot be mutated by anyone.
+    non-approved proposal.  Viewers cannot mutate any proposal.
+    Approved proposals cannot be mutated by anyone.
 
     Args:
         proposal: The proposal to check.
         current_user: The authenticated user.
 
     Raises:
+        HTTPException(403): If the user is a viewer (read-only role).
         HTTPException(404): If the player does not own this proposal.
         HTTPException(409): If the proposal is already approved.
     """
+    if current_user.role == Role.VIEWER:
+        raise_forbidden("Viewers have read-only access.")
+
     _assert_can_read(proposal, current_user)
 
     if proposal.status not in _EDITABLE_STATUSES:

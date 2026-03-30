@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-13
-**Last verified**: 2026-03-16
+**Last verified**: 2026-03-29
 
 ---
 
@@ -136,6 +136,12 @@ Return `204 No Content` with an empty body.
 - `code`: Machine-readable snake_case string (e.g., `not_found`, `validation_error`, `insufficient_free_time`, `forbidden`)
 - `message`: Human-readable explanation
 - `details`: Optional object. For validation errors, contains a `fields` map of field name → error message. May carry other structured context as needed.
+
+### Unified 422 Normalization
+
+- **Decision**: A `RequestValidationError` exception handler normalizes all Pydantic/FastAPI schema validation errors into the standard `{error: {code, message, details}}` envelope. Field names use dot-notation with the leading source prefix (`body`/`query`/`path`) stripped. Multiple errors on the same field are joined with `"; "`.
+- **Rationale**: FastAPI's default 422 handler produces `{"detail": [...]}`, which conflicts with the standard error envelope. Normalizing all 422s removes a special case from client error handling.
+- **Implications**: All error responses, including Pydantic schema validation failures, use the standard `{error: {...}}` envelope. No error response in the API uses FastAPI's default `{"detail": [...]}` shape.
 
 ### HTTP Status Codes
 

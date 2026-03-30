@@ -380,6 +380,20 @@ def start_session(
             },
         )
 
+    if not session.participants:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "no_participants",
+                    "message": (
+                        "Cannot start a session with no participants. "
+                        "Add at least one participant first."
+                    ),
+                }
+            },
+        )
+
     session = session_svc.start_session(db, session)
     return SessionResponse.model_validate(session)
 

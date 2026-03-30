@@ -6,6 +6,7 @@ import pathlib
 import time
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -76,6 +77,36 @@ def _register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def _request_validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        """Normalize Pydantic/FastAPI validation errors into the standard envelope."""
+        fields: dict[str, str] = {}
+        for err in exc.errors():
+            loc_parts = err.get("loc", ())
+            # Skip the leading source element ("body", "query", "path").
+            if len(loc_parts) > 1:
+                field_name = ".".join(str(p) for p in loc_parts[1:])
+            elif loc_parts:
+                field_name = str(loc_parts[0])
+            else:
+                field_name = "__root__"
+            msg = err.get("msg", "Invalid value")
+            # Append with separator when multiple errors hit the same field.
+            if field_name in fields:
+                fields[field_name] += f"; {msg}"
+            else:
+                fields[field_name] = msg
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "validation_error",
+                    "message": "Validation failed",
+                    "details": {"fields": fields},
+                }
+            },
         )
 
     # -- Domain exception handlers -----------------------------------------

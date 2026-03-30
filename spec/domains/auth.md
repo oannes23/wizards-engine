@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-12
-**Last verified**: 2026-03-16
+**Last verified**: 2026-03-29
 **Depends on**: None (primitive)
 **Depended on by**: [actions](actions.md), [events](events.md), [feed](feed.md)
 
@@ -79,7 +79,7 @@ Login/join-specific errors:
 
 ### Permission Model
 
-Two roles:
+Three roles:
 
 **GM (Game Master)**:
 - Full read/write access to everything
@@ -89,16 +89,17 @@ Two roles:
 - Can manage sessions (create, start, end)
 - Can generate and delete invite codes
 - Can regenerate any player's login code (returns new magic link)
-- Can view all player magic links via the player roster
+- Can view all player magic links via the player roster (including viewer users)
 - Can change any event's visibility level
-- Can access the **silent feed** (`/me/feed/silent`) — bookkeeping events invisible to players
+- Can access the **silent feed** (`/me/feed/silent`) — bookkeeping events invisible to players and viewers
 - Can override Story visibility (add player IDs to `visibility_overrides`)
 - Can optionally own a character via `POST /api/v1/me/character`
 - Sees all events regardless of bond-distance visibility (unified visibility model — see [feed.md](feed.md))
+- `GET /me` returns `can_view_gm_content: true, can_take_gm_actions: true`
 
 **Players**:
 - Can read all public game state (characters, groups, locations, NPCs, stories, sessions)
-- Can read the player roster (`/api/v1/players`) — names, roles, character links (no login URLs)
+- Can read the player roster (`/api/v1/players`) — names, roles, character links (no login URLs); viewers are excluded from the roster for player callers
 - Can read events and story entries filtered by unified visibility model (bond-graph based, server-side) — see [feed.md](feed.md)
 - Can access personal feed (`/me/feed`), starred feed (`/me/feed/starred`), and per-Game Object feeds
 - Can star/unstar Game Objects (`/me/starred`)
@@ -109,15 +110,27 @@ Two roles:
 - Can add entries to Stories they can see (see = write)
 - Cannot modify other players' characters
 - Cannot access GM-only endpoints (including silent feed)
+- `GET /me` returns `can_view_gm_content: false, can_take_gm_actions: false`
+
+**Viewers**:
+- GM-level read access: sees all events (except `silent`), all proposals, the GM dashboard, queue summary, all characters' effects, and the full player roster (without login URLs)
+- Cannot take any mutating actions — all POST/PATCH/DELETE endpoints return 403
+- Cannot access the silent feed (`/me/feed/silent`)
+- Cannot submit proposals, approve/reject proposals, or use any player direct actions
+- Can star/unstar Game Objects (`/me/starred`) — personal convenience feature with no game-state impact
+- Has no linked character — viewer accounts are created via viewer invites
+- Visible to GM and viewer callers in the player roster; hidden from player callers' roster
+- `GET /me` returns `can_view_gm_content: true, can_take_gm_actions: false`
 
 ### Invite & Character Lifecycle
 
-- One invite code = one future player account. Invites are **bare** — not pre-linked to a character.
+- One invite code = one future user account. Invites carry a `role` field (`"player"` or `"viewer"`, default `"player"`). Invites are **bare** — not pre-linked to a character.
 - Invite codes are ULIDs — single-use, consumed on redemption, no expiry.
-- On redemption: the invite code becomes the user's login code. PC + User created atomically.
+- On player redemption: the invite code becomes the user's login code. PC + User created atomically.
+- On viewer redemption: User created with no character. `character_name` field is not required in the join request.
 - GM can delete unconsumed invite codes.
 - If a player needs a new character (death, replacement): GM issues a new invite. Old player account is deactivated. Player joins with the new invite link.
-- No "characterless" player state — a player always has exactly one character.
+- Players always have exactly one character. Viewers never have a character.
 - When a player account is deactivated, their pending proposals are **orphaned in place** — the GM can still approve/reject them. The character persists (soft delete is optional and separate from account deactivation).
 
 ### GM Self-Play
@@ -201,6 +214,12 @@ The GM can optionally own a character via `POST /api/v1/me/character`, which acc
 - **Decision**: Any authenticated user can refresh their own magic link via `POST /api/v1/me/refresh-link`. Generates a new code, invalidates the old link, updates the cookie, returns the new magic link URL.
 - **Rationale**: Players should be able to invalidate their own link if they accidentally share it or suspect compromise. Empowers users without requiring GM intervention.
 - **Implications**: Old link stops working immediately. If the user has the site open in other browsers/devices, those sessions lose auth and must re-login via the new link.
+
+### Logout Without Code Invalidation
+
+- **Decision**: `POST /api/v1/auth/logout` clears the httpOnly cookie but does not rotate or invalidate the login code. The magic link remains usable. Deliberately unauthenticated — clearing a non-existent cookie is harmless, and requiring auth on logout creates a catch-22 when the cookie is stale.
+- **Rationale**: Logout is a browser-session action, not a credential rotation. Users who want a secure logout (e.g., on a shared device) should call `POST /me/refresh-link` first to rotate the code.
+- **Implications**: Cookie-clearing logout alone does not protect against a stolen magic link. Self-refresh is the correct path for credential invalidation.
 
 ### Player-Character Mapping
 
@@ -296,25 +315,26 @@ The GM can optionally own a character via `POST /api/v1/me/character`, which acc
 |--------|----------|--------|---------|
 | `POST` | `/api/v1/setup` | Unauthenticated (one-time) | Create GM account (accepts `{display_name}`). Sets auth cookie. Returns magic link URL. Returns 409 if already set up. |
 | `POST` | `/api/v1/auth/login` | Unauthenticated | Validate a login code `{code}`. If code matches an active user → sets cookie, returns user info with `type: "user"`. If code matches an unconsumed invite → returns `{type: "invite"}` (no cookie). Otherwise → 404. Inactive users with a matching code fall through to 404 (no account-state leak). |
-| `POST` | `/api/v1/game/join` | Unauthenticated | Redeem invite code `{code, character_name, display_name}`. Creates User + Character atomically. Sets auth cookie. Returns user info. 404 if code is invalid/consumed. |
+| `POST` | `/api/v1/game/join` | Unauthenticated | Redeem invite code `{code, display_name, character_name?}`. For player invites: `character_name` required — creates User + Character atomically. For viewer invites: `character_name` omitted — creates User only (no character). Sets auth cookie. Returns user info including `role` and nullable `character_id`. 404 if code is invalid/consumed. |
 | `GET` | `/api/v1/me` | Any authenticated | Current user identity (ID, name, role, character ID) |
 | `PATCH` | `/api/v1/me` | Any authenticated | Update own display name `{display_name}` |
 | `POST` | `/api/v1/me/refresh-link` | Any authenticated | Refresh own magic link. Returns new magic link URL. Updates cookie. Old link stops working. |
+| `POST` | `/api/v1/auth/logout` | Unauthenticated | Clear the httpOnly auth cookie. Returns 204. Does not invalidate the login code — the magic link remains usable. |
 | `POST` | `/api/v1/me/character` | GM only | Create a full Character `{name}` and link to GM account. If GM already has a character, old one stays as ownerless. |
 
 ### Invite Management
 
 | Method | Endpoint | Access | Purpose |
 |--------|----------|--------|---------|
-| `POST` | `/api/v1/game/invites` | GM | Generate bare invite code (ULID). Returns invite code + magic link URL. |
-| `GET` | `/api/v1/game/invites` | GM | List invite codes (consumed and unconsumed) |
+| `POST` | `/api/v1/game/invites` | GM | Generate bare invite code (ULID). Optional body `{role: "player"|"viewer"}` (default `"player"`). Returns invite including `role` field + magic link URL. |
+| `GET` | `/api/v1/game/invites` | GM or Viewer | List invite codes (consumed and unconsumed). Response includes `role` per invite. |
 | `DELETE` | `/api/v1/game/invites/{id}` | GM | Delete an unconsumed invite code |
 
 ### Player Management
 
 | Method | Endpoint | Access | Purpose |
 |--------|----------|--------|---------|
-| `GET` | `/api/v1/players` | Any authenticated | Player roster (display_name, role, character_id, is_active). GM callers also see `login_url` per player. |
+| `GET` | `/api/v1/players` | Any authenticated | Player roster (display_name, role, character_id, is_active). GM callers see all users including viewers, with `login_url` per user. Viewer callers see all users without `login_url`. Player callers see only GM + player users (viewers filtered out), without `login_url`. |
 | `POST` | `/api/v1/players/{id}/regenerate-token` | GM | Regenerate a player's login code. Returns new magic link URL. Old link stops working. |
 
 ### Feed & Starring (defined in [feed.md](feed.md), auth-relevant)

@@ -65,7 +65,7 @@ See [mvp-scope.md](architecture/mvp-scope.md) for full details.
 | Downtime | [downtime.md](domains/downtime.md) | 🟢 | All resolved. Time Now defaults documented (default 0, GM can override at creation). **Verified 2026-03-16**: GM may call find-time on behalf of any character. find-time validates detail_level = full (422 not_a_pc). Session start error codes documented. Session end error code (session_not_active) and late-join event details (session.participant_added: global, character as primary target, changes include free_time/last_session_time_now/plot) documented against Stories 5.1.2–5.1.3. |
 | Events | [events.md](domains/events.md) | 🟢 | All resolved. **Verified 2026-03-16**: Clarified `GET /events/{id}` returns 404 for silent events for all callers including GM. session.participant_added default visibility (global) added against Story 5.1.2. |
 | Feed | [feed.md](domains/feed.md) | 🟢 | All resolved. **Verified 2026-03-16**: GM silent feed excludes story entries. POST /me/starred idempotency (200 if already starred, 201 on new star) and DELETE /me/starred idempotency documented. |
-| Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. **Verified 2026-03-16**: Login response `type` discriminator and cookie max_age documented. |
+| Auth | [auth.md](domains/auth.md) | 🟢 | All resolved. **Updated 2026-03-12**: Major auth model redesign — magic link + cookie auth (no Bearer tokens). Bare invite flow synced with character-core. Plaintext login code storage. Cookie-only API auth. Player self-edit display name (PATCH /me). GM character via POST /me/character. Player self-refresh link. Login endpoint POST /auth/login. No explicit deactivation endpoint. **Verified 2026-03-16**: Login response `type` discriminator and cookie max_age documented. **Updated 2026-03-29**: Added Viewer role (Phase 9). Three-role permission model documented. Viewer invite flow, viewer join semantics, roster visibility rules, and /me capability fields (can_view_gm_content, can_take_gm_actions) added. |
 | Web UI | [web-ui.md](domains/web-ui.md) | 🟢 | Full UX specification for Phase 6. Technology stack (Pico CSS + Alpine.js), navigation architecture, complete screen inventory (40+ screens), interaction flows, component definitions, information hierarchy, table-flow design principles, API additions. Spec changes: `narrative` optional on session actions; `recharge_trait` and `maintain_bond` promoted to direct player actions. |
 
 ---
@@ -150,7 +150,7 @@ All propagation complete as of 2026-03-14. All specs aligned.
 
 Implementation uses a **6-phase build order** (see [mvp-scope.md](architecture/mvp-scope.md)). Epic/Story breakdown is in [`spec/implementation/`](implementation/README.md).
 
-**20 Epics, 78 Stories** across 7 phases (5 complete + Phase 5.5 backend additions + Phase 6 Web UI).
+**29 Epics, 80 Stories** across 9 phases (Phases 1–8 complete + Phase 9 Viewer Role complete).
 
 | Phase | Epic | File | Stories | Status |
 |-------|------|------|---------|--------|

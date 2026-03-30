@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from wizards_engine.api.auth import set_auth_cookie
+from wizards_engine.api.auth import clear_auth_cookie, set_auth_cookie
 from wizards_engine.db import get_db
 from wizards_engine.models.user import Invite, User
 from wizards_engine.schemas.auth import LoginInviteResponse, LoginRequest, LoginUserResponse
@@ -86,3 +86,26 @@ def login(
         status_code=404,
         detail={"error": {"code": "code_not_found", "message": "No active user or unconsumed invite matches the provided code."}},
     )
+
+
+@router.post(
+    "/auth/logout",
+    status_code=204,
+    summary="Log out",
+    description=(
+        "Clears the auth cookie.  Does not invalidate the login code itself — "
+        "the magic link remains usable.  For a secure logout that also rotates "
+        "the login code, use ``POST /me/refresh-link`` before logging out."
+    ),
+)
+def logout(response: Response) -> None:
+    """Clear the auth cookie, ending the browser session.
+
+    Deliberately unauthenticated — clearing a non-existent cookie is harmless,
+    and requiring auth on logout creates a catch-22 when the cookie is already
+    stale or corrupted.
+
+    Args:
+        response: FastAPI Response object used to clear the cookie.
+    """
+    clear_auth_cookie(response)

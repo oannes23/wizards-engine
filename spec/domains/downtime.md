@@ -2,7 +2,7 @@
 
 **Status**: 🟢 Complete
 **Last interrogated**: 2026-03-10
-**Last verified**: 2026-03-16
+**Last verified**: 2026-03-29
 **Depends on**: [actions](actions.md), [game-objects](game-objects.md), [character-core](character-core.md)
 **Depended on by**: None
 
@@ -203,6 +203,12 @@ Sessions have a participant list tracking who played:
 - **Rationale**: Prevents confusion about which session is "current." FT/Plot distribution and clock adjustments assume a single active context. Multiple active sessions would create ambiguous state.
 - **Implications**: `POST /api/v1/sessions/{id}/start` must check for existing Active sessions and reject if one exists. Multiple Draft sessions can coexist.
 
+### Minimum One Participant to Start
+
+- **Decision**: `POST /api/v1/sessions/{id}/start` rejects with 400 and error code `no_participants` if the session has zero registered participants.
+- **Rationale**: Starting an empty session is almost certainly a GM error. Rejecting early surfaces the mistake immediately rather than silently starting an empty session with no FT/Plot distribution.
+- **Implications**: GM must register at least one participant before starting. The check runs after `time_now` validation, before distribution.
+
 ### Time Now Validation
 
 - **Decision**: A Session's Time Now must be greater than or equal to the previous session's Time Now. Equal values are allowed (producing 0 FT delta). Negative deltas are rejected by the system.
@@ -290,7 +296,7 @@ Sessions have a participant list tracking who played:
 - `GET /api/v1/sessions/{id}` — session detail with participants, clocks status
 - `PATCH /api/v1/sessions/{id}` — update session details (GM, Draft or Active only; Ended is read-only)
 - `DELETE /api/v1/sessions/{id}` — delete a session (GM, Draft only)
-- `POST /api/v1/sessions/{id}/start` — start session (GM): distributes FT + Plot (overflow allowed) to participants, locks contribution flags. Rejects if another session is Active.
+- `POST /api/v1/sessions/{id}/start` — start session (GM): distributes FT + Plot (overflow allowed) to participants, locks contribution flags. Rejects if another session is Active. Returns 400 with `{error: {code: "no_participants"}}` if no participants are registered.
 - `POST /api/v1/sessions/{id}/end` — end session (GM): no payload. Transitions to Ended + clamps all participants' Plot to 5. Clock adjustments happen separately during Active. Returns 400 with `{error: {code: "session_not_active"}}` if session is not Active.
 - `GET /api/v1/sessions/{id}/timeline` — authenticated. Returns a paginated, visibility-filtered list of events tagged with the session (`session_id` match). `silent` events are excluded for all callers including the GM (silent events are only accessible via the dedicated silent feed endpoint). ULID cursor pagination via `?after=<ulid>&limit=N`.
 

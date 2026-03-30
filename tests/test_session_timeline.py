@@ -673,6 +673,10 @@ class TestSessionTimelineLifecycleEvents:
         assert create_resp.status_code == 201
         session_id = create_resp.json()["id"]
 
+        # Add a participant so the session can start.
+        pc1 = seed_data["pc1"]
+        client.post(f"/api/v1/sessions/{session_id}/participants", json={"character_id": pc1.id})
+
         # Start the session — creates 3 events.
         start_resp = client.post(f"/api/v1/sessions/{session_id}/start")
         assert start_resp.status_code == 200
@@ -696,6 +700,9 @@ class TestSessionTimelineLifecycleEvents:
         create_resp = client.post("/api/v1/sessions", json={"time_now": 100})
         assert create_resp.status_code == 201
         session_id = create_resp.json()["id"]
+
+        pc1 = seed_data["pc1"]
+        client.post(f"/api/v1/sessions/{session_id}/participants", json={"character_id": pc1.id})
 
         client.post(f"/api/v1/sessions/{session_id}/start")
         client.post(f"/api/v1/sessions/{session_id}/end")

@@ -8,7 +8,7 @@ Scenarios tested:
 - FT capped at 20 (clamped flag present in event changes)
 - Plot overflow allowed (can exceed 5)
 - Additional contribution gives +2 Plot instead of +1
-- Session with no participants starts cleanly
+- 400 if session has no participants
 - 3 events created with correct types, visibility, session_id
 - character.last_session_time_now updated correctly
 - 400 if session not in draft status (active or ended)
@@ -88,6 +88,7 @@ class TestSessionStartHappyPath:
     ) -> None:
         """Starting a draft session returns 200 with status='active'."""
         session = _make_session(db, status="draft", time_now=10)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         response = client.post(f"/api/v1/sessions/{session.id}/start")
@@ -97,17 +98,17 @@ class TestSessionStartHappyPath:
         assert body["status"] == "active"
         assert body["id"] == session.id
 
-    def test_start_session_with_no_participants(
+    def test_start_session_with_no_participants_returns_400(
         self, client: TestClient, db: DBSession, seed_data: dict
     ) -> None:
-        """Session with no participants starts cleanly; no FT/Plot changes."""
+        """Session with no participants returns 400."""
         session = _make_session(db, status="draft", time_now=5)
 
         auth_as(client, seed_data["gm"])
         response = client.post(f"/api/v1/sessions/{session.id}/start")
 
-        assert response.status_code == 200
-        assert response.json()["status"] == "active"
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "no_participants"
 
     def test_ft_distributed_to_participant(
         self, client: TestClient, db: DBSession, seed_data: dict
@@ -239,6 +240,7 @@ class TestSessionStartEvents:
     ) -> None:
         """Session start creates exactly 3 events."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -251,6 +253,7 @@ class TestSessionStartEvents:
     ) -> None:
         """The 3 events have the correct types: started, ft_distributed, plot_distributed."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -266,6 +269,7 @@ class TestSessionStartEvents:
     ) -> None:
         """session.started event has visibility='global'."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -279,6 +283,7 @@ class TestSessionStartEvents:
     ) -> None:
         """session.ft_distributed and session.plot_distributed are silent."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -294,6 +299,7 @@ class TestSessionStartEvents:
     ) -> None:
         """All 3 events have actor_type='system' and actor_id=None."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -308,6 +314,7 @@ class TestSessionStartEvents:
     ) -> None:
         """All 3 events have session_id set to the started session's ID."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -322,6 +329,7 @@ class TestSessionStartEvents:
     ) -> None:
         """session.started event changes record draft→active status transition."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")
@@ -424,6 +432,7 @@ class TestSessionStartEvents:
     ) -> None:
         """session.started event has a non-empty narrative."""
         session = _make_session(db, status="draft", time_now=5)
+        _add_participant(db, session, seed_data["pc1"])
 
         auth_as(client, seed_data["gm"])
         client.post(f"/api/v1/sessions/{session.id}/start")

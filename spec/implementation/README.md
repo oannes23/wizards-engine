@@ -178,11 +178,9 @@ Phase 7 (sequential, depends on all prior phases)
 
 | Metric | Count |
 |--------|-------|
-| Phases | 8 complete (1–8) + Phase 9 in progress |
-| Epics | 28 complete + 1 new (viewer role) |
-| Stories | 69 complete + 11 new (viewer role) |
-| Max parallel tracks | 2 (9.1.3/9.1.4/9.1.8 after 9.1.1+9.1.2; 9.1.10/9.1.11 after 9.1.7) |
-| Estimated new backend tests | ~40 (across Phase 9) |
+| Phases | 9 complete (1–9) |
+| Epics | 29 complete |
+| Stories | 80 complete |
 
 ---
 

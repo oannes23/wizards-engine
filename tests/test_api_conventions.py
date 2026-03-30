@@ -333,3 +333,46 @@ def test_paginate_default_limit_is_50(db_session, seeded_users):
     result = paginate(db_session, q, model=User)
     assert len(result.items) == 5
     assert result.has_more is False
+
+
+# ---------------------------------------------------------------------------
+# RequestValidationError → 422 envelope (HTTP integration)
+# ---------------------------------------------------------------------------
+
+
+def test_validation_error_uses_standard_envelope_not_detail_list(client):
+    """POST with a missing required field returns 422 in the standard error envelope.
+
+    Verifies that the custom RequestValidationError handler in app.py emits:
+      {"error": {"code": "validation_error", "message": "Validation failed",
+                 "details": {"fields": {"<field>": "<message>"}}}}
+
+    and does NOT emit FastAPI's default shape:
+      {"detail": [{"loc": [...], "msg": "...", "type": "..."}]}
+    """
+    # POST /api/v1/auth/login requires {"code": "..."}.
+    # Sending an empty body triggers a RequestValidationError for the missing field.
+    response = client.post("/api/v1/auth/login", json={})
+    assert response.status_code == 422
+
+    body = response.json()
+
+    # Must NOT have the old FastAPI "detail" list shape.
+    assert "detail" not in body, (
+        "Response must not use FastAPI's default {'detail': [...]} shape"
+    )
+
+    # Must have the standard error envelope.
+    assert "error" in body
+    error = body["error"]
+    assert error["code"] == "validation_error"
+    assert error["message"] == "Validation failed"
+
+    # Must include per-field details.
+    assert "details" in error
+    assert "fields" in error["details"]
+    fields = error["details"]["fields"]
+    # The "code" field is required; its validation message must be present.
+    assert "code" in fields, (
+        f"Expected 'code' field in validation details; got fields={fields!r}"
+    )

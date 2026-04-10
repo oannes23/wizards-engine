@@ -33,6 +33,7 @@ from wizards_engine.schemas.clock import (
 )
 from wizards_engine.schemas.common import PaginatedResponse
 from wizards_engine.services import clock as clock_svc
+from wizards_engine.services.shared import get_game_object
 
 router = APIRouter()
 
@@ -41,6 +42,15 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 _VALID_ASSOCIATED_TYPES = {"character", "group", "location"}
+
+
+def _clock_response(clock: Clock, db: Session) -> ClockResponse:
+    """Build a ClockResponse with associated_name resolved."""
+    resp = ClockResponse.from_orm_model(clock)
+    if clock.associated_id and clock.associated_type:
+        obj = get_game_object(db, clock.associated_type, clock.associated_id)
+        resp.associated_name = obj.name if obj else None
+    return resp
 
 
 def _get_clock_or_404(db: Session, clock_id: str) -> Clock:
@@ -118,7 +128,7 @@ def create_clock(
         associated_id=body.associated_id,
         notes=body.notes,
     )
-    return ClockResponse.from_orm_model(clock)
+    return _clock_response(clock, db)
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +180,7 @@ def create_group_clock(
         associated_id=group_id,
         notes=body.notes,
     )
-    return ClockResponse.from_orm_model(clock)
+    return _clock_response(clock, db)
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +239,7 @@ def list_clocks(
     page = paginate(db, q, model=Clock, after=after, limit=limit)
 
     return PaginatedResponse[ClockResponse](
-        items=[ClockResponse.from_orm_model(c) for c in page.items],
+        items=[_clock_response(c, db) for c in page.items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
     )
@@ -271,7 +281,7 @@ def get_clock(
         HTTPException(404): If no clock exists with ``clock_id``.
     """
     clock = _get_clock_or_404(db, clock_id)
-    return ClockResponse.from_orm_model(clock)
+    return _clock_response(clock, db)
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +329,7 @@ def update_clock(
     raw = body.model_dump(exclude_unset=True)
 
     clock = clock_svc.update_clock(db, clock, raw)
-    return ClockResponse.from_orm_model(clock)
+    return _clock_response(clock, db)
 
 
 # ---------------------------------------------------------------------------

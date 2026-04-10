@@ -53,7 +53,7 @@ class FeedItemBase(BaseModel):
     timestamp: datetime
     narrative: str | None
     visibility: str
-    targets: list[dict[str, str]]
+    targets: list[dict[str, Any]]
     is_own: bool
 
 
@@ -134,6 +134,7 @@ class StoryEntryFeedItem(FeedItemBase):
     story_name: str
     entry_text: str
     author_id: str | None
+    author_name: str | None = None
 
 
 # ---------------------------------------------------------------------------

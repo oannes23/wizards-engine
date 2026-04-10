@@ -35,6 +35,7 @@ from wizards_engine.models.starred import StarredObject
 from wizards_engine.models.story import Story, StoryEntry, StoryOwner
 from wizards_engine.models.user import User
 from wizards_engine.schemas.feed import EventFeedItem, FeedResponse, StoryEntryFeedItem
+from wizards_engine.services.shared import get_game_object
 from wizards_engine.services.visibility import can_user_see_event, can_user_see_story
 
 __all__ = [
@@ -52,21 +53,31 @@ _MAX_LIMIT = 100
 _DEFAULT_LIMIT = 50
 
 
-def _build_event_feed_item(event: Event, current_user: User) -> EventFeedItem:
+def _build_event_feed_item(
+    event: Event,
+    current_user: User,
+    db: Session,
+) -> EventFeedItem:
     """Convert an Event ORM instance to an EventFeedItem schema.
 
     Args:
         event: The Event ORM instance.  Must have ``targets`` relationship
             loaded.
         current_user: The requesting user, used to compute ``is_own``.
+        db: Active SQLAlchemy session, used to resolve target display names.
 
     Returns:
         A populated :class:`~wizards_engine.schemas.feed.EventFeedItem`.
     """
-    targets = [
-        {"type": t.target_type, "id": t.target_id}
-        for t in event.targets
-    ]
+    targets = []
+    for t in event.targets:
+        obj = get_game_object(db, t.target_type, t.target_id)
+        targets.append({
+            "type": t.target_type,
+            "id": t.target_id,
+            "is_primary": t.is_primary,
+            "name": obj.name if obj else None,
+        })
     is_own = (
         event.actor_id is not None and event.actor_id == current_user.id
     )
@@ -140,6 +151,8 @@ def _build_story_entry_feed_item(
     # Visibility: use story's visibility_level, defaulting to "familiar".
     visibility = story.visibility_level or "familiar"
 
+    author_name = entry.author.display_name if entry.author_id else None
+
     return StoryEntryFeedItem(
         id=entry.id,
         type="story_entry",
@@ -152,6 +165,7 @@ def _build_story_entry_feed_item(
         story_name=story.name,
         entry_text=entry.text,
         author_id=entry.author_id,
+        author_name=author_name,
     )
 
 
@@ -461,7 +475,7 @@ def build_game_object_feed(
 
     # Convert to feed items.
     event_items: list[EventFeedItem] = [
-        _build_event_feed_item(e, current_user) for e in visible_events
+        _build_event_feed_item(e, current_user, db) for e in visible_events
     ]
 
     # ------------------------------------------------------------------
@@ -958,7 +972,7 @@ def build_personal_feed(
     ]
 
     event_items: list[EventFeedItem] = [
-        _build_event_feed_item(e, current_user) for e in visible_events
+        _build_event_feed_item(e, current_user, db) for e in visible_events
     ]
 
     # ------------------------------------------------------------------
@@ -1065,7 +1079,7 @@ def build_starred_feed(
     ]
 
     event_items: list[EventFeedItem] = [
-        _build_event_feed_item(e, current_user) for e in visible_events
+        _build_event_feed_item(e, current_user, db) for e in visible_events
     ]
 
     # ------------------------------------------------------------------
@@ -1158,7 +1172,7 @@ def build_silent_feed(
     )
 
     event_items: list[EventFeedItem] = [
-        _build_event_feed_item(e, current_user) for e in raw_events
+        _build_event_feed_item(e, current_user, db) for e in raw_events
     ]
 
     return _merge_and_paginate(event_items, [], after=after, limit=limit)

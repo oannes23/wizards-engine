@@ -191,6 +191,7 @@ class ClockResponse(BaseModel):
     is_completed: bool
     associated_type: str | None
     associated_id: str | None
+    associated_name: str | None = None
     notes: str | None
     is_deleted: bool
     created_at: datetime

@@ -244,6 +244,9 @@ class ProposalResponse(BaseModel):
     clock_id: str | None
     created_at: datetime
     updated_at: datetime
+    character_name: str | None = None
+    clock_name: str | None = None
+    selection_entities: dict[str, str] = {}
 
 
 class CalculateEffectResponse(BaseModel):

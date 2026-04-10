@@ -25,7 +25,10 @@ from wizards_engine.api.responses import raise_forbidden, raise_not_found, valid
 from wizards_engine.api.types import UlidStr
 from wizards_engine.db import get_db
 from wizards_engine.models.character import Character
+from wizards_engine.models.clock import Clock
 from wizards_engine.models.proposal import Proposal
+from wizards_engine.models.slot import Slot
+from wizards_engine.models.story import Story
 from wizards_engine.models.user import User
 from wizards_engine.schemas.common import PaginatedResponse
 from wizards_engine.schemas.proposal import (
@@ -45,6 +48,35 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 _EDITABLE_STATUSES = frozenset({"pending", "rejected"})
+
+
+def _resolve_selection_entities(selections: dict, db: Session) -> dict[str, str]:
+    """Return a flat {id: name} map for entity IDs referenced in selections."""
+    entities: dict[str, str] = {}
+    if story_id := selections.get("story_id"):
+        s = db.get(Story, story_id)
+        if s:
+            entities[story_id] = s.name
+    if mods := selections.get("modifiers"):
+        for key in ("core_trait_id", "role_trait_id", "bond_id"):
+            if slot_id := mods.get(key):
+                slot = db.get(Slot, slot_id)
+                if slot:
+                    entities[slot_id] = slot.name
+    return entities
+
+
+def _proposal_response(proposal: Proposal, db: Session) -> ProposalResponse:
+    """Build a ProposalResponse with denormalized character_name, clock_name, and selection_entities."""
+    resp = ProposalResponse.model_validate(proposal)
+    if proposal.character_id:
+        char = db.get(Character, proposal.character_id)
+        resp.character_name = char.name if char else None
+    if proposal.clock_id:
+        clk = db.get(Clock, proposal.clock_id)
+        resp.clock_name = clk.name if clk else None
+    resp.selection_entities = _resolve_selection_entities(proposal.selections, db)
+    return resp
 
 
 def _get_proposal_or_404(db: Session, proposal_id: str) -> Proposal:
@@ -195,7 +227,7 @@ def create_proposal(
         selections=body.selections,
         actor_id=current_user.id,
     )
-    return ProposalResponse.model_validate(proposal)
+    return _proposal_response(proposal, db)
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +363,7 @@ def list_proposals(
     page = paginate(db, q, model=Proposal, after=after, limit=limit)
 
     return PaginatedResponse[ProposalResponse](
-        items=[ProposalResponse.model_validate(p) for p in page.items],
+        items=[_proposal_response(p, db) for p in page.items],
         next_cursor=page.next_cursor,
         has_more=page.has_more,
     )
@@ -374,7 +406,7 @@ def get_proposal(
     """
     proposal = _get_proposal_or_404(db, proposal_id)
     _assert_can_read(proposal, current_user)
-    return ProposalResponse.model_validate(proposal)
+    return _proposal_response(proposal, db)
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +463,7 @@ def update_proposal(
         actor_id=current_user.id,
         actor_type=actor_type,
     )
-    return ProposalResponse.model_validate(proposal)
+    return _proposal_response(proposal, db)
 
 
 # ---------------------------------------------------------------------------
@@ -533,7 +565,7 @@ def approve_proposal(
         gm_overrides=body.gm_overrides,
         rider_event_payload=rider_payload,
     )
-    return ProposalResponse.model_validate(proposal)
+    return _proposal_response(proposal, db)
 
 
 # ---------------------------------------------------------------------------
@@ -583,4 +615,4 @@ def reject_proposal(
         actor_id=current_user.id,
         rejection_note=body.rejection_note,
     )
-    return ProposalResponse.model_validate(proposal)
+    return _proposal_response(proposal, db)

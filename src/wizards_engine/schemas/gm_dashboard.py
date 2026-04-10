@@ -44,6 +44,7 @@ class PendingProposalSummary(BaseModel):
     narrative: str | None
     status: str
     created_at: datetime
+    character_name: str | None = None
 
 
 class PCSummary(BaseModel):
@@ -85,6 +86,7 @@ class PCSummary(BaseModel):
     plot_max: int
     gnosis: int
     gnosis_max: int
+    player_name: str | None = None
 
 
 class NearCompletionClock(BaseModel):

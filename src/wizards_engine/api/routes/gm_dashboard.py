@@ -13,13 +13,14 @@ from sqlalchemy.orm import Session
 
 from wizards_engine.api.deps import require_privileged
 from wizards_engine.db import get_db
+from wizards_engine.models.character import Character
+from wizards_engine.models.user import User
 from wizards_engine.services.proposal.constants import (
     FREE_TIME_MAX,
     GNOSIS_MAX,
     PLOT_MAX,
     STRESS_MAX,
 )
-from wizards_engine.models.user import User
 from wizards_engine.schemas.gm_dashboard import (
     ActiveClockSummary,
     GmDashboardResponse,
@@ -82,10 +83,17 @@ def gm_dashboard(
     clocks = get_near_completion_clocks(db)
     stress_proximity_data = get_stress_proximity(db)
 
+    def _pending_summary(p: object) -> PendingProposalSummary:
+        char_name = None
+        if p.character_id:  # type: ignore[attr-defined]
+            char = db.get(Character, p.character_id)  # type: ignore[attr-defined]
+            char_name = char.name if char else None
+        summary = PendingProposalSummary.model_validate(p)
+        summary.character_name = char_name
+        return summary
+
     return GmDashboardResponse(
-        pending_proposals=[
-            PendingProposalSummary.model_validate(p) for p in proposals
-        ],
+        pending_proposals=[_pending_summary(p) for p in proposals],
         pc_summaries=[
             PCSummary(
                 id=c.id,
@@ -98,6 +106,7 @@ def gm_dashboard(
                 plot_max=PLOT_MAX,
                 gnosis=c.gnosis or 0,
                 gnosis_max=GNOSIS_MAX,
+                player_name=c.user.display_name if c.user else None,
             )
             for c in characters
         ],

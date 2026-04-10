@@ -47,6 +47,7 @@ from wizards_engine.services import character as character_svc
 from wizards_engine.services.bond import get_bonds_display_for_entity
 from wizards_engine.services.presence import get_locations_for_character
 from wizards_engine.services.proposal.constants import STRESS_MAX
+from wizards_engine.services.visibility import get_bond_distance_for_user
 
 router = APIRouter()
 
@@ -286,7 +287,7 @@ def characters_summary(
 )
 def get_character(
     character_id: UlidStr,
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CharacterDetailResponse:
     """Return a single character by ID including bond-distance location tiers.
@@ -298,7 +299,7 @@ def get_character(
 
     Args:
         character_id: ULID of the character to retrieve.
-        _current_user: Authenticated user (any role).
+        current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
@@ -325,8 +326,15 @@ def get_character(
         known=locations_raw["known"],
     )
 
+    bond_distance = get_bond_distance_for_user(db, current_user, "character", character_id)
+
     base = CharacterResponse.model_validate(character)
-    detail_kwargs: dict = {**base.model_dump(), "bonds": bonds, "locations": locations}
+    detail_kwargs: dict = {
+        **base.model_dump(),
+        "bonds": bonds,
+        "locations": locations,
+        "bond_distance": bond_distance,
+    }
 
     if character.detail_level == "full":
         # --- Traits -----------------------------------------------------------

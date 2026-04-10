@@ -156,3 +156,7 @@ class LocationDetailResponse(LocationResponse):
     traits: list[TraitDisplayResponse] = []
     bonds: BondGroups = BondGroups()
     presence: PresenceTiers = PresenceTiers()
+
+    # Bond-distance from the requesting user's character to this entity.
+    # None for GMs, Viewers, and users without a linked character.
+    bond_distance: int | None = None

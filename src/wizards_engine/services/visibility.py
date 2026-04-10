@@ -44,6 +44,7 @@ from wizards_engine.services.presence import (
 __all__ = [
     "get_reachable_nodes",
     "get_visible_character_ids",
+    "get_bond_distance_for_user",
     "can_user_see_event",
     "filter_events_for_user",
     "can_user_see_story",
@@ -175,6 +176,63 @@ def get_visible_character_ids(
             if node_type == "character":
                 character_ids.add(node_id)
     return character_ids
+
+
+# ---------------------------------------------------------------------------
+# Bond-distance helper for detail responses
+# ---------------------------------------------------------------------------
+
+
+def get_bond_distance_for_user(
+    db: Session, user: User, entity_type: str, entity_id: str
+) -> int | None:
+    """Return the bond-graph hop distance from *user*'s character to an entity.
+
+    Computes how far (in bond-graph hops) the requesting player's character is
+    from the viewed entity.  Used to populate the ``bond_distance`` field in
+    detail responses.
+
+    | Value | Meaning                                                        |
+    |-------|----------------------------------------------------------------|
+    | None  | Caller is GM, Viewer, or has no character — full detail always |
+    | 0     | Entity is the caller's own character                           |
+    | 1     | 1-hop (bonded)                                                 |
+    | 2     | 2-hop (familiar)                                               |
+    | 3     | 3-hop (public)                                                 |
+    | 4     | Beyond 3 hops (unreachable in bond graph)                      |
+
+    Args:
+        db: Active SQLAlchemy session.
+        user: The requesting user.
+        entity_type: Type of the target entity — ``"character"``, ``"group"``,
+            or ``"location"``.
+        entity_id: ULID of the target entity.
+
+    Returns:
+        An integer hop distance (0–4) or ``None`` for privileged users and
+        users without a linked character.
+    """
+    # GMs and Viewers always receive full detail — distance is not applicable.
+    if has_full_visibility(user):
+        return None
+
+    # Players without a linked character also receive full detail.
+    if user.character_id is None:
+        return None
+
+    # The entity *is* the caller's own character.
+    if entity_type == "character" and entity_id == user.character_id:
+        return 0
+
+    # BFS outward from the caller's character up to 3 hops.
+    reachable = get_reachable_nodes(db, "character", user.character_id, max_hops=3)
+
+    for hop in (1, 2, 3):
+        if (entity_type, entity_id) in reachable[hop]:
+            return hop
+
+    # Entity is not reachable within 3 hops.
+    return 4
 
 
 # ---------------------------------------------------------------------------

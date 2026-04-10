@@ -36,6 +36,7 @@ from wizards_engine.services.bond import (
     get_group_members,
     get_traits_for_owner,
 )
+from wizards_engine.services.visibility import get_bond_distance_for_user
 
 router = APIRouter()
 
@@ -160,14 +161,14 @@ def list_groups(
 )
 def get_group(
     group_id: str,
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> GroupDetailResponse:
     """Return a single group by ID with traits, bonds, and derived members.
 
     Args:
         group_id: ULID of the group to retrieve.
-        _current_user: Authenticated user (any role).
+        current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
@@ -192,8 +193,16 @@ def get_group(
     member_chars = get_group_members(db, group_id)
     members = [GroupMemberResponse.model_validate(c) for c in member_chars]
 
+    bond_distance = get_bond_distance_for_user(db, current_user, "group", group_id)
+
     base = GroupResponse.model_validate(group)
-    return GroupDetailResponse(**base.model_dump(), traits=traits, bonds=bonds, members=members)
+    return GroupDetailResponse(
+        **base.model_dump(),
+        traits=traits,
+        bonds=bonds,
+        members=members,
+        bond_distance=bond_distance,
+    )
 
 
 @router.patch(

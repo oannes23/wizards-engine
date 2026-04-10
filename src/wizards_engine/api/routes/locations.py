@@ -33,6 +33,7 @@ from wizards_engine.schemas.location import (
 from wizards_engine.services import location as location_svc
 from wizards_engine.services.bond import get_bonds_display_for_entity, get_traits_for_owner
 from wizards_engine.services.presence import get_presence_for_location
+from wizards_engine.services.visibility import get_bond_distance_for_user
 
 router = APIRouter()
 
@@ -184,14 +185,14 @@ def list_locations(
 )
 def get_location(
     location_id: str,
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> LocationDetailResponse:
     """Return a single location by ID including bond-distance presence tiers.
 
     Args:
         location_id: ULID of the location to retrieve.
-        _current_user: Authenticated user (any role).
+        current_user: Authenticated user (any role).
         db: Injected SQLAlchemy session.
 
     Returns:
@@ -218,8 +219,16 @@ def get_location(
         known=presence_raw["known"],
     )
 
+    bond_distance = get_bond_distance_for_user(db, current_user, "location", location_id)
+
     base = LocationResponse.model_validate(location)
-    return LocationDetailResponse(**base.model_dump(), traits=traits, bonds=bonds, presence=presence)
+    return LocationDetailResponse(
+        **base.model_dump(),
+        traits=traits,
+        bonds=bonds,
+        presence=presence,
+        bond_distance=bond_distance,
+    )
 
 
 @router.patch(

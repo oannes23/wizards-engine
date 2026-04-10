@@ -320,6 +320,10 @@ class CharacterDetailResponse(CharacterResponse):
     bonds: BondGroups = BondGroups()
     locations: LocationTiers = LocationTiers()
 
+    # Bond-distance from the requesting user's character to this entity.
+    # None for GMs, Viewers, and users without a linked character.
+    bond_distance: int | None = None
+
     # Full-character mechanical fields — None for simplified characters.
     stress: int | None = None
     free_time: int | None = None

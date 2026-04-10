@@ -236,6 +236,7 @@ class ProposalResponse(BaseModel):
     selections: dict
     calculated_effect: dict | None
     status: str
+    revision_count: int
     gm_notes: str | None
     gm_overrides: dict | None
     event_id: str | None

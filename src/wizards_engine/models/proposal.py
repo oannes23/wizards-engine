@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, JSON, String, Text
+from sqlalchemy import ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from wizards_engine.models.base import Base, TimestampMixin
@@ -41,6 +41,9 @@ class Proposal(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         String(10), nullable=False
     )  # 'pending' | 'approved' | 'rejected'
+    revision_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     gm_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     gm_overrides: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     event_id: Mapped[str | None] = mapped_column(

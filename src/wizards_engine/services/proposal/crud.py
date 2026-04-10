@@ -182,6 +182,7 @@ def update_proposal(
 
     if was_rejected:
         proposal.status = "pending"
+        proposal.revision_count += 1
 
     db.flush()
 

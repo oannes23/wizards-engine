@@ -1247,3 +1247,99 @@ class TestCalculateProposalHappyPath:
             },
         )
         assert response.status_code == 422
+
+
+# ===========================================================================
+# revision_count field (CR-014)
+# ===========================================================================
+
+
+class TestProposalRevisionCount:
+    """revision_count is zero on creation and increments each time a rejected
+    proposal is patched back to pending."""
+
+    def test_fresh_proposal_has_revision_count_zero(
+        self, client: TestClient, seed_data: dict
+    ) -> None:
+        """A newly created proposal starts with revision_count == 0."""
+        auth_as(client, seed_data["player1"])
+        response = client.post(
+            "/api/v1/proposals",
+            json={
+                "character_id": seed_data["pc1"].id,
+                "action_type": "use_skill",
+                "narrative": "I check the door.",
+                "selections": {"skill": "awareness"},
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["revision_count"] == 0
+
+    def test_revision_count_increments_on_rejected_edit(
+        self, client: TestClient, db: Session, seed_data: dict
+    ) -> None:
+        """Patching a rejected proposal increments revision_count to 1 and
+        sets status back to pending."""
+        pc1 = seed_data["pc1"]
+        pc1.free_time = 1
+        p = _proposal(db, character_id=pc1.id, action_type="rest", status="rejected")
+        db.commit()
+
+        auth_as(client, seed_data["player1"])
+        response = client.patch(
+            f"/api/v1/proposals/{p.id}",
+            json={"narrative": "Revised narrative."},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["revision_count"] == 1
+        assert body["status"] == "pending"
+
+    def test_revision_count_increments_again(
+        self, client: TestClient, db: Session, seed_data: dict
+    ) -> None:
+        """Full cycle: create → reject → patch (count=1) → reject → patch (count=2)."""
+        pc1 = seed_data["pc1"]
+        pc1.free_time = 1
+        p = _proposal(db, character_id=pc1.id, action_type="rest", status="rejected")
+        db.commit()
+
+        auth_as(client, seed_data["player1"])
+
+        # First revision.
+        resp1 = client.patch(
+            f"/api/v1/proposals/{p.id}",
+            json={"narrative": "First revision."},
+        )
+        assert resp1.status_code == 200
+        assert resp1.json()["revision_count"] == 1
+
+        # Simulate GM rejection by updating status directly in DB.
+        db.expire_all()
+        proposal_obj = db.get(Proposal, p.id)
+        proposal_obj.status = "rejected"
+        db.commit()
+
+        # Second revision.
+        resp2 = client.patch(
+            f"/api/v1/proposals/{p.id}",
+            json={"narrative": "Second revision."},
+        )
+        assert resp2.status_code == 200
+        assert resp2.json()["revision_count"] == 2
+
+    def test_editing_pending_proposal_does_not_increment(
+        self, client: TestClient, db: Session, seed_data: dict
+    ) -> None:
+        """Patching a pending (not rejected) proposal leaves revision_count at 0."""
+        pc1 = seed_data["pc1"]
+        p = _proposal(db, character_id=pc1.id, status="pending")
+        db.commit()
+
+        auth_as(client, seed_data["player1"])
+        response = client.patch(
+            f"/api/v1/proposals/{p.id}",
+            json={"narrative": "Tweaked narrative."},
+        )
+        assert response.status_code == 200
+        assert response.json()["revision_count"] == 0

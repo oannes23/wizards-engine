@@ -118,6 +118,8 @@ class GroupMemberResponse(BaseModel):
         ULID of the character.
     name:
         Character display name.
+    description:
+        Optional freeform character description.
     detail_level:
         ``"full"`` (PC) or ``"simplified"`` (NPC).
     """
@@ -126,4 +128,5 @@ class GroupMemberResponse(BaseModel):
 
     id: str
     name: str
+    description: str | None
     detail_level: str

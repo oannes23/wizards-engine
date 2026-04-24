@@ -699,12 +699,13 @@ class TestGroupDetailBonds:
     def test_group_member_has_required_fields(
         self, client: TestClient, seed_data: dict
     ) -> None:
-        """Each member entry has id, name, detail_level."""
+        """Each member entry has id, name, description, detail_level."""
         auth_as(client, seed_data["gm"])
         response = client.get(f"/api/v1/groups/{seed_data['group'].id}")
         member = response.json()["members"][0]
         assert "id" in member
         assert "name" in member
+        assert "description" in member
         assert "detail_level" in member
 
     def test_group_with_no_members_returns_empty_list(
